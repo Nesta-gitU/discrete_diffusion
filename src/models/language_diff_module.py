@@ -5,8 +5,11 @@ from lightning import LightningModule
 from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy
 
+from src.models.diffusions import NeuralDiffusion
 
-class MNISTLitModule(LightningModule):
+
+
+class DiffusionModule(LightningModule):
     """Example of a `LightningModule` for MNIST classification.
 
     A `LightningModule` implements 8 key methods:
@@ -41,12 +44,12 @@ class MNISTLitModule(LightningModule):
 
     def __init__(
         self,
-        net: torch.nn.Module,
+        diffusion: NeuralDiffusion,
         optimizer: torch.optim.Optimizer,
-        scheduler: torch.optim.lr_scheduler,
         compile: bool,
+        scheduler: torch.optim.lr_scheduler = None
     ) -> None:
-        """Initialize a `MNISTLitModule`.
+        """Initialize a `Diffusion Module`.
 
         :param net: The model to train.
         :param optimizer: The optimizer to use for training.
@@ -58,60 +61,27 @@ class MNISTLitModule(LightningModule):
         # also ensures init params will be stored in ckpt
         self.save_hyperparameters(logger=False)
 
-        self.net = net
+        self.model = diffusion
 
-        # loss function
-        self.criterion = torch.nn.CrossEntropyLoss()
+        # initialize the metrics to track:
+        # recon_loss, diffusion_loss, prior_loss, elbo, bits-per-character 
 
-        # metric objects for calculating and averaging accuracy across batches
-        self.train_acc = Accuracy(task="multiclass", num_classes=10)
-        self.val_acc = Accuracy(task="multiclass", num_classes=10)
-        self.test_acc = Accuracy(task="multiclass", num_classes=10)
-
-        # for averaging loss across batches
-        self.train_loss = MeanMetric()
-        self.val_loss = MeanMetric()
-        self.test_loss = MeanMetric()
-
-        # for tracking best so far validation accuracy
-        self.val_acc_best = MaxMetric()
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, compute_diffusion_loss, compute_reconstruction_loss, compute_prior_loss, reconstruction_loss_type) -> torch.Tensor:
         """Perform a forward pass through the model `self.net`.
 
         :param x: A tensor of images.
         :return: A tensor of logits.
         """
-        return self.net(x)
+        return self.model(x, compute_diffusion_loss, compute_reconstruction_loss, compute_prior_loss, reconstruction_loss_type)
 
     def on_train_start(self) -> None:
         """Lightning hook that is called when training begins."""
         # by default lightning executes validation step sanity checks before training starts,
         # so it's worth to make sure validation metrics don't store results from these checks
-        self.val_loss.reset()
-        self.val_acc.reset()
-        self.val_acc_best.reset()
-
-    def model_step(
-        self, batch: Tuple[torch.Tensor, torch.Tensor]
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Perform a single model step on a batch of data.
-
-        :param batch: A batch of data (a tuple) containing the input tensor of images and target labels.
-
-        :return: A tuple containing (in order):
-            - A tensor of losses.
-            - A tensor of predictions.
-            - A tensor of target labels.
-        """
-        x, y = batch
-        logits = self.forward(x)
-        loss = self.criterion(logits, y)
-        preds = torch.argmax(logits, dim=1)
-        return loss, preds, y
+        pass
 
     def training_step(
-        self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int
+        self, batch: torch.Tensor, batch_idx: int
     ) -> torch.Tensor:
         """Perform a single training step on a batch of data from the training set.
 
@@ -120,63 +90,70 @@ class MNISTLitModule(LightningModule):
         :param batch_idx: The index of the current batch.
         :return: A tensor of losses between model predictions and targets.
         """
-        loss, preds, targets = self.model_step(batch)
+        diffusion_loss, reconstruction_loss, prior_loss = self.forward(batch,
+                                            compute_diffusion_loss=self.hparams.compute_diffusion_loss,
+                                            compute_prior_loss=self.hparams.compute_prior_loss,
+                                            compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
+                                            reconstruction_loss_type = self.hparams.reconstruction_loss_type)
+
+        #note elbo may or may not be valid depending on what we actualy calculatte in the forward pass
+        elbo = diffusion_loss + reconstruction_loss + prior_loss 
 
         # update and log metrics
-        self.train_loss(loss)
-        self.train_acc(preds, targets)
-        self.log("train/loss", self.train_loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("train/acc", self.train_acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("train/diffusion_loss", self.train_loss, on_step=True, prog_bar=False)
+        self.log("train/reconstruction_loss", self.train_acc, on_step=True, prog_bar=False)
+        self.log("train/prior_loss", self.train_loss, on_step=True, prog_bar=False)
+        self.log("train/elbo", elbo, on_step=True, prog_bar=True)
+
+        #generate samples once in a while:
+        if self.global_step % self.config.generate_every_n_steps == 0:
+            generated_sents = self.generate()
+            self.logger.experiment.add_text('Training texts', generated_sents, self.global_step)
 
         # return loss or backpropagation will fail
-        return loss
+        return elbo
 
-    def on_train_epoch_end(self) -> None:
-        "Lightning hook that is called when a training epoch ends."
-        pass
-
-    def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> None:
+    def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         """Perform a single validation step on a batch of data from the validation set.
 
         :param batch: A batch of data (a tuple) containing the input tensor of images and target
             labels.
         :param batch_idx: The index of the current batch.
         """
-        loss, preds, targets = self.model_step(batch)
+        diffusion_loss, reconstruction_loss, prior_loss = self.forward(batch, 
+                                            compute_diffusion_loss=True,
+                                            compute_prior_loss=True,
+                                            compute_reconstruction_loss=True,
+                                            reconstruction_loss_type =self.hparams.reconstruction_loss_type)
+        elbo = diffusion_loss + reconstruction_loss + prior_loss
 
         # update and log metrics
-        self.val_loss(loss)
-        self.val_acc(preds, targets)
-        self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val/diffusion_loss", self.train_loss, on_step=True, prog_bar=False)
+        self.log("val/reconstruction_loss", self.train_acc, on_step=True, prog_bar=False)
+        self.log("val/prior_loss", self.train_loss, on_step=True, prog_bar=False)
+        self.log("val/elbo", elbo, on_step=True, prog_bar=True)
+       
 
-    def on_validation_epoch_end(self) -> None:
-        "Lightning hook that is called when a validation epoch ends."
-        acc = self.val_acc.compute()  # get current val acc
-        self.val_acc_best(acc)  # update best so far val acc
-        # log `val_acc_best` as a value through `.compute()` method, instead of as a metric object
-        # otherwise metric would be reset by lightning after each epoch
-        self.log("val/acc_best", self.val_acc_best.compute(), sync_dist=True, prog_bar=True)
-
-    def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> None:
+    def test_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         """Perform a single test step on a batch of data from the test set.
 
         :param batch: A batch of data (a tuple) containing the input tensor of images and target
             labels.
         :param batch_idx: The index of the current batch.
         """
-        loss, preds, targets = self.model_step(batch,
-                                            
+        diffusion_loss, reconstruction_loss, prior_loss = self.forward(batch, 
+                                            compute_diffusion_loss=True,
+                                            compute_prior_loss=True,
+                                            compute_reconstruction_loss=True,
+                                            reconstruction_loss_type =self.hparams.reconstruction_loss_type)
+        elbo = diffusion_loss + reconstruction_loss + prior_loss
 
         # update and log metrics
-        self.test_loss(loss)
-        self.test_acc(preds, targets)
-        self.log("test/loss", self.test_loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("test/acc", self.test_acc, on_step=False, on_epoch=True, prog_bar=True)
-
-    def on_test_epoch_end(self) -> None:
-        """Lightning hook that is called when a test epoch ends."""
-        pass
+        self.log("test/diffusion_loss", self.train_loss, on_step=True, prog_bar=False)
+        self.log("test/reconstruction_loss", self.train_acc, on_step=True, prog_bar=False)
+        self.log("test/prior_loss", self.train_loss, on_step=True, prog_bar=False)
+        self.log("test/elbo", elbo, on_step=True, prog_bar=True)
+        
 
     def setup(self, stage: str) -> None:
         """Lightning hook that is called at the beginning of fit (train + validate), validate,

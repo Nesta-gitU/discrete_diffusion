@@ -1,0 +1,191 @@
+import requests
+import zipfile
+from pathlib import Path
+import logging
+from typing import Optional
+
+import torch
+from torch.utils.data import Dataset as TorchDataset
+from typing import Union
+from torch import Tensor
+
+import numpy as np 
+import os
+import pickle
+
+from tokenizers import Tokenizer
+from tokenizers.models import BPE
+from tokenizers.trainers import BpeTrainer
+from tokenizers.pre_tokenizers import Whitespace
+
+class Text8Dataset(TorchDataset):
+    data_lists: list[Tensor]
+    file_url = "http://mattmahoney.net/dc/text8.zip"
+    data_dir: Path
+
+    def __init__(
+        self,
+        split: str,
+        block_size: int,
+        root_dir: str,
+        overfit_one_batch: bool = False,
+        return_index: bool = False
+    ):
+        
+        self.return_index = return_index
+        self.block_size = block_size
+        self.overfit_one_batch = overfit_one_batch
+        self.text8_dir = Text8Dataset.get_data_dir(Path(root_dir)) / "text8"
+        self.text8_url = Text8Dataset.get_data_dir(Path(root_dir)) / "text8" / f"{split}.bin"
+
+        data = np.memmap(self.text8_url, dtype=np.uint16, mode='r')
+        num_tokens = len(data)
+        self.num_chunks = num_tokens // block_size
+
+    #length is arbitrary so lets just make it the number of chuncks if you stack them after eachother
+    #probably just shouldnt use the concept of epoch at all. 
+    def __len__(self): 
+        return self.num_chunks
+
+    def get_vocab_size(self):
+        #open the meta file and get the vocab size
+        url = Text8Dataset.get_data_dir(Path(self.text8_dir)) / 'meta.pkl'
+        with open(url, 'rb') as f:
+            meta = pickle.load(f)
+        return meta['vocab_size']
+
+    def __getitem__(self, index: int):
+
+        #create a memmap for the current split, create a new one each time to prevent memory leakage.
+        data = np.memmap(self.text8_url, dtype=np.uint16, mode='r')
+
+        #the get item function should return a ternsor of block size but not for a whole batch, the loader will handle that. 
+        if not self.overfit_one_batch:
+            i = torch.randint(len(data) - self.block_size, (1,)).item() #this is questionable, because it does not garuantee seeing the whole dataset in an epoch. idk how to make better
+        else:
+            i = 0  #this is for debugging purposes, so we can see the same string over and over again.
+       
+        x = torch.from_numpy((data[i:i+self.block_size]).astype(np.int64))
+        
+        return x
+
+        
+    @classmethod
+    def prepare(cls, root_dir: str, character_level: bool = True):
+        text8_file_path = Text8Dataset.get_data_dir(Path(root_dir)) / "text8" / "text8"
+
+        with open(text8_file_path, 'r') as f:
+            data = f.read()
+        print(f"length of dataset in characters: {len(data):,}")
+
+        # get all the unique characters that occur in this text
+        if character_level:
+            print("using a char tokenizer....")
+            chars = sorted(list(set(data)))
+            vocab_size = len(chars)
+
+            print("all the unique characters:", ''.join(chars))
+            print(f"vocab size: {vocab_size:,}")
+
+            # create a mapping from characters to integers
+            stoi = { ch:i for i,ch in enumerate(chars) }
+            itos = { i:ch for i,ch in enumerate(chars) }
+            
+            def encode(s):
+                return [stoi[c] for c in s] # encoder: take a string, output a list of integers
+            def decode(l):
+                return ''.join([itos[i] for i in l]) # decoder: take a list of integers, output a string
+
+            # create the train and test splits
+            n = len(data)
+            train_data = data[:int(n*0.9)]
+            val_data = data[int(n*0.8):int(n*0.9)] #this isnt great but otherwise pl will complain 
+            test_data = data[int(n*0.9):]
+
+            # encode both to integers
+            train_ids = encode(train_data)
+            val_ids = encode(val_data)
+            test_ids = encode(test_data)
+            print(f"train has {len(train_ids):,} tokens")
+            print(f"test has {len(test_ids):,} tokens")
+        
+        else:
+            n = len(data)
+            train_data = data[:int(n*0.8)]
+            val_data = data[int(n*0.8):int(n*0.9)]
+            test_data = data[int(n*0.9):]
+
+            # Tokenize the data using a BPE tokenizer
+            if not os.path.exists("tokenizer.json"):
+                tokenizer = Tokenizer(BPE())
+                tokenizer.pre_tokenizer = Whitespace()
+                trainer = BpeTrainer(vocab_size=10000)
+                tokenizer.train_from_iterator([data], trainer=trainer)
+                tokenizer.save("tokenizer.json")
+            else:
+                tokenizer = Tokenizer.from_file("tokenizer.json")
+                
+            
+
+            # Get the vocabulary size and the mapping between tokens and integers
+            vocab_size = tokenizer.get_vocab_size()
+            stoi = tokenizer.get_vocab()
+            itos = {v: k for k, v in stoi.items()}
+
+            # Encode the data, this is also stupid. should just encode on demand in the loader
+            train_ids = tokenizer.encode_batch([train_data])[0].ids
+            val_ids = tokenizer.encode_batch([val_data])[0].ids
+            test_ids = tokenizer.encode_batch([test_data])[0].ids
+
+            print(f"train has {len(train_ids):,} tokens")
+            print(f"test has {len(test_ids):,} tokens")
+
+        # export to bin files
+        train_ids = np.array(train_ids, dtype=np.uint16)
+        val_ids = np.array(val_ids, dtype=np.uint16)
+        test_ids = np.array(test_ids, dtype=np.uint16)
+
+        train_ids.tofile(os.path.join(os.path.dirname(text8_file_path), 'train.bin'))
+        val_ids.tofile(os.path.join(os.path.dirname(text8_file_path), 'val.bin'))
+        test_ids.tofile(os.path.join(os.path.dirname(text8_file_path), 'test.bin'))
+
+
+        # save the meta information as well, to help us encode/decode later
+        meta = {
+            'vocab_size': vocab_size,
+            'itos': itos,
+            'stoi': stoi,
+        }
+        with open(os.path.join(os.path.dirname(text8_file_path), 'meta.pkl'), 'wb') as f:
+            pickle.dump(meta, f)
+
+    @classmethod
+    def get_data_dir(cls, root_dir: Path):
+        data_dir = root_dir
+        data_dir.mkdir(parents=True, exist_ok=True)
+        return data_dir
+
+    @classmethod
+    def download_and_extract(
+        cls, root_dir: str, logger: Optional[logging.Logger] = None 
+    ):
+        if logger is None:
+            logger = logging.getLogger(__name__)
+            logger.setLevel(logging.INFO)
+        root_dir = Path(root_dir)
+        data_dir = cls.get_data_dir(root_dir)
+
+        out_folder = data_dir / "text8" #should not be the same as datadir otherwise the if below goes wrong.
+        if out_folder.exists():
+            logger.info(f"Data already downloaded and extracted at {out_folder}")
+            return out_folder
+
+        logger.info(f"Downloading and extracting data to {out_folder}")
+        r = requests.get(Text8Dataset.file_url, allow_redirects=True)
+        with open(data_dir / "text8.zip", "wb") as f:
+            f.write(r.content)
+        with zipfile.ZipFile(data_dir / "text8.zip", "r") as zip_ref:
+            zip_ref.extractall(out_folder) #since this file has only one inside it it doesnt unzip into a folder by itself. 
+        # remove the zip file
+        (data_dir / "text8.zip").unlink()
+        return out_folder
