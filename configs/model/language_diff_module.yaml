@@ -1,0 +1,13 @@
+_target_: src.models.mnist_module.MNISTLitModule
+
+diffusion: ?? #define the diffusion seperately in the experiment config
+
+optimizer:
+  _target_: torch.optim.Adam
+  _partial_: true
+  lr: 1e-3
+
+schedule: None
+
+# compile model for faster training with pytorch 2.0
+compile: false

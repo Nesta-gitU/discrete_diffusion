@@ -134,4 +134,4 @@ class NeuralDiffusion(nn.Module):
     def prior_loss(self, embeddings, bs):
         # compute the prior loss 
         #not implemented error
-        return torch.zeros(bs, dtype=embeddings.dtype, device=x.device)
+        return torch.zeros(bs, dtype=embeddings.dtype)

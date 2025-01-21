@@ -1,0 +1,7 @@
+__target__: src.models.components.volatility.Volatility
+
+model: 
+  __target__: src.models.components.nets.mlp.MLP
+  input_size: 1
+  hidden_size: [64, 64, 64]
+  output_size: 1

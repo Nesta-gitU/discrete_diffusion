@@ -2,9 +2,6 @@ import torch
 from torch import nn
 import numpy as np
 
-#not yet created
-from nets.net import Net
-
 class NFDM_gaussian(nn.Module):
     """
     Affine transformation module. It parametrizes the forward
