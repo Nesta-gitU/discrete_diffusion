@@ -6,6 +6,8 @@ optimizer:
   _target_: torch.optim.Adam
   _partial_: true
   lr: 1e-3
+  weight_decay: 1e-1
+  #put the correct params from nano_gpt here. 
 
 schedule: None
 
