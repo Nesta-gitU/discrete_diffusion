@@ -31,12 +31,13 @@ class MLP(nn.Module):
             self.layers += [nn.Linear(in_features, hidden_size)]
             if use_batch_norm:
                 self.layers += [nn.BatchNorm1d(hidden_size)]
-            self.layers += [nn.ELU(alpha=1, inplace=True)]
+            self.layers += [nn.SELU(alpha=1, inplace=True)]
             in_features = hidden_size
         n_last_layer_inp = n_inputs if len(n_hidden) == 0 else n_hidden[-1]
         self.layers.append(nn.Linear(n_last_layer_inp, n_outputs))
         self.layers = nn.Sequential(*self.layers)
 
+        """ 
         for l_idx, m in enumerate(self.layers):
             if isinstance(m, nn.Linear):
                 if m.bias is not None:
@@ -45,6 +46,7 @@ class MLP(nn.Module):
                     nn.init.normal_(m.weight, std=1.0/m.weight.shape[1]**0.5)
                 else:
                     nn.init.kaiming_normal_(m.weight)
+        """
 
     def forward(self, x):
         """
