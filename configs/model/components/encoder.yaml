@@ -1,0 +1,4 @@
+__target__: src.models.components.encoder.EmbeddingEncoder
+
+root_dir: ${paths.root_dir}
+embedding_dim: 256
