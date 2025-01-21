@@ -81,10 +81,19 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     if logger:
         log.info("Logging hyperparameters!")
         log_hyperparameters(object_dict)
+    
+    #get memory profile
+    if cfg.get("get_memory_profile"):
+        torch.cuda.memory._record_memory_history()
 
     if cfg.get("train"):
         log.info("Starting training!")
         trainer.fit(model=model, datamodule=datamodule, ckpt_path=cfg.get("ckpt_path"))
+
+    #get memory profile
+    if cfg.get("get_memory_profile"):
+        torch.cuda.memory._dump_snapshot("memory_snapshot.json")
+        torch.cuda.memory._record_memory_history()
 
     train_metrics = trainer.callback_metrics
 

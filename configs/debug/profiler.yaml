@@ -7,6 +7,16 @@ defaults:
 
 trainer:
   max_epochs: 1
-  profiler: "simple"
-  # profiler: "advanced"
-  # profiler: "pytorch"
+  limit_train_batches: 5
+  limit_val_batches: 0
+  accelerator: gpu
+  #profiler: "simple"
+  #profiler: "advanced"
+  profiler:
+    _target_: pytorch_lightning.profilers.PyTorchProfiler
+    with_stack: false                     # Include stack traces
+    profile_memory: true                  # Use memory profiler
+
+  
+
+get_memory_snapshot: true 
