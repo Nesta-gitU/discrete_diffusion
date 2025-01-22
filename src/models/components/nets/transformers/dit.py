@@ -15,8 +15,7 @@ import torch.nn as nn
 import numpy as np
 import math
 
-from timm.models.vision_transformer import Mlp
-
+from timm.models.vision_transformer import Mlp, Attention
 
 def modulate(x, shift, scale):
     return x * (1 + scale.unsqueeze(1)) + shift.unsqueeze(1)
@@ -105,13 +104,10 @@ class DiTBlock(nn.Module):
     """
     A DiT block with adaptive layer norm zero (adaLN-Zero) conditioning.
     """
-    def __init__(self, hidden_size, num_heads, dropout_p, bias=True, mlp_ratio=4.0):
+    def __init__(self, hidden_size, num_heads, mlp_ratio=4.0, **block_kwargs):
         super().__init__()
-        self.hidden_size = hidden_size
-        self.num_heads = num_heads
-        self.c_attn = nn.Linear(hidden_size, 3 * hidden_size, bias=bias)
-        self.dropout = dropout_p
         self.norm1 = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
+        self.attn = Attention(hidden_size, num_heads=num_heads, qkv_bias=True, **block_kwargs)
         self.norm2 = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
         mlp_hidden_dim = int(hidden_size * mlp_ratio)
         approx_gelu = lambda: nn.GELU(approximate="tanh")
@@ -122,20 +118,11 @@ class DiTBlock(nn.Module):
         )
 
     def forward(self, x, c):
+
         shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.adaLN_modulation(c).chunk(6, dim=1)
-        #get q k v 
-        B, T, C = x.shape
-        x = modulate(self.norm1(x), shift_msa, scale_msa) #TODO should this be before or after the blow up I gues before
-
-        q, k, v  = self.c_attn(x).split(self.hidden_size, dim=2)
-        k = k.view(B, T, self.num_heads, C // self.num_heads).transpose(1, 2) # (B, nh, T, hs)
-        q = q.view(B, T, self.num_heads, C // self.num_heads).transpose(1, 2) # (B, nh, T, hs)
-        v = v.view(B, T, self.num_heads, C // self.num_heads).transpose(1, 2) # (B, nh, T, hs)
-        y = torch.nn.functional.scaled_dot_product_attention(q, k, v, attn_mask=None, dropout_p=self.dropout if self.training else 0, is_causal=False)
-        y = y.transpose(1, 2).contiguous().view(B, T, C)
-
-        x = x + gate_msa.unsqueeze(1) * y
-
+        
+        with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_math=True, enable_mem_efficient=False):
+            x = x + gate_msa.unsqueeze(1) * self.attn(modulate(self.norm1(x), shift_msa, scale_msa))
         x = x + gate_mlp.unsqueeze(1) * self.mlp(modulate(self.norm2(x), shift_mlp, scale_mlp))
         return x
 
@@ -193,7 +180,7 @@ class DiT(nn.Module):
         #self.pos_embed = nn.Parameter(torch.zeros(1, block_size, hidden_size), requires_grad=False) #TODO: note that this might be wrong given it is designed for images maybe swap to rotary embeddings. 
         self.pos_embed = nn.Embedding(block_size, hidden_size)
         self.blocks = nn.ModuleList([
-            DiTBlock(hidden_size, num_heads, mlp_ratio=mlp_ratio, dropout_p=dropout_prob) for _ in range(depth)
+            DiTBlock(hidden_size, num_heads, mlp_ratio=mlp_ratio) for _ in range(depth)
         ])
         self.final_layer = FinalLayer(hidden_size, output_size)
         self.initialize_weights()
@@ -241,8 +228,6 @@ class DiT(nn.Module):
         """
         pos = torch.arange(0, self.block_size, dtype=torch.long) # shape (t)
         pos_embed = self.pos_embed(pos) # shape (t, hidden_size)
-        print("x shape", x.shape)
-        print("pos_embed shape", pos_embed.shape)
         x = x + pos_embed  # (N, T, D), where T = H * W / patch_size ** 2
         t = self.t_embedder(t)                   # (N, D)
         c = t                                # (N, D)

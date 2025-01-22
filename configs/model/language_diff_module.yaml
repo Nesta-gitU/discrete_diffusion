@@ -18,8 +18,8 @@ diffusion:  #define the diffusion seperately in the experiment config
       _target_: src.models.components.nets.transformers.dit.DiT
       depth: 12
       block_size: ${data.block_size}
-      hidden_size: 384
-      output_size: 384
+      hidden_size: 120
+      output_size: 120
       num_heads: 6
 
   affine:
@@ -41,8 +41,8 @@ diffusion:  #define the diffusion seperately in the experiment config
       _target_: src.models.components.nets.transformers.dit.DiT
       depth: 12
       block_size: ${data.block_size}
-      hidden_size: 384
-      output_size: 768 #2x input size which is equal to hidden size. 
+      hidden_size: 120
+      output_size: 240 #2x input size which is equal to hidden size. 
       num_heads: 6
 
   vol: 
@@ -57,7 +57,7 @@ diffusion:  #define the diffusion seperately in the experiment config
   encoder: 
     _target_: models.components.encoder.SimpleEmbeddingEncoder
     vocab_size: ${data.vocab_size}
-    embedding_dim: 384
+    embedding_dim: 120
   decoder: 
     _target_:  src.models.components.decoder.SimilarityDecoder
 
