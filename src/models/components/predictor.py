@@ -13,7 +13,7 @@ class Predictor(nn.Module):
         #z_t = torch.cat([z, t], dim=1)
         #x = self.model(z_t)
         
-        x = self.model(z) # t conditioning not implemented yet in the model
+        x = self.model(z, t) # t conditioning not implemented yet in the model
 
         # Reparametrization for numerical stability
         x = (1 - t) * z + (t + 0.01) * x

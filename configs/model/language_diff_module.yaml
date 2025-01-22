@@ -15,7 +15,12 @@ diffusion:  #define the diffusion seperately in the experiment config
     #    output_size: 360 #1536
     #    dropout: 0.0
     #    bias: true # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
-      
+      _target_: src.models.components.nets.transformers.dit.DiT
+      depth: 12
+      hidden_size: 384
+      output_size: 384
+      num_heads: 6
+
   affine:
     _target_: src.models.components.forward_process.NFDM_gaussian
 
@@ -32,8 +37,11 @@ diffusion:  #define the diffusion seperately in the experiment config
     #    output_size: 720 #1536
     #    dropout: 0.0
     #    bias: true # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
-
-    
+      _target_: src.models.components.nets.transformers.dit.DiT
+      depth: 12
+      hidden_size: 384
+      output_size: 786 #2x input size which is equal to hidden size. 
+      num_heads: 6
 
   vol: 
     _target_: src.models.components.volatility.Volatility

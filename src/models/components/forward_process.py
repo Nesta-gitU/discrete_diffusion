@@ -25,7 +25,7 @@ class NFDM_gaussian(nn.Module):
         #x_t = torch.cat([x, t], dim=1)
         #m_ls = self.net(x_t)  
         #TODO: t conditioning not implemented yet
-        m_ls = self.net(x)
+        m_ls = self.net(x, t)
         m, ls = m_ls.chunk(2, dim=2)#why was this 1 before 
 
         m = (1 - t) * x + t * (1 - t) * m #m is mu_hat
