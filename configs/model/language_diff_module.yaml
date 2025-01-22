@@ -17,6 +17,7 @@ diffusion:  #define the diffusion seperately in the experiment config
     #    bias: true # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
       _target_: src.models.components.nets.transformers.dit.DiT
       depth: 12
+      block_size: ${data.block_size}
       hidden_size: 384
       output_size: 384
       num_heads: 6
@@ -39,8 +40,9 @@ diffusion:  #define the diffusion seperately in the experiment config
     #    bias: true # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
       _target_: src.models.components.nets.transformers.dit.DiT
       depth: 12
+      block_size: ${data.block_size}
       hidden_size: 384
-      output_size: 786 #2x input size which is equal to hidden size. 
+      output_size: 768 #2x input size which is equal to hidden size. 
       num_heads: 6
 
   vol: 
@@ -55,7 +57,7 @@ diffusion:  #define the diffusion seperately in the experiment config
   encoder: 
     _target_: models.components.encoder.SimpleEmbeddingEncoder
     vocab_size: ${data.vocab_size}
-    embedding_dim: 360
+    embedding_dim: 384
   decoder: 
     _target_:  src.models.components.decoder.SimilarityDecoder
 
