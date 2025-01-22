@@ -1,15 +1,71 @@
-_target_: src.models.mnist_module.MNISTLitModule
+_target_: src.models.language_diff_module.DiffusionModule
 
-diffusion: ?? #define the diffusion seperately in the experiment config
+diffusion:  #define the diffusion seperately in the experiment config
+  _target_: src.models.diffusions.NeuralDiffusion
+  pred: 
+    _target_: src.models.components.predictor.Predictor
+    model:
+    #  _target_: src.models.components.nets.transformers.nano_gpt.GPT
+    #  config:
+    #    block_size: 1024
+    #    vocab_size: ${data.vocab_size} # GPT-2 vocab_size of 50257, padded up to nearest multiple of 64 for efficiency
+    #    n_layer: 12
+    #    n_head: 12
+    #    n_embd:  360
+    #    output_size: 360 #1536
+    #    dropout: 0.0
+    #    bias: true # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
+      
+  affine:
+    _target_: src.models.components.forward_process.NFDM_gaussian
+
+    # get input size with ${data.vocab_size} and ${encoder.embedding_dim} and ${encoder.embedding_dim}
+    # output size shoudl be multiplied by 2 to get the mean and variance.
+    model:
+    #  _target_: src.models.components.nets.transformers.nano_gpt.GPT
+    #  config:
+    #    block_size: 1024
+    #    vocab_size: ${data.vocab_size} # GPT-2 vocab_size of 50257, padded up to nearest multiple of 64 for efficiency
+    #    n_layer: 12
+    #    n_head: 12
+    #    n_embd: 360
+    #    output_size: 720 #1536
+    #    dropout: 0.0
+    #    bias: true # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
+
+    
+
+  vol: 
+    _target_: src.models.components.volatility.Volatility
+
+    model: 
+      _target_: src.models.components.nets.mlp.MLP
+      n_inputs: 1
+      n_hidden: [64, 64, 64] # 3 layer, 1 hidden layer mlp. idk if that right. 
+      n_outputs: 1
+      use_batch_norm: false
+  encoder: 
+    _target_: models.components.encoder.SimpleEmbeddingEncoder
+    vocab_size: ${data.vocab_size}
+    embedding_dim: 360
+  decoder: 
+    _target_:  src.models.components.decoder.SimilarityDecoder
+
+
+weight_decay: 1e-1
+compute_diffusion_loss: true
+compute_prior_loss: false
+compute_reconstruction_loss: true
+reconstruction_loss_type: diff_anchor
 
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
   lr: 1e-3
-  weight_decay: 1e-1
+  betas: [0.9, 0.95]
   #put the correct params from nano_gpt here. 
 
-schedule: None
+scheduler: null
 
 # compile model for faster training with pytorch 2.0
 compile: false

@@ -4,6 +4,7 @@ import torch
 from lightning import LightningModule
 from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy
+import inspect
 
 from src.models.diffusions import NeuralDiffusion
 
@@ -47,9 +48,12 @@ class DiffusionModule(LightningModule):
         diffusion: NeuralDiffusion,
         optimizer: torch.optim.Optimizer,
         compile: bool,
-        lr: float,
         weight_decay: float,
-        scheduler: torch.optim.lr_scheduler = None
+        scheduler: torch.optim.lr_scheduler = None,
+        compute_diffusion_loss: bool = True,
+        compute_prior_loss: bool = False,
+        compute_reconstruction_loss: bool = True,
+        reconstruction_loss_type: str = "diff_anchor"
     ) -> None:
         """Initialize a `Diffusion Module`.
 
@@ -74,7 +78,8 @@ class DiffusionModule(LightningModule):
         :param x: A tensor of images.
         :return: A tensor of logits.
         """
-        return self.model(x, compute_diffusion_loss, compute_reconstruction_loss, compute_prior_loss, reconstruction_loss_type)
+        t = torch.rand(x.size(0), 1).unsqueeze(2) #sample a random time for each example in the batch
+        return self.model(x, t, compute_diffusion_loss, compute_reconstruction_loss, compute_prior_loss, reconstruction_loss_type)
 
     def on_train_start(self) -> None:
         """Lightning hook that is called when training begins."""
@@ -98,22 +103,21 @@ class DiffusionModule(LightningModule):
                                             compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
                                             reconstruction_loss_type = self.hparams.reconstruction_loss_type)
 
+        diffusion_loss = diffusion_loss.mean()
+        reconstruction_loss = reconstruction_loss.mean()
+        prior_loss = prior_loss.mean()
+
         #note elbo may or may not be valid depending on what we actualy calculatte in the forward pass
         elbo = diffusion_loss + reconstruction_loss + prior_loss 
 
         # update and log metrics
-        self.log("train/diffusion_loss", self.train_loss, on_step=True, prog_bar=False)
-        self.log("train/reconstruction_loss", self.train_acc, on_step=True, prog_bar=False)
-        self.log("train/prior_loss", self.train_loss, on_step=True, prog_bar=False)
+        self.log("train/diffusion_loss", diffusion_loss, on_step=True, prog_bar=False)
+        self.log("train/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=False)
+        self.log("train/prior_loss", prior_loss, on_step=True, prog_bar=False)
         self.log("train/elbo", elbo, on_step=True, prog_bar=True)
 
-        #generate samples once in a while:
-        if self.global_step % self.config.generate_every_n_steps == 0:
-            generated_sents = self.generate()
-            self.logger.experiment.add_text('Training texts', generated_sents, self.global_step)
-
         # return loss or backpropagation will fail
-        return elbo
+        return elbo.sum()
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         """Perform a single validation step on a batch of data from the validation set.
@@ -127,12 +131,17 @@ class DiffusionModule(LightningModule):
                                             compute_prior_loss=True,
                                             compute_reconstruction_loss=True,
                                             reconstruction_loss_type =self.hparams.reconstruction_loss_type)
-        elbo = diffusion_loss + reconstruction_loss + prior_loss
+        diffusion_loss = diffusion_loss.mean()
+        reconstruction_loss = reconstruction_loss.mean()
+        prior_loss = prior_loss.mean()
+
+        #note elbo may or may not be valid depending on what we actualy calculatte in the forward pass
+        elbo = diffusion_loss + reconstruction_loss + prior_loss 
 
         # update and log metrics
-        self.log("val/diffusion_loss", self.train_loss, on_step=True, prog_bar=False)
-        self.log("val/reconstruction_loss", self.train_acc, on_step=True, prog_bar=False)
-        self.log("val/prior_loss", self.train_loss, on_step=True, prog_bar=False)
+        self.log("val/diffusion_loss", diffusion_loss, on_step=True, prog_bar=False)
+        self.log("val/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=False)
+        self.log("val/prior_loss", prior_loss, on_step=True, prog_bar=False)
         self.log("val/elbo", elbo, on_step=True, prog_bar=True)
        
 
@@ -148,14 +157,18 @@ class DiffusionModule(LightningModule):
                                             compute_prior_loss=True,
                                             compute_reconstruction_loss=True,
                                             reconstruction_loss_type =self.hparams.reconstruction_loss_type)
-        elbo = diffusion_loss + reconstruction_loss + prior_loss
+        diffusion_loss = diffusion_loss.mean()
+        reconstruction_loss = reconstruction_loss.mean()
+        prior_loss = prior_loss.mean()
+
+        #note elbo may or may not be valid depending on what we actualy calculatte in the forward pass
+        elbo = diffusion_loss + reconstruction_loss + prior_loss 
 
         # update and log metrics
-        self.log("test/diffusion_loss", self.train_loss, on_step=True, prog_bar=False)
-        self.log("test/reconstruction_loss", self.train_acc, on_step=True, prog_bar=False)
-        self.log("test/prior_loss", self.train_loss, on_step=True, prog_bar=False)
+        self.log("test/diffusion_loss", diffusion_loss, on_step=True, prog_bar=False)
+        self.log("test/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=False)
+        self.log("test/prior_loss", prior_loss, on_step=True, prog_bar=False)
         self.log("test/elbo", elbo, on_step=True, prog_bar=True)
-        
 
     def setup(self, stage: str) -> None:
         """Lightning hook that is called at the beginning of fit (train + validate), validate,
@@ -167,7 +180,7 @@ class DiffusionModule(LightningModule):
         :param stage: Either `"fit"`, `"validate"`, `"test"`, or `"predict"`.
         """
         if self.hparams.compile and stage == "fit":
-            self.net = torch.compile(self.net)
+            self.net = torch.compile(self.model)
 
     def configure_optimizers(self) -> Dict[str, Any]:
         """Choose what optimizers and learning-rate schedulers to use in your optimization.
@@ -197,9 +210,10 @@ class DiffusionModule(LightningModule):
         print(f"num non-decayed parameter tensors: {len(nodecay_params)}, with {num_nodecay_params:,} parameters")
         # Create AdamW optimizer and use the fused version if it is available
         fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
-        use_fused = fused_available and device_type == 'cuda'
+        use_fused = fused_available and self.device == 'cuda'
         extra_args = dict(fused=True) if use_fused else dict()
         print(f"using fused AdamW: {use_fused}")
+
 
         optimizer = self.hparams.optimizer(params=optim_groups)
         if self.hparams.scheduler is not None:

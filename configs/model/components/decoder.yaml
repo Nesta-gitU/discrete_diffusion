@@ -1,2 +1,2 @@
-__target__:  src.models.components.decoder.SimilarityDecoder
+_target_:  src.models.components.decoder.SimilarityDecoder
 

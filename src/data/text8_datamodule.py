@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-from pytorch_lightning import LightningDataModule
+from lightning import LightningDataModule
 from torch.utils.data import DataLoader, Dataset
 from src.data.components.text8_dataset import Text8Dataset
 import logging
@@ -15,6 +15,7 @@ class Text8DataModule(LightningDataModule):
         self,
         batch_size: int = 64,
         block_size: int = 256,
+        vocab_size: int = 100000,
         root_dir: str = "data/text8",
         num_workers: int = 0,
         overfit_one_batch: bool = False,
@@ -46,7 +47,7 @@ class Text8DataModule(LightningDataModule):
             if os.path.exists(os.path.join(self.hparams.root_dir, 'text8', 'train.bin')) and not self.hparams.reload_data:
                 pass
             else:
-                Text8Dataset.prepare(root_dir=self.hparams.root_dir, character_level=self.hparams.character_level)
+                Text8Dataset.prepare(root_dir=self.hparams.root_dir, character_level=self.hparams.character_level, vocab_size=self.hparams.vocab_size)
 
 
             self.data_train = Text8Dataset(split= "train" ,block_size=self.hparams.block_size, root_dir=self.hparams.root_dir, 

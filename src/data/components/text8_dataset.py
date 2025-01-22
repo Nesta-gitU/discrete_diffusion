@@ -71,7 +71,7 @@ class Text8Dataset(TorchDataset):
 
         
     @classmethod
-    def prepare(cls, root_dir: str, character_level: bool = True):
+    def prepare(cls, root_dir: str, character_level: bool = True, vocab_size: int = 10000):
         text8_file_path = Text8Dataset.get_data_dir(Path(root_dir)) / "text8" / "text8"
 
         with open(text8_file_path, 'r') as f:
@@ -119,7 +119,7 @@ class Text8Dataset(TorchDataset):
             if not os.path.exists("tokenizer.json"):
                 tokenizer = Tokenizer(BPE())
                 tokenizer.pre_tokenizer = Whitespace()
-                trainer = BpeTrainer(vocab_size=10000)
+                trainer = BpeTrainer(vocab_size=vocab_size)
                 tokenizer.train_from_iterator([data], trainer=trainer)
                 tokenizer.save("tokenizer.json")
             else:

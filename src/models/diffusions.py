@@ -80,7 +80,9 @@ class NeuralDiffusion(nn.Module):
         else:
             prior_loss = torch.zeros(bs, dtype=embeddings.dtype, device=x.device)
 
-
+        print("diffusion_loss: ", diffusion_loss.shape)
+        print("reconstruction_loss: ", reconstruction_loss.shape)
+        print("prior_loss: ", prior_loss.shape)
         
         return diffusion_loss, reconstruction_loss, prior_loss
 
@@ -102,7 +104,7 @@ class NeuralDiffusion(nn.Module):
 
         # compute the diffusion loss
         loss = 0.5 * (f_drift - r_drift) ** 2 / g2
-        loss = loss.sum(dim=1)
+        loss = loss.sum(dim=(1,2))
 
         return loss
 
@@ -111,10 +113,10 @@ class NeuralDiffusion(nn.Module):
         I need to have a good look at the math of this part. 
         """
         if loss_type == "collapse":
-            logits = self.decoder(embeddings, self.encoder.weight)
-        elif loss_type == "anchor_diff":
+            logits = self.decoder(embeddings, self.encoder.embedding.weight)
+        elif loss_type == "diff_anchor":
             # e prediction used in the reverse process
-            logits = self.decoder(embeddings_, self.encoder.weight)
+            logits = self.decoder(embeddings_, self.encoder.embedding.weight)
 
         # Reshape logits and x to compute token-wise cross-entropy loss
         block_size = x.shape[1]

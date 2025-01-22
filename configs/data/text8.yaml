@@ -1,4 +1,4 @@
-_target_: src.datamodules.text8_datamodule.Text8DataModule
+_target_: src.data.text8_datamodule.Text8DataModule
 root_dir: ${paths.root_dir}
 block_size: 128
 vocab_size: 10000 # use in other spots. 

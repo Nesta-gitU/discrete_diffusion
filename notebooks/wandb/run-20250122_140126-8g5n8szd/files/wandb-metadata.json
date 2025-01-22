@@ -1,0 +1,31 @@
+{
+  "os": "Linux-5.15.0-1075-aws-x86_64-with-glibc2.31",
+  "python": "CPython 3.10.10",
+  "startedAt": "2025-01-22T14:01:26.233795Z",
+  "program": "/teamspace/studios/this_studio/discrete_diffusion/notebooks/nfdm_from_scratch.ipynb",
+  "codePath": "notebooks/nfdm_from_scratch.ipynb",
+  "git": {
+    "remote": "https://github.com/Nesta-gitU/discrete_diffusion.git",
+    "commit": "06d038e899f067cb7a681febabe1bf4df58d6e99"
+  },
+  "email": "n.midavaine@student.vu.nl",
+  "root": "/teamspace/studios/this_studio/discrete_diffusion/notebooks",
+  "host": "ip-10-192-12-14",
+  "executable": "/home/zeus/miniconda3/envs/cloudspace/bin/python",
+  "codePathLocal": "nfdm_from_scratch.ipynb",
+  "cpu_count": 2,
+  "cpu_count_logical": 4,
+  "disk": {
+    "/": {
+      "total": "416055988224",
+      "used": "31268720640"
+    }
+  },
+  "memory": {
+    "total": "16468402176"
+  },
+  "cpu": {
+    "count": 2,
+    "countLogical": 4
+  }
+}

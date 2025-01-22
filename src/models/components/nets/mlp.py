@@ -31,7 +31,7 @@ class MLP(nn.Module):
             self.layers += [nn.Linear(in_features, hidden_size)]
             if use_batch_norm:
                 self.layers += [nn.BatchNorm1d(hidden_size)]
-            self.layers += [nn.SELU(alpha=1, inplace=True)]
+            self.layers += [nn.SELU(inplace=True)]
             in_features = hidden_size
         n_last_layer_inp = n_inputs if len(n_hidden) == 0 else n_hidden[-1]
         self.layers.append(nn.Linear(n_last_layer_inp, n_outputs))
