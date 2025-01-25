@@ -17,10 +17,8 @@ reconstruction_loss_type: diff_anchor
 
 optimizer:
   _target_: torch.optim.Adam
-  _partial_: true
-  lr: 1e-3
-  betas: [0.9, 0.95]
-  #put the correct params from nano_gpt here. 
+  lr: 1e-4
+  weight_decay: 0
 
 scheduler: null
 

@@ -20,8 +20,6 @@ defaults:
   - override /callbacks: default
   - override /trainer: gpu
   
-  
-
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
