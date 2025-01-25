@@ -8,14 +8,13 @@ diffusion:  #define the diffusion seperately in the experiment config
   encoder: debug
   decoder: debug
 
-
-weight_decay: 1e-1
 compute_diffusion_loss: true
 compute_prior_loss: false
 compute_reconstruction_loss: true
 reconstruction_loss_type: diff_anchor
 
 optimizer:
+  _partial_: true
   _target_: torch.optim.Adam
   lr: 1e-4
   weight_decay: 0
