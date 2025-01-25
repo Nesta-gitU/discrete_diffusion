@@ -4,7 +4,16 @@
 # python train.py experiment=example
 
 defaults:
-  #-/model/components@diffusion.affine: forward_process.yaml
+    #choose which components to use for the diffusion model
+  - /model/components/encoder@model.diffusion.encoder: simple_embedding_encoder.yaml
+  - /model/components/decoder@model.diffusion.decoder: similarity_decoder.yaml
+  - /model/components/forward_process@model.diffusion.affine: fm_ot.yaml
+  - /model/components/predictor@model.diffusion.pred: predictor.yaml
+  - /model/components/volatility@model.diffusion.vol: static_volatility.yaml
+
+  #choose which backbone to use for the predictor and forward process
+  - /model/components/transformer@model.diffusion.affine.model: dit_2x_output.yaml
+  - /model/components/transformer@model.diffusion.pred.model: dit.yaml
   
   - override /data: text8
   - override /model: language_diff_module
@@ -28,12 +37,7 @@ trainer:
   accumulate_grad_batches: 4
   
 
-model:
-  diffusion:
-    affine:
-      _target_: src.models.components.forward_process.FM_OT
-      model: none
-      
+model:      
   compute_diffusion_loss: true
   compute_prior_loss: false
   compute_reconstruction_loss: true

@@ -1,0 +1,6 @@
+_target_: src.models.components.nets.transformers.dit.DiT
+depth: ${model.diffusion.pred.model.depth}
+block_size: ${model.diffusion.pred.model.block_size}
+hidden_size: ${model.diffusion.pred.model.hidden_size}
+output_size: ${eval:"2 * ${model.diffusion.encoder.embedding_dim}"}
+num_heads: ${model.diffusion.pred.model.num_heads}

@@ -1,0 +1,8 @@
+_target_: src.models.components.volatility.LearnedVolatility
+
+model: 
+  _target_: src.models.components.nets.mlp.MLP
+  n_inputs: 1
+  n_hidden: [64, 64, 64] # 3 layer, 1 hidden layer mlp. idk if that right. 
+  n_outputs: 1
+  use_batch_norm: false

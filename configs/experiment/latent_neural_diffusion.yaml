@@ -4,15 +4,24 @@
 # python train.py experiment=example
 
 defaults:
-  #-/model/components@diffusion.affine: forward_process.yaml
+
+  #choose which components to use for the diffusion model
+  - /model/components/encoder@model.diffusion.encoder: simple_embedding_encoder.yaml
+  - /model/components/decoder@model.diffusion.decoder: similarity_decoder.yaml
+  - /model/components/forward_process@model.diffusion.affine: nfdm_gaussain.yaml
+  - /model/components/predictor@model.diffusion.pred: predictor.yaml
+  - /model/components/volatility@model.diffusion.vol: learned_volatility.yaml
+
+  #choose which backbone to use for the predictor and forward process
+  - /model/components/transformer@model.diffusion.affine.model: dit_2x_output.yaml
+  - /model/components/transformer@model.diffusion.pred.model: dit.yaml
   
   - override /data: text8
   - override /model: language_diff_module
   - override /callbacks: default
   - override /trainer: gpu
   
-  
-
+ 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 

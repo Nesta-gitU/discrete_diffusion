@@ -1,0 +1,7 @@
+_target_: src.models.components.forward_process.NFDM_gaussian
+
+# get input size with ${data.vocab_size} and ${encoder.embedding_dim} and ${encoder.embedding_dim}
+# output size shoudl be multiplied by 2 to get the mean and variance.
+model: ??
+
+    
