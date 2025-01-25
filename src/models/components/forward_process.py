@@ -39,7 +39,7 @@ class FM_OT(nn.Module):
     og flow matching parameterization
     """
 
-    def __init__(self):
+    def __init__(self, model=None):
         super().__init__()
         
     def forward(self, x, t):

@@ -39,7 +39,7 @@ class TimestepEmbedder(nn.Module):
         self.frequency_embedding_size = frequency_embedding_size
 
     @staticmethod
-    def timestep_embedding(t, dim, max_period=10000):
+    def timestep_embedding(t, dim, max_period=10000/1000):
         """
         Create sinusoidal timestep embeddings.
         :param t: a 1-D Tensor of N indices, one per batch element.
@@ -165,6 +165,7 @@ class DiT(nn.Module):
     ):
         super().__init__()
         self.learn_sigma = learn_sigma
+        self.hidden_size = hidden_size
 
         self.num_heads = num_heads
 
@@ -226,7 +227,7 @@ class DiT(nn.Module):
         t: (N,) tensor of diffusion timesteps
         y: (N,) tensor of class labels
         """
-        pos = torch.arange(0, self.block_size, dtype=torch.long) # shape (t)
+        pos = torch.arange(0, self.block_size, dtype=torch.long, device=x.device) # shape (t)
         pos_embed = self.pos_embed(pos) # shape (t, hidden_size)
         x = x + pos_embed  # (N, T, D), where T = H * W / patch_size ** 2
         t = self.t_embedder(t)                   # (N, D)

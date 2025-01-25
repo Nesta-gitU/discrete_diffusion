@@ -31,7 +31,7 @@ class NeuralDiffusion(nn.Module):
     def forward(self, x, t, 
                 compute_diffusion_loss=True,
                 compute_prior_loss=False,
-                compute_reconstruction_loss=False,
+                compute_reconstruction_loss=True,
                 reconstruction_loss_type = "diff_anchor"):
         bs = x.size(0)
 
@@ -60,7 +60,7 @@ class NeuralDiffusion(nn.Module):
         z = f_m + f_s * eps # function evaluation of F(e(x), t, eps)
 
         # predict x from z_t
-        embeddings_ = self.pred(z, t)
+        embeddings_ = self.pred(z, t) # z is not neccerily a word embedding here.
 
         # compute the diffusion loss
         if compute_diffusion_loss:
@@ -80,10 +80,6 @@ class NeuralDiffusion(nn.Module):
         else:
             prior_loss = torch.zeros(bs, dtype=embeddings.dtype, device=x.device)
 
-        print("diffusion_loss: ", diffusion_loss.shape)
-        print("reconstruction_loss: ", reconstruction_loss.shape)
-        print("prior_loss: ", prior_loss.shape)
-        
         return diffusion_loss, reconstruction_loss, prior_loss
 
     def diffusion_loss(self, f_dm, f_ds, f_s, eps, g2, x_, z, t):
@@ -112,8 +108,9 @@ class NeuralDiffusion(nn.Module):
         """
         I need to have a good look at the math of this part. 
         """
+
         if loss_type == "collapse":
-            logits = self.decoder(embeddings, self.encoder.embedding.weight)
+            logits = self.decoder(embeddings, self.encoder.embedding.weight) #check 
         elif loss_type == "diff_anchor":
             # e prediction used in the reverse process
             logits = self.decoder(embeddings_, self.encoder.embedding.weight)
@@ -136,4 +133,4 @@ class NeuralDiffusion(nn.Module):
     def prior_loss(self, embeddings, bs):
         # compute the prior loss 
         #not implemented error
-        return torch.zeros(bs, dtype=embeddings.dtype)
+        return torch.zeros(bs, dtype=embeddings.dtype, device=embeddings.device)

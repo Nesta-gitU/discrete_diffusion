@@ -4,6 +4,7 @@ defaults:
   - model_summary
   - rich_progress_bar
   - _self_
+  - word_sampler
 
 model_checkpoint:
   dirpath: ${paths.output_dir}/checkpoints

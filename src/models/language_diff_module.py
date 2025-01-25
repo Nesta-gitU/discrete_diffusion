@@ -53,7 +53,9 @@ class DiffusionModule(LightningModule):
         compute_diffusion_loss: bool = True,
         compute_prior_loss: bool = False,
         compute_reconstruction_loss: bool = True,
-        reconstruction_loss_type: str = "diff_anchor"
+        reconstruction_loss_type: str = "diff_anchor",
+        enable_matmul_tf32: bool = False,
+        enable_cudnn_tf32: bool = False
     ) -> None:
         """Initialize a `Diffusion Module`.
 
@@ -78,8 +80,8 @@ class DiffusionModule(LightningModule):
         :param x: A tensor of images.
         :return: A tensor of logits.
         """
-        t = torch.rand(x.size(0), 1).unsqueeze(2) #sample a random time for each example in the batch
-        return self.model(x, t, compute_diffusion_loss, compute_reconstruction_loss, compute_prior_loss, reconstruction_loss_type)
+        t = torch.rand(x.size(0), 1).unsqueeze(2).to(x.device) #sample a random time for each example in the batch
+        return self.model(x, t, compute_diffusion_loss, compute_prior_loss, compute_reconstruction_loss, reconstruction_loss_type)
 
     def on_train_start(self) -> None:
         """Lightning hook that is called when training begins."""
@@ -106,6 +108,8 @@ class DiffusionModule(LightningModule):
         diffusion_loss = diffusion_loss.mean()
         reconstruction_loss = reconstruction_loss.mean()
         prior_loss = prior_loss.mean()
+
+        #print(f"diffusion_loss: {self.hparams.compute_diffusion_loss}, reconstruction_loss: {self.hparams.compute_reconstruction_loss}, prior_loss: {self.hparams.compute_prior_loss}")
 
         #note elbo may or may not be valid depending on what we actualy calculatte in the forward pass
         elbo = diffusion_loss + reconstruction_loss + prior_loss 
@@ -179,6 +183,10 @@ class DiffusionModule(LightningModule):
 
         :param stage: Either `"fit"`, `"validate"`, `"test"`, or `"predict"`.
         """
+        if self.hparams.enable_matmul_tf32:
+            torch.backends.cuda.matmul.allow_tf32 = True
+        if self.hparams.enable_cudnn_tf32:
+            torch.backends.cudnn.allow_tf32 = True
         if self.hparams.compile and stage == "fit":
             self.net = torch.compile(self.model)
 

@@ -63,6 +63,7 @@ class Text8Dataset(TorchDataset):
         if not self.overfit_one_batch:
             i = torch.randint(len(data) - self.block_size, (1,)).item() #this is questionable, because it does not garuantee seeing the whole dataset in an epoch. idk how to make better
         else:
+            print("overfitting one batch")
             i = 0  #this is for debugging purposes, so we can see the same string over and over again.
        
         x = torch.from_numpy((data[i:i+self.block_size]).astype(np.int64))
@@ -161,7 +162,7 @@ class Text8Dataset(TorchDataset):
 
     @classmethod
     def get_data_dir(cls, root_dir: Path):
-        data_dir = root_dir
+        data_dir = root_dir / "data"
         data_dir.mkdir(parents=True, exist_ok=True)
         return data_dir
 

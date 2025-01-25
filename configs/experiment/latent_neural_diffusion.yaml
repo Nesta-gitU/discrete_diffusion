@@ -16,12 +16,12 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-tags: ["text8", "nanoGPT"]
+tags: ["text8", "dit", "neural_diffusion"]
 
 seed: 12345
 
 trainer:
-  limit_train_batches: 2
+  limit_train_batches: 2000
   limit_val_batches: 1
   limit_test_batches: 1
   max_epochs: 1
@@ -31,6 +31,8 @@ model:
   compute_prior_loss: false
   compute_reconstruction_loss: true
   reconstruction_loss_type: diff_anchor
+  enable_matmul_tf32: false
+  enable_cudnn_tf32: false
 
 logger:
   wandb:

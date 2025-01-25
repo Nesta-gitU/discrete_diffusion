@@ -44,8 +44,9 @@ class Text8DataModule(LightningDataModule):
         
         # load and split datasets only if not loaded already
         if not self.data_train:
-            if os.path.exists(os.path.join(self.hparams.root_dir, 'text8', 'train.bin')) and not self.hparams.reload_data:
+            if os.path.exists(os.path.join(self.hparams.root_dir, 'data', 'text8', 'train.bin')) and not self.hparams.reload_data:
                 pass
+                print("what??????????????????????????????????????????")
             else:
                 Text8Dataset.prepare(root_dir=self.hparams.root_dir, character_level=self.hparams.character_level, vocab_size=self.hparams.vocab_size)
 

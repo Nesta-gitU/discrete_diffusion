@@ -1,0 +1,9 @@
+word_sampler:
+  _target_: src.callbacks.text_logger.TextLogger
+
+  odeint_params: none
+  root_dir: ${paths.root_dir}
+  n_steps: 300
+  batch_size: 1
+  log_train_every_n_steps: 500
+  sample_seed: 42
