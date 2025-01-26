@@ -7,6 +7,9 @@ import logging
 import itertools
 import os 
 
+from src.data.components.custom_tokenizers import CharTokenizer
+from tokenizers import Tokenizer
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -45,10 +48,13 @@ class Text8DataModule(LightningDataModule):
         # load and split datasets only if not loaded already
         if not self.data_train:
             if os.path.exists(os.path.join(self.hparams.root_dir, 'data', 'text8', 'train.bin')) and not self.hparams.reload_data:
-                pass
-                print("what??????????????????????????????????????????")
+                print("data already loaded, skipping...")
+                if self.hparams.character_level:
+                    self.tokenizer = CharTokenizer.load("char_tokenizer_text8.pkl")
+                else:
+                    self.tokenizer = Tokenizer.from_file("tokenizer_text8.json")
             else:
-                Text8Dataset.prepare(root_dir=self.hparams.root_dir, character_level=self.hparams.character_level, vocab_size=self.hparams.vocab_size)
+                self.tokenizer = Text8Dataset.prepare(root_dir=self.hparams.root_dir, character_level=self.hparams.character_level, vocab_size=self.hparams.vocab_size)
 
 
             self.data_train = Text8Dataset(split= "train" ,block_size=self.hparams.block_size, root_dir=self.hparams.root_dir, 

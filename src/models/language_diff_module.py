@@ -80,6 +80,10 @@ class DiffusionModule(LightningModule):
         :return: A tensor of logits.
         """
         t = torch.rand(x.size(0), 1).unsqueeze(2).to(x.device) #sample a random time for each example in the batch
+        #for i in range(3):
+        #    print(f"t: {t[i]}")
+        # sample just t = 1 the most corupted noise level
+        #t = torch.ones(x.size(0), 1).unsqueeze(2).to(x.device)
         return self.model(x, t, compute_diffusion_loss, compute_prior_loss, compute_reconstruction_loss, reconstruction_loss_type)
 
     def on_train_start(self) -> None:
@@ -105,7 +109,7 @@ class DiffusionModule(LightningModule):
                                             reconstruction_loss_type = self.hparams.reconstruction_loss_type)
 
         diffusion_loss = diffusion_loss.mean()
-        reconstruction_loss = reconstruction_loss.mean()
+        reconstruction_loss = reconstruction_loss
         prior_loss = prior_loss.mean()
 
         #print(f"diffusion_loss: {self.hparams.compute_diffusion_loss}, reconstruction_loss: {self.hparams.compute_reconstruction_loss}, prior_loss: {self.hparams.compute_prior_loss}")
@@ -135,7 +139,7 @@ class DiffusionModule(LightningModule):
                                             compute_reconstruction_loss=True,
                                             reconstruction_loss_type =self.hparams.reconstruction_loss_type)
         diffusion_loss = diffusion_loss.mean()
-        reconstruction_loss = reconstruction_loss.mean()
+        reconstruction_loss = reconstruction_loss
         prior_loss = prior_loss.mean()
 
         #note elbo may or may not be valid depending on what we actualy calculatte in the forward pass
@@ -161,7 +165,7 @@ class DiffusionModule(LightningModule):
                                             compute_reconstruction_loss=True,
                                             reconstruction_loss_type =self.hparams.reconstruction_loss_type)
         diffusion_loss = diffusion_loss.mean()
-        reconstruction_loss = reconstruction_loss.mean()
+        reconstruction_loss = reconstruction_loss
         prior_loss = prior_loss.mean()
 
         #note elbo may or may not be valid depending on what we actualy calculatte in the forward pass

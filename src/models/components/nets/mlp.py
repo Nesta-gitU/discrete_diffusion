@@ -37,7 +37,6 @@ class MLP(nn.Module):
         self.layers.append(nn.Linear(n_last_layer_inp, n_outputs))
         self.layers = nn.Sequential(*self.layers)
 
-        """ 
         for l_idx, m in enumerate(self.layers):
             if isinstance(m, nn.Linear):
                 if m.bias is not None:
@@ -46,7 +45,6 @@ class MLP(nn.Module):
                     nn.init.normal_(m.weight, std=1.0/m.weight.shape[1]**0.5)
                 else:
                     nn.init.kaiming_normal_(m.weight)
-        """
 
     def forward(self, x):
         """

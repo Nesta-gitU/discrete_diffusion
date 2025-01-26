@@ -13,6 +13,8 @@ import numpy as np
 import os
 import pickle
 
+from src.data.components.custom_tokenizers import CharTokenizer
+
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from tokenizers.trainers import BpeTrainer
@@ -47,13 +49,6 @@ class Text8Dataset(TorchDataset):
     def __len__(self): 
         return self.num_chunks
 
-    def get_vocab_size(self):
-        #open the meta file and get the vocab size
-        url = Text8Dataset.get_data_dir(Path(self.text8_dir)) / 'meta.pkl'
-        with open(url, 'rb') as f:
-            meta = pickle.load(f)
-        return meta['vocab_size']
-
     def __getitem__(self, index: int):
 
         #create a memmap for the current split, create a new one each time to prevent memory leakage.
@@ -78,69 +73,33 @@ class Text8Dataset(TorchDataset):
             data = f.read()
         print(f"length of dataset in characters: {len(data):,}")
 
-        # get all the unique characters that occur in this text
+        n = len(data)
+        train_data = data[:int(n*0.9)]
+        val_data = data[int(n*0.8):int(n*0.9)] #this isnt great but otherwise pl will complain 
+        test_data = data[int(n*0.9):]
+
+        #initialize a tokenizer here
         if character_level:
-            print("using a char tokenizer....")
-            chars = sorted(list(set(data)))
-            vocab_size = len(chars)
+            tokenizer = CharTokenizer(data)
+            tokenizer.save("char_tokenizer_text8.pkl")
 
-            print("all the unique characters:", ''.join(chars))
-            print(f"vocab size: {vocab_size:,}")
-
-            # create a mapping from characters to integers
-            stoi = { ch:i for i,ch in enumerate(chars) }
-            itos = { i:ch for i,ch in enumerate(chars) }
-            
-            def encode(s):
-                return [stoi[c] for c in s] # encoder: take a string, output a list of integers
-            def decode(l):
-                return ''.join([itos[i] for i in l]) # decoder: take a list of integers, output a string
-
-            # create the train and test splits
-            n = len(data)
-            train_data = data[:int(n*0.9)]
-            val_data = data[int(n*0.8):int(n*0.9)] #this isnt great but otherwise pl will complain 
-            test_data = data[int(n*0.9):]
-
-            # encode both to integers
-            train_ids = encode(train_data)
-            val_ids = encode(val_data)
-            test_ids = encode(test_data)
-            print(f"train has {len(train_ids):,} tokens")
-            print(f"test has {len(test_ids):,} tokens")
-        
+            train_ids = tokenizer.encode(train_data)
+            val_ids = tokenizer.encode(val_data)
+            test_ids = tokenizer.encode(test_data)
         else:
-            n = len(data)
-            train_data = data[:int(n*0.8)]
-            val_data = data[int(n*0.8):int(n*0.9)]
-            test_data = data[int(n*0.9):]
+            tokenizer = Tokenizer(BPE())
+            tokenizer.pre_tokenizer = Whitespace()
+            trainer = BpeTrainer(vocab_size=vocab_size, special_tokens=["[UNK]"])
+            tokenizer.train_from_iterator([data], trainer=trainer)
+            tokenizer.save("tokenizer_text8.json")
 
-            # Tokenize the data using a BPE tokenizer
-            if not os.path.exists("tokenizer.json"):
-                tokenizer = Tokenizer(BPE())
-                tokenizer.pre_tokenizer = Whitespace()
-                trainer = BpeTrainer(vocab_size=vocab_size)
-                tokenizer.train_from_iterator([data], trainer=trainer)
-                tokenizer.save("tokenizer.json")
-            else:
-                tokenizer = Tokenizer.from_file("tokenizer.json")
-                
-            
-
-            # Get the vocabulary size and the mapping between tokens and integers
-            vocab_size = tokenizer.get_vocab_size()
-            stoi = tokenizer.get_vocab()
-            itos = {v: k for k, v in stoi.items()}
-
-            # Encode the data, this is also stupid. should just encode on demand in the loader
             train_ids = tokenizer.encode_batch([train_data])[0].ids
             val_ids = tokenizer.encode_batch([val_data])[0].ids
             test_ids = tokenizer.encode_batch([test_data])[0].ids
+        
+        print(f"train has {len(train_ids):,} tokens")
+        print(f"test has {len(test_ids):,} tokens")
 
-            print(f"train has {len(train_ids):,} tokens")
-            print(f"test has {len(test_ids):,} tokens")
-
-        # export to bin files
         train_ids = np.array(train_ids, dtype=np.uint16)
         val_ids = np.array(val_ids, dtype=np.uint16)
         test_ids = np.array(test_ids, dtype=np.uint16)
@@ -149,15 +108,7 @@ class Text8Dataset(TorchDataset):
         val_ids.tofile(os.path.join(os.path.dirname(text8_file_path), 'val.bin'))
         test_ids.tofile(os.path.join(os.path.dirname(text8_file_path), 'test.bin'))
 
-
-        # save the meta information as well, to help us encode/decode later
-        meta = {
-            'vocab_size': vocab_size,
-            'itos': itos,
-            'stoi': stoi,
-        }
-        with open(os.path.join(os.path.dirname(text8_file_path), 'meta.pkl'), 'wb') as f:
-            pickle.dump(meta, f)
+        return tokenizer
 
     @classmethod
     def get_data_dir(cls, root_dir: Path):

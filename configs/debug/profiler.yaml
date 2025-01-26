@@ -19,4 +19,4 @@ trainer:
 
   
 
-get_memory_snapshot: true 
+get_memory_profile: true 

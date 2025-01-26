@@ -1,5 +1,3 @@
 _target_: models.components.encoder.IdentityEncoder
 vocab_size: ${data.vocab_size}
-embedding_dim: 120
-
-s
+embedding_dim: 27

@@ -30,19 +30,24 @@ data:
   batch_size: 256
   block_size: 28
 
+callbacks:
+  word_sampler:
+   log_train_every_n_steps: 10000
+  
 
 trainer:
   limit_train_batches: 2000
   limit_val_batches: 1
   limit_test_batches: 1
   max_epochs: 1
+  log_every_n_steps: 1
   
 
 model:      
   compute_diffusion_loss: true
   compute_prior_loss: false
-  compute_reconstruction_loss: false
-  reconstruction_loss_type: diff_anchor
+  compute_reconstruction_loss: true
+  reconstruction_loss_type:  diff_anchor #
   enable_matmul_tf32: false
   enable_cudnn_tf32: false
   diffusion:
@@ -53,5 +58,7 @@ logger:
   wandb:
     tags: ${tags}
     group: "text8"
+    project: "clean_long_runs" #if just testing garbage use test
+    #mode: "disabled" if you dont want ot log a debug run 
   aim:
     experiment: "text8test"

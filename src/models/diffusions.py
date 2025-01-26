@@ -3,6 +3,9 @@ import torch.autograd
 import torch.autograd.functional
 import torch.nn as nn
 
+from pathlib import Path
+import pickle
+
 def jvp(f, x, v):
     return torch.autograd.functional.jvp(
         f, x, v, 
@@ -59,6 +62,12 @@ class NeuralDiffusion(nn.Module):
         eps = torch.randn_like(embeddings)
         z = f_m + f_s * eps # function evaluation of F(e(x), t, eps)
 
+        #also deocde z to see if pred is doing a  hard job?
+        #with torch.no_grad():
+        #    z_logits = self.decoder(z, self.encoder.embedding.weight)
+        #    for i in range(3):
+        #        print("z sequence: ", torch.argmax(z_logits[i], dim=1))
+
         # predict x from z_t
         embeddings_ = self.pred(z, t) # z is not neccerily a word embedding here.
 
@@ -72,7 +81,7 @@ class NeuralDiffusion(nn.Module):
         if compute_reconstruction_loss:
             reconstruction_loss = self.reconstruction_loss(x, embeddings, embeddings_, bs, reconstruction_loss_type)
         else:
-            reconstruction_loss = torch.zeros(bs, dtype=embeddings.dtype, device=x.device)
+            reconstruction_loss = torch.zeros(bs, dtype=embeddings.dtype, device=x.device).mean()
 
         # compute the prior loss
         if compute_prior_loss:
@@ -108,29 +117,29 @@ class NeuralDiffusion(nn.Module):
         """
         I need to have a good look at the math of this part. 
         """
+        
 
         if loss_type == "collapse":
             logits = self.decoder(embeddings, self.encoder.embedding.weight) #check 
+            #this doesnt make any sense, because the embeddins are being decoded by similarity to all, but I just got them from there so this will always be zero. 
         elif loss_type == "diff_anchor":
             # e prediction used in the reverse process
             logits = self.decoder(embeddings_, self.encoder.embedding.weight)
+            
+        #for the first 3 samples in the batch, print the actual sequence, and the sequence created by logits of the decoder
+        #for i in range(3):
+        #    print("Actual sequence: ", x[i])
+        #    print("Predicted sequence: ", torch.argmax(logits[i], dim=1))
+        #    print("\n")
 
-        # Reshape logits and x to compute token-wise cross-entropy loss
-        block_size = x.shape[1]
-        
-        logits = logits.view(bs * block_size, -1)  # [batch_size * block_size, vocab_size]
-        x = x.view(-1)  # [batch_size * block_size]
+        loss = torch.nn.functional.cross_entropy(logits.view(-1, logits.size(-1)), x.view(-1)) #use ignore_index here if we ever do any padding
 
-        # Compute cross-entropy loss for each token
-        token_loss = torch.nn.functional.cross_entropy(logits, x, reduction="none")  # [batch_size * block_size]
-
-        # Reshape back to [batch_size, block_size] and sum losses over tokens
-        token_loss = token_loss.view(bs, block_size).sum(dim=1)  # [batch_size]
-
-        return token_loss
+        return loss
 
     #this should only be computed if the forward process isnt implemented to have exactly n(0,1) at time 1. 
     def prior_loss(self, embeddings, bs):
         # compute the prior loss 
         #not implemented error
         return torch.zeros(bs, dtype=embeddings.dtype, device=embeddings.device)
+    
+

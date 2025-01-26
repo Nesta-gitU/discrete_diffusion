@@ -162,6 +162,7 @@ class DiT(nn.Module):
         mlp_ratio=4.0,
         dropout_prob=0.1,
         learn_sigma=True,
+        small_input_size=None
     ):
         super().__init__()
         self.learn_sigma = learn_sigma
@@ -171,6 +172,9 @@ class DiT(nn.Module):
 
         #self.x_embedder = PatchEmbed(input_size, patch_size, in_channels, hidden_size, bias=True)
         #turn of x embedding, we already did this in the seperate encoder
+        self.small_input_size = small_input_size
+        if small_input_size is not None and small_input_size != hidden_size:
+            self.extra_embedder = nn.Linear(small_input_size, hidden_size, bias=True)
     
         self.t_embedder = TimestepEmbedder(hidden_size)
         #self.y_embedder = LabelEmbedder(num_classes, hidden_size, class_dropout_prob)
@@ -194,6 +198,8 @@ class DiT(nn.Module):
                 if module.bias is not None:
                     nn.init.constant_(module.bias, 0)
         self.apply(_basic_init)
+
+        nn.init.normal_(self.pos_embed.weight, mean=0.0, std=0.02)
 
         # Initialize (and freeze) pos_embed by sin-cos embedding:
         #OFErrorpos_embed = get_2d_sincos_pos_embed(self.pos_embed.shape[-1], int(self.block_size ** 0.5))
@@ -227,6 +233,9 @@ class DiT(nn.Module):
         t: (N,) tensor of diffusion timesteps
         y: (N,) tensor of class labels
         """
+        if self.small_input_size is not None and self.small_input_size != self.hidden_size:
+            x = self.extra_embedder(x)
+
         pos = torch.arange(0, self.block_size, dtype=torch.long, device=x.device) # shape (t)
         pos_embed = self.pos_embed(pos) # shape (t, hidden_size)
         x = x + pos_embed  # (N, T, D), where T = H * W / patch_size ** 2
@@ -261,61 +270,6 @@ class DiT(nn.Module):
         half_eps = uncond_eps + cfg_scale * (cond_eps - uncond_eps)
         eps = torch.cat([half_eps, half_eps], dim=0)
         return torch.cat([eps, rest], dim=1)
-
-
-#################################################################################
-#                   Sine/Cosine Positional Embedding Functions                  #
-#################################################################################
-# https://github.com/facebookresearch/mae/blob/main/util/pos_embed.py
-
-def get_2d_sincos_pos_embed(embed_dim, grid_size, cls_token=False, extra_tokens=0):
-    """
-    grid_size: int of the grid height and width
-    return:
-    pos_embed: [grid_size*grid_size, embed_dim] or [1+grid_size*grid_size, embed_dim] (w/ or w/o cls_token)
-    """
-    grid_h = np.arange(grid_size, dtype=np.float32)
-    grid_w = np.arange(grid_size, dtype=np.float32)
-    grid = np.meshgrid(grid_w, grid_h)  # here w goes first
-    grid = np.stack(grid, axis=0)
-
-    grid = grid.reshape([2, 1, grid_size, grid_size])
-    pos_embed = get_2d_sincos_pos_embed_from_grid(embed_dim, grid)
-    if cls_token and extra_tokens > 0:
-        pos_embed = np.concatenate([np.zeros([extra_tokens, embed_dim]), pos_embed], axis=0)
-    return pos_embed
-
-
-def get_2d_sincos_pos_embed_from_grid(embed_dim, grid):
-    assert embed_dim % 2 == 0
-
-    # use half of dimensions to encode grid_h
-    emb_h = get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[0])  # (H*W, D/2)
-    emb_w = get_1d_sincos_pos_embed_from_grid(embed_dim // 2, grid[1])  # (H*W, D/2)
-
-    emb = np.concatenate([emb_h, emb_w], axis=1) # (H*W, D)
-    return emb
-
-
-def get_1d_sincos_pos_embed_from_grid(embed_dim, pos):
-    """
-    embed_dim: output dimension for each position
-    pos: a list of positions to be encoded: size (M,)
-    out: (M, D)
-    """
-    assert embed_dim % 2 == 0
-    omega = np.arange(embed_dim // 2, dtype=np.float64)
-    omega /= embed_dim / 2.
-    omega = 1. / 10000**omega  # (D/2,)
-
-    pos = pos.reshape(-1)  # (M,)
-    out = np.einsum('m,d->md', pos, omega)  # (M, D/2), outer product
-
-    emb_sin = np.sin(out) # (M, D/2)
-    emb_cos = np.cos(out) # (M, D/2)
-
-    emb = np.concatenate([emb_sin, emb_cos], axis=1)  # (M, D)
-    return emb
 
 
 #################################################################################

@@ -89,14 +89,25 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     if cfg.get("get_memory_profile"):
         torch.cuda.memory._record_memory_history()
 
+        try:
+            print("did we get here?")
+            log.info("Starting training!")
+            trainer.fit(model=model, datamodule=datamodule, ckpt_path=cfg.get("ckpt_path"))
+        except torch.cuda.OutOfMemoryError:
+            print("Out of memory error! found ")
+            torch.cuda.memory._dump_snapshot("memory_snapshot.json")
+            torch.cuda.memory._record_memory_history()
+            #end the program
+            print("hallo")
+            exit()
+        
+        torch.cuda.memory._dump_snapshot("memory_snapshot.json")
+        torch.cuda.memory._record_memory_history()
+
+
     if cfg.get("train"):
         log.info("Starting training!")
         trainer.fit(model=model, datamodule=datamodule, ckpt_path=cfg.get("ckpt_path"))
-
-    #get memory profile
-    if cfg.get("get_memory_profile"):
-        torch.cuda.memory._dump_snapshot("memory_snapshot.json")
-        torch.cuda.memory._record_memory_history()
 
     train_metrics = trainer.callback_metrics
 
