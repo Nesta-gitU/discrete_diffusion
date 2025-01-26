@@ -127,18 +127,19 @@ class TextLogger(Callback):
         logger = get_wandb_logger(trainer)
         if logger is None:
             return
+       
 
-        #sample one final time 
         words_sde, words_ode = self.sample_from_diffusion(pl_module, self.batch_size)
+        tokenizer = trainer.datamodule.tokenizer
 
         if words_sde is None:
             w_sde = None
         else:
-            w_sde = self.idx_to_words(words_sde)
+            w_sde = self.idx_to_words(words_sde, tokenizer)
         if words_ode is None:
             w_ode = None
         else:
-            w_ode = self.idx_to_words(words_ode)
+            w_ode = self.idx_to_words(words_ode, tokenizer)
 
         epoch = trainer.current_epoch
         global_step = trainer.global_step
@@ -148,6 +149,8 @@ class TextLogger(Callback):
         )
 
         self.text_table.add_data(str(epoch), str(global_step), str(w_ode), str(w_sde))
+
+        logger.experiment.log({"generated_samples": self.text_table})
 
         
 
