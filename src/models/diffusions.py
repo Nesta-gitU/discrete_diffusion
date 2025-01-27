@@ -114,9 +114,9 @@ class NeuralDiffusion(nn.Module):
         mask = x != 0 #false for [UNK] tokens which should have id zero. 
         #not_mask = ~mask
         #print(not_mask.sum(), "number of unks")
-        mask_expanded = mask.unsqueeze(-1).expand(-1, -1, loss.shape[2])
-        loss = loss * mask_expanded
-        loss = loss.sum(dim=(1,2))
+        #mask_expanded = mask.unsqueeze(-1).expand(-1, -1, loss.shape[2])
+        #loss = loss * mask_expanded
+        #loss = loss.sum(dim=(1,2))
 
         return loss
 
