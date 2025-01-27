@@ -28,17 +28,17 @@ seed: 12345
 
 data:
   batch_size: 128
-  block_size: 256
+  block_size: 64
 
 callbacks:
   word_sampler:
-   log_train_every_n_steps: 499
+   log_train_every_n_steps: 1000000
   
 
 #one epoch has 12556 batches
 #one val epoch has 1396 batches on batch size 256
 trainer:
-  max_epochs: 10
+  max_epochs: 20
 
 model:      
   compute_diffusion_loss: true
