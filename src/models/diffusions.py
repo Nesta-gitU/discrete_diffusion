@@ -73,7 +73,7 @@ class NeuralDiffusion(nn.Module):
 
         # compute the diffusion loss
         if compute_diffusion_loss:
-            diffusion_loss = self.diffusion_loss(f_dm, f_ds, f_s, eps, g2, embeddings_ , z, t)
+            diffusion_loss = self.diffusion_loss(f_dm, f_ds, f_s, eps, g2, embeddings_ , x, z, t)
         else:
             diffusion_loss = torch.zeros(bs, dtype=embeddings.dtype, device=x.device)
         
@@ -91,7 +91,7 @@ class NeuralDiffusion(nn.Module):
 
         return diffusion_loss, reconstruction_loss, prior_loss
 
-    def diffusion_loss(self, f_dm, f_ds, f_s, eps, g2, x_, z, t):
+    def diffusion_loss(self, f_dm, f_ds, f_s, eps, g2, x_, x, z, t):
         # compute the drift term of the forward process based on eps
         # f_drift is what is then used in the loss and is the forward process drift.
         f_dz = f_dm + f_ds * eps  # ODE drift ---> this works because gaussians are nice and linear so the derivative of F(x, t, eps) can be written like this. 
@@ -109,6 +109,13 @@ class NeuralDiffusion(nn.Module):
 
         # compute the diffusion loss
         loss = 0.5 * (f_drift - r_drift) ** 2 / g2
+
+        # mask out special tokens
+        mask = x != 0 #false for [UNK] tokens which should have id zero. 
+        #not_mask = ~mask
+        #print(not_mask.sum(), "number of unks")
+        mask_expanded = mask.unsqueeze(-1).expand(-1, -1, loss.shape[2])
+        loss = loss * mask_expanded
         loss = loss.sum(dim=(1,2))
 
         return loss

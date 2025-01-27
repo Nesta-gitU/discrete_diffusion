@@ -31,4 +31,5 @@ class SimpleEmbeddingEncoder(nn.Module):
     
 
     def forward(self, x):
+        print(x)
         return self.embedding(x)

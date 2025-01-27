@@ -48,15 +48,20 @@ class Text8DataModule(LightningDataModule):
         # load and split datasets only if not loaded already
         if not self.data_train:
             print("loading data...")
-            if self.hparams.character_level and os.path.exists(os.path.join(self.hparams.root_dir, 'data', 'text8', 'char_train.bin')):
-                    print("char_data data already loaded, skipping...")
-                    self.tokenizer = CharTokenizer.load("char_tokenizer_text8.pkl")
-            elif os.path.exists(os.path.join(self.hparams.root_dir, 'data', 'text8', 'bpe_train.bin')) and not self.hparams.character_level:
-                print("bpe_data data already loaded, skipping...")
-                self.tokenizer = Tokenizer.from_file("tokenizer_text8.json")
+            if not self.hparams.reload_data:
+                if self.hparams.character_level and os.path.exists(os.path.join(self.hparams.root_dir, 'data', 'text8', 'char_train.bin')):
+                        print("char_data data already loaded, skipping...")
+                        self.tokenizer = CharTokenizer.load("char_tokenizer_text8.pkl")
+                elif os.path.exists(os.path.join(self.hparams.root_dir, 'data', 'text8', 'bpe_train.bin')) and not self.hparams.character_level:
+                    print("bpe_data data already loaded, skipping...")
+                    self.tokenizer = Tokenizer.from_file("tokenizer_text8.json")
+                else:
+                    print("loading data with function...")
+                    self.tokenizer = Text8Dataset.prepare(root_dir=self.hparams.root_dir, character_level=self.hparams.character_level, vocab_size=self.hparams.vocab_size)
             else:
-                print("loading data with function...")
+                print("relaoading data with function...")
                 self.tokenizer = Text8Dataset.prepare(root_dir=self.hparams.root_dir, character_level=self.hparams.character_level, vocab_size=self.hparams.vocab_size)
+
 
 
             self.data_train = Text8Dataset(split= "train" ,block_size=self.hparams.block_size, root_dir=self.hparams.root_dir, 

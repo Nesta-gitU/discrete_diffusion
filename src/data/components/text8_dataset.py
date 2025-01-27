@@ -62,7 +62,9 @@ class Text8Dataset(TorchDataset):
         if not self.overfit_one_batch:
             i = torch.randint(len(data) - self.block_size, (1,)).item() #this is questionable, because it does not garuantee seeing the whole dataset in an epoch. idk how to make better
         else:
-            i = 0  #this is for debugging purposes, so we can see the same string over and over again.
+            #i = 0  #this is for debugging purposes, so we can see the same string over and over again.
+            # sample an index between 0-64
+            i = torch.randint(0, 64, (1,)).item()
        
         x = torch.from_numpy((data[i:i+self.block_size]).astype(np.int64))
         
