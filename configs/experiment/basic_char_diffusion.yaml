@@ -35,7 +35,7 @@ data:
 
 callbacks:
   word_sampler:
-   log_train_every_n_steps: 13000
+   log_train_every_n_steps: 499
   
 
 trainer:
