@@ -31,14 +31,18 @@ class Text8Dataset(TorchDataset):
         block_size: int,
         root_dir: str,
         overfit_one_batch: bool = False,
-        return_index: bool = False
+        return_index: bool = False,
+        character_level: bool = False,
     ):
         
         self.return_index = return_index
         self.block_size = block_size
         self.overfit_one_batch = overfit_one_batch
         self.text8_dir = Text8Dataset.get_data_dir(Path(root_dir)) / "text8"
-        self.text8_url = Text8Dataset.get_data_dir(Path(root_dir)) / "text8" / f"{split}.bin"
+        if character_level:
+            self.text8_url = Text8Dataset.get_data_dir(Path(root_dir)) / "text8" / f"char_{split}.bin"
+        else:
+            self.text8_url = Text8Dataset.get_data_dir(Path(root_dir)) / "text8" / f"bpe_{split}.bin"
 
         data = np.memmap(self.text8_url, dtype=np.uint16, mode='r')
         num_tokens = len(data)
@@ -103,10 +107,14 @@ class Text8Dataset(TorchDataset):
         train_ids = np.array(train_ids, dtype=np.uint16)
         val_ids = np.array(val_ids, dtype=np.uint16)
         test_ids = np.array(test_ids, dtype=np.uint16)
-
-        train_ids.tofile(os.path.join(os.path.dirname(text8_file_path), 'train.bin'))
-        val_ids.tofile(os.path.join(os.path.dirname(text8_file_path), 'val.bin'))
-        test_ids.tofile(os.path.join(os.path.dirname(text8_file_path), 'test.bin'))
+        if character_level:
+            train_ids.tofile(os.path.join(os.path.dirname(text8_file_path), 'char_train.bin'))
+            val_ids.tofile(os.path.join(os.path.dirname(text8_file_path), 'char_val.bin'))
+            test_ids.tofile(os.path.join(os.path.dirname(text8_file_path), 'char_test.bin'))
+        else:
+            train_ids.tofile(os.path.join(os.path.dirname(text8_file_path), 'bpe_train.bin'))
+            val_ids.tofile(os.path.join(os.path.dirname(text8_file_path), 'bpe_val.bin'))
+            test_ids.tofile(os.path.join(os.path.dirname(text8_file_path), 'bpe_test.bin'))
 
         return tokenizer
 
