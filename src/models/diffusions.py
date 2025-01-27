@@ -111,7 +111,7 @@ class NeuralDiffusion(nn.Module):
         loss = 0.5 * (f_drift - r_drift) ** 2 / g2
 
         # mask out special tokens
-        mask = x != 0 #false for [UNK] tokens which should have id zero. 
+        #mask = x != 0 #false for [UNK] tokens which should have id zero. 
         #not_mask = ~mask
         #print(not_mask.sum(), "number of unks")
         #mask_expanded = mask.unsqueeze(-1).expand(-1, -1, loss.shape[2])
