@@ -32,7 +32,7 @@ dependencies:
   - pytest=7.*
 
   # --------- loggers --------- #
-  # - wandb
+  - wandb
   # - neptune-client
   # - mlflow
   # - comet-ml
