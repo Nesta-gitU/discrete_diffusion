@@ -13,4 +13,4 @@ module load 2023
 module load Anaconda3/2023.07-2
 
 cd $HOME/discrete_diffusion/
-conda env create -f environment.yml
+conda env create -f environment.yaml
