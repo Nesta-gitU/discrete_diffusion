@@ -30,7 +30,7 @@ data:
   batch_size: 128
   block_size: 64
   reload_data: true
-  overfit_one_batch: true
+  overfit_one_batch: false
 
 callbacks:
   word_sampler:
@@ -41,11 +41,12 @@ callbacks:
 #one val epoch has 1396 batches on batch size 256
 trainer:
   max_epochs: 30
+  accumulate_grad_batches: 4
 
 model:      
   compute_diffusion_loss: true
   compute_prior_loss: false
-  compute_reconstruction_loss: false
+  compute_reconstruction_loss: true
   reconstruction_loss_type:  diff_anchor #
   enable_matmul_tf32: true
   enable_cudnn_tf32: true
