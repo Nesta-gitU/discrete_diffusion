@@ -132,7 +132,7 @@ class NeuralDiffusion(nn.Module):
         #    print("Predicted sequence: ", torch.argmax(logits[i], dim=1))
         #    print("\n")
 
-        loss = torch.nn.functional.cross_entropy(logits.view(-1, logits.size(-1)), x.view(-1)) #use ignore_index here if we ever do any padding
+        loss = torch.nn.functional.cross_entropy(logits.view(-1, logits.size(-1)), x.view(-1), ignore_index=0) #use ignore_index here if we ever do any padding
 
         return loss
 

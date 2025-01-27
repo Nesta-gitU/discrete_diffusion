@@ -16,9 +16,6 @@ class IdentityEncoder(nn.Module):
         self.embedding.weight.data = torch.eye(self.vocab_size)
 
     def forward(self, x: torch.Tensor):
-        print("max class label in x", x.max())
-        print(self.vocab_size)
-
         return torch.nn.functional.one_hot(x, num_classes=self.vocab_size).float()
 
 class SimpleEmbeddingEncoder(nn.Module):
