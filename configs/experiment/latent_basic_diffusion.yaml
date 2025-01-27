@@ -41,7 +41,7 @@ trainer:
   max_epochs: 20
 
 model:      
-  compute_diffusion_loss: true
+  compute_diffusion_loss: false
   compute_prior_loss: false
   compute_reconstruction_loss: true
   reconstruction_loss_type:  diff_anchor #
