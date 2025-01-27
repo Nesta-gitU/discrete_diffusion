@@ -29,16 +29,18 @@ seed: 12345
 data:
   batch_size: 128
   block_size: 64
+  reload_data: true
+  overfit_one_batch: true
 
 callbacks:
   word_sampler:
-   log_train_every_n_steps: 1000000
+   log_train_every_n_steps: 1
   
 
 #one epoch has 12556 batches
 #one val epoch has 1396 batches on batch size 256
 trainer:
-  max_epochs: 20
+  max_epochs: 30
 
 model:      
   compute_diffusion_loss: true
