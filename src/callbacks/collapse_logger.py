@@ -41,25 +41,26 @@ class CollapseLogger(Callback):
         logger = get_wandb_logger(trainer)
         if logger is None:
             return
+        
+        with torch.no_grad():
+            #get embeddings from the encoder
+            embeddings = pl_module.model.encoder.embedding.weight
 
-        #get embeddings from the encoder
-        embeddings = pl_module.encoder.embedding.weight
+            # Normalize the embeddings to unit vectors
+            embeddings = torch.nn.functional.normalize(embeddings, dim=0)  # Shape remains [embedding_dim, vocab_size]
 
-        # Normalize the embeddings to unit vectors
-        embeddings = torch.nn.functional.normalize(embeddings, dim=0)  # Shape remains [embedding_dim, vocab_size]
+            # Compute cosine similarities (dot products of normalized embeddings)
+            cosine_similarities = torch.matmul(embeddings.T, embeddings)  # Shape: [vocab_size, vocab_size]
 
-        # Compute cosine similarities (dot products of normalized embeddings)
-        cosine_similarities = torch.matmul(embeddings.T, embeddings)  # Shape: [vocab_size, vocab_size]
+            # Exclude self-similarities by subtracting the diagonal
+            vocab_size = embeddings.size(1)
+            mask = ~torch.eye(vocab_size, dtype=torch.bool, device=embeddings.device)  # Mask for non-diagonal elements
+            pairwise_cosines = cosine_similarities[mask]  # Extract only off-diagonal elements
 
-        # Exclude self-similarities by subtracting the diagonal
-        vocab_size = embeddings.size(1)
-        mask = ~torch.eye(vocab_size, dtype=torch.bool, device=embeddings.device)  # Mask for non-diagonal elements
-        pairwise_cosines = cosine_similarities[mask]  # Extract only off-diagonal elements
+            # Compute ANI
+            ani = pairwise_cosines.mean().item()
 
-        # Compute ANI
-        ani = pairwise_cosines.mean().item()
-
-        logger.log("train_collapse/ani_score", ani, on_step=True, prog_bar=False)
+            logger.log("train_collapse/ani_score", ani, on_step=True, prog_bar=False)
                 
 
     
