@@ -15,6 +15,6 @@ module load Anaconda3/2023.07-2
 # Your job starts in the directory where you call sbatch
 cd $HOME/discrete_diffusion
 # Activate your environment
-source activate myenv
+#source activate myenv
 # Run your code
 srun python src/train.py experiment=basic_char_diffusion
