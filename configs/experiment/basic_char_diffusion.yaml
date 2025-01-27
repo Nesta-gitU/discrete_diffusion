@@ -32,6 +32,7 @@ data:
   vocab_size: 27
   character_level: true
   overfit_one_batch: false
+  reload_data: true
 
 callbacks:
   word_sampler:
