@@ -3,7 +3,7 @@ root_dir: ${paths.root_dir}
 block_size: 28
 vocab_size: 30000 # use in other spots. 
 batch_size: 32 # Needs to be divisible by the number of devices (e.g., if in a distributed setup)
-num_workers: 4
+num_workers: 8
 pin_memory: true
 
 character_level: false
