@@ -43,6 +43,7 @@ class CollapseLogger(Callback):
             return
         
         with torch.no_grad():
+
             #get embeddings from the encoder
             embeddings = pl_module.model.encoder.embedding.weight
 
@@ -56,11 +57,10 @@ class CollapseLogger(Callback):
             vocab_size = embeddings.size(1)
             mask = ~torch.eye(vocab_size, dtype=torch.bool, device=embeddings.device)  # Mask for non-diagonal elements
             pairwise_cosines = cosine_similarities[mask]  # Extract only off-diagonal elements
-
+            global_step = trainer.global_step
             # Compute ANI
             ani = pairwise_cosines.mean().item()
-
-            logger.log("train_collapse/ani_score", ani, on_step=True, prog_bar=False)
+            wandb.log({"trainer/global_step": global_step, "ani": ani})
                 
 
     
