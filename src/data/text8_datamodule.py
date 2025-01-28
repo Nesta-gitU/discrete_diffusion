@@ -24,7 +24,8 @@ class Text8DataModule(LightningDataModule):
         overfit_one_batch: bool = False,
         pin_memory: bool = False,
         character_level: bool = False,
-        reload_data: bool = False
+        reload_data: bool = False,
+        epoch_length: int = 8000,
     ) -> None:
         super().__init__()
         
@@ -65,11 +66,11 @@ class Text8DataModule(LightningDataModule):
 
 
             self.data_train = Text8Dataset(split= "train" ,block_size=self.hparams.block_size, root_dir=self.hparams.root_dir, 
-                overfit_one_batch=self.hparams.overfit_one_batch, character_level=self.hparams.character_level)
+                overfit_one_batch=self.hparams.overfit_one_batch, character_level=self.hparams.character_level, epoch_length=self.hparams.epoch_length)
             self.data_val = Text8Dataset(split= "val", block_size=self.hparams.block_size, root_dir=self.hparams.root_dir, 
-                overfit_one_batch= self.hparams.overfit_one_batch, character_level=self.hparams.character_level)
+                overfit_one_batch= self.hparams.overfit_one_batch, character_level=self.hparams.character_level, epoch_length=self.hparams.epoch_length)
             self.data_test = Text8Dataset(split="test", block_size=self.hparams.block_size, root_dir=self.hparams.root_dir, 
-                overfit_one_batch=self.hparams.overfit_one_batch, character_level=self.hparams.character_level)
+                overfit_one_batch=self.hparams.overfit_one_batch, character_level=self.hparams.character_level, epoch_length=self.hparams.epoch_length)
             
 
     def train_dataloader(self) -> DataLoader[Any]:
