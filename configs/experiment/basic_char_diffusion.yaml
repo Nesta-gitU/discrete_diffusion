@@ -40,9 +40,7 @@ callbacks:
   
 
 trainer:
-  limit_train_batches: 2000
-  limit_val_batches: 200
-  max_epochs: 20
+  max_epochs: 15
   accumulate_grad_batches: 4
   
 
