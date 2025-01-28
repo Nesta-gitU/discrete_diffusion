@@ -84,7 +84,8 @@ class DiffusionModule(LightningModule):
         #    print(f"t: {t[i]}")
         # sample just t = 1 the most corupted noise level
         #t = torch.ones(x.size(0), 1).unsqueeze(2).to(x.device)
-        return self.model(x, t, compute_diffusion_loss, compute_prior_loss, compute_reconstruction_loss, reconstruction_loss_type)
+        diffusion_loss, reconstruction_loss, prior_loss = self.model(x, t, compute_diffusion_loss, compute_prior_loss, compute_reconstruction_loss, reconstruction_loss_type)
+        return diffusion_loss, reconstruction_loss, prior_loss
 
     def on_train_start(self) -> None:
         """Lightning hook that is called when training begins."""
@@ -138,12 +139,16 @@ class DiffusionModule(LightningModule):
                                             compute_prior_loss=True,
                                             compute_reconstruction_loss=True,
                                             reconstruction_loss_type =self.hparams.reconstruction_loss_type)
+
+
         diffusion_loss = diffusion_loss.mean()
         reconstruction_loss = reconstruction_loss
         prior_loss = prior_loss.mean()
 
         #note elbo may or may not be valid depending on what we actualy calculatte in the forward pass
-        elbo = diffusion_loss + reconstruction_loss + prior_loss 
+        elbo = diffusion_loss + reconstruction_loss + prior_loss
+
+        #compute the bits per character 
 
         # update and log metrics
         self.log("val/diffusion_loss", diffusion_loss, on_step=True, prog_bar=False)

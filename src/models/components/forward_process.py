@@ -25,12 +25,17 @@ class NFDM_gaussian(nn.Module):
         #x_t = torch.cat([x, t], dim=1)
         #m_ls = self.net(x_t)  
         #TODO: t conditioning not implemented yet
-        m_ls = self.net(x, t)
-        m, ls = m_ls.chunk(2, dim=2)#why was this 1 before 
+        if t > 0:
+            m_ls = self.net(x, t)
+            m, ls = m_ls.chunk(2, dim=2)#why was this 1 before 
 
-        m = (1 - t) * x + t * (1 - t) * m #m is mu_hat
-        ls = (1 - t) * np.log(0.01) + t * (1 - t) * ls #ls is log(sigma_hat) so the final expresion is log sigma. 
+            m = (1 - t) * x + t * (1 - t) * m #m is mu_hat
+            ls = (1 - t) * np.log(0.01) + t * (1 - t) * ls #ls is log(sigma_hat) so the final expresion is log sigma. 
         #0.01 is delta, so delta^2 = 0.0001 like in the paper
+        else:
+            #no point in doing a forward pass if t = 0.
+            m = x
+            ls = np.log(0.01)
 
         return m, torch.exp(ls)
 

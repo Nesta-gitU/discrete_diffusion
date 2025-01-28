@@ -79,7 +79,7 @@ class NeuralDiffusion(nn.Module):
         
         # compute the reconstruction loss
         if compute_reconstruction_loss:
-            reconstruction_loss = self.reconstruction_loss(x, embeddings, embeddings_, bs, reconstruction_loss_type)
+            reconstruction_loss = self.reconstruction_loss(x, t, embeddings, embeddings_, bs, reconstruction_loss_type)
         else:
             reconstruction_loss = torch.zeros(bs, dtype=embeddings.dtype, device=x.device).mean()
 
@@ -120,14 +120,17 @@ class NeuralDiffusion(nn.Module):
 
         return loss
 
-    def reconstruction_loss(self, x, embeddings, embeddings_, bs, loss_type):
+    def reconstruction_loss(self, x, t, embeddings, embeddings_, bs, loss_type):
         """
         I need to have a good look at the math of this part. 
         """
         
 
         if loss_type == "collapse":
-            logits = self.decoder(embeddings, self.encoder.embedding.weight) #check 
+            f_m, f_s = self.affine(embeddings, torch.zeros_like(t))
+            z_0 = f_m + f_s * torch.randn_like(embeddings)
+
+            logits = self.decoder(z_0, self.encoder.embedding.weight) #check 
             #this doesnt make any sense, because the embeddins are being decoded by similarity to all, but I just got them from there so this will always be zero. 
         elif loss_type == "diff_anchor":
             # e prediction used in the reverse process

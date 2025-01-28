@@ -43,13 +43,14 @@ trainer:
   limit_train_batches: 2000
   limit_val_batches: 200
   max_epochs: 20
+  accumulate_grad_batches: 4
   
 
 model:      
-  compute_diffusion_loss: false
+  compute_diffusion_loss: true
   compute_prior_loss: false
   compute_reconstruction_loss: true
-  reconstruction_loss_type:  diff_anchor #
+  reconstruction_loss_type:  collapse #
   enable_matmul_tf32: true
   enable_cudnn_tf32: true
   diffusion:
