@@ -8,5 +8,5 @@ pin_memory: true
 
 character_level: false
 reload_data: false
-epoch_length: 1024000
+epoch_length: 256000
 
