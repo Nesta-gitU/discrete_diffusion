@@ -10,9 +10,14 @@ defaults:
   - extras: default
   - hydra: default
 
-task_name: "eval"
+task_name: "sample"
 
 tags: ["dev"]
 
+get_sde: true
+get_ode: true
+n_steps: 5
+batch_size: 2
+
 # passing checkpoint path is necessary for evaluation
-ckpt_path: /teamspace/studios/this_studio/discrete_diffusion/epoch_017.ckpt
+ckpt_path: /teamspace/studios/this_studio/discrete_diffusion/logs/train/runs/2025-01-28_19-59-05/checkpoints/epoch_002.ckpt

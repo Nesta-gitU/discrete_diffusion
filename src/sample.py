@@ -6,7 +6,11 @@ from lightning import LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
 
+
+
+
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+from src.sampling.sampling import sample_code
 # ------------------------------------------------------------------------------------ #
 # the setup_root above is equivalent to:
 # - adding project root dir to PYTHONPATH
@@ -32,6 +36,7 @@ from src.utils import (
     task_wrapper,
 )
 
+from src.models.language_diff_module import DiffusionModule
 
 log = RankedLogger(__name__, rank_zero_only=True)
 
@@ -52,15 +57,18 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.data)
 
     log.info(f"Instantiating model <{cfg.model._target_}>")
-    model: LightningModule = hydra.utils.instantiate(cfg.model)
+    model = DiffusionModule.load_from_checkpoint(cfg.ckpt_path)
+    #model: LightningModule = hydra.utils.instantiate(cfg.model)
+
+    
+
+    datamodule.setup(stage="fit")
 
     log.info("Instantiating loggers...")
     logger: List[Logger] = instantiate_loggers(cfg.get("logger"))
 
     log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
     trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=logger)
-
-   
 
     object_dict = {
         "cfg": cfg,
@@ -69,23 +77,23 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         "logger": logger,
         "trainer": trainer,
     }
+    #trainer.test(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
 
     if logger:
         log.info("Logging hyperparameters!")
         log_hyperparameters(object_dict)
+    
+    get_sde = cfg.get("get_sde", True)
+    get_ode = cfg.get("get_ode", True)
+    n_steps = cfg.get("n_steps")
+    batch_size = cfg.get("batch_size")
 
-    log.info("Starting testing!")
-    trainer.test(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
+    sample_code(model, datamodule, logger, get_sde, get_ode, n_steps, batch_size)
 
-    # for predictions use trainer.predict(...)
-    # predictions = trainer.predict(model=model, dataloaders=dataloaders, ckpt_path=cfg.ckpt_path)
-
-    metric_dict = trainer.callback_metrics
-
-    return metric_dict, object_dict
+    
 
 
-@hydra.main(version_base="1.3", config_path="../configs", config_name="eval.yaml")
+@hydra.main(version_base="1.3", config_path="../configs", config_name="sample.yaml")
 def main(cfg: DictConfig) -> None:
     """Main entry point for evaluation.
 

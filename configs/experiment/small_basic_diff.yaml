@@ -5,7 +5,7 @@
 
 defaults:
     #choose which components to use for the diffusion model
-  - /model/components/encoder@model.diffusion.encoder: identity_encoder.yaml
+  - /model/components/encoder@model.diffusion.encoder: simple_embedding_encoder.yaml
   - /model/components/decoder@model.diffusion.decoder: similarity_decoder.yaml
   - /model/components/forward_process@model.diffusion.affine: fm_ot.yaml
   - /model/components/predictor@model.diffusion.pred: predictor.yaml
@@ -27,22 +27,23 @@ tags: ["text8", "dit", "basic_diffusion"]
 seed: 12345
 
 data:
-  batch_size: 128
+  batch_size: 64
   block_size: 64
-  vocab_size: 27
-  character_level: true
-  overfit_one_batch: false
   reload_data: true
+  overfit_one_batch: false
 
 callbacks:
   word_sampler:
-   log_train_every_n_steps: 1000000
+   log_train_every_n_steps: 100000000
   
 
+#one epoch has 12556 batches
+#one val epoch has 1396 batches on batch size 256
 trainer:
+  limit_train_batches: 2
+  limit_val_batches: 2
+  limit_test_batches: 2
   max_epochs: 15
-  accumulate_grad_batches: 4
-  
 
 model:      
   compute_diffusion_loss: true
@@ -52,10 +53,12 @@ model:
   enable_matmul_tf32: true
   enable_cudnn_tf32: true
   diffusion:
+    encoder:
+      embedding_dim: 384
     pred:
       model:
-        small_input_size: 27 #hopefully this is right. 
-        hidden_size: 386
+        depth: 12
+        num_heads: 6
 
 logger:
   wandb:

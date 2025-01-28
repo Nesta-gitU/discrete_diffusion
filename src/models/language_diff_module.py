@@ -196,7 +196,7 @@ class DiffusionModule(LightningModule):
         if self.hparams.enable_cudnn_tf32:
             torch.backends.cudnn.allow_tf32 = True
         if self.hparams.compile and stage == "fit":
-            self.net = torch.compile(self.model)
+            self.model = torch.compile(self.model)
 
     def configure_optimizers(self) -> Dict[str, Any]:
         """Choose what optimizers and learning-rate schedulers to use in your optimization.

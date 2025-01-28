@@ -36,6 +36,7 @@ class TextLogger(Callback):
         sample_seed: Optional[int] = 42,
         get_sde: Optional[bool] = True,
         get_ode: Optional[bool] = True,
+        vizualize: Optional[bool] = False
     ):
         self._odeint_params = odeint_params
         self._n_steps = n_steps
@@ -95,30 +96,7 @@ class TextLogger(Callback):
         if logger is None:
             return
        
-
-        words_sde, words_ode = self.sample_from_diffusion(pl_module, self.batch_size)
-        tokenizer = trainer.datamodule.tokenizer
-
-        if words_sde is None:
-            w_sde = None
-        else:
-            w_sde = self.idx_to_words(words_sde, tokenizer)
-        if words_ode is None:
-            w_ode = None
-        else:
-            w_ode = self.idx_to_words(words_ode, tokenizer)
-
-        epoch = trainer.current_epoch
-        global_step = trainer.global_step
-
-        self.text_table = wandb.Table(
-            columns=self.text_table.columns, data=self.text_table.data
-        )
-
-        self.text_table.add_data(str(epoch), str(global_step), str(w_ode), str(w_sde))
-
-        logger.experiment.log({"generated_samples": self.text_table})
-        #delete the artifact made the previous step to save space
+        self.sample_code(trainer, pl_module, logger)
 
     @rank_zero_only
     def on_train_epoch_end(self, trainer, pl_module) -> None:
@@ -129,29 +107,7 @@ class TextLogger(Callback):
             return
        
 
-        words_sde, words_ode = self.sample_from_diffusion(pl_module, self.batch_size)
-        tokenizer = trainer.datamodule.tokenizer
-
-        if words_sde is None:
-            w_sde = None
-        else:
-            w_sde = self.idx_to_words(words_sde, tokenizer)
-        if words_ode is None:
-            w_ode = None
-        else:
-            w_ode = self.idx_to_words(words_ode, tokenizer)
-
-        epoch = trainer.current_epoch
-        global_step = trainer.global_step
-
-        self.text_table = wandb.Table(
-            columns=self.text_table.columns, data=self.text_table.data
-        )
-
-        self.text_table.add_data(str(epoch), str(global_step), str(w_ode), str(w_sde))
-
-        logger.experiment.log({"generated_samples": self.text_table})
-        #delete the artifact made the previous step to save space
+        self.sample_code(trainer, pl_module, logger)
 
     @rank_zero_only
     def on_train_end(self, trainer, pl_module) -> None:
@@ -162,6 +118,9 @@ class TextLogger(Callback):
             return
        
 
+        self.sample_code(trainer, pl_module, logger)
+
+    def sample_code(self, trainer, pl_module, logger):
         words_sde, words_ode = self.sample_from_diffusion(pl_module, self.batch_size)
         tokenizer = trainer.datamodule.tokenizer
 
@@ -184,8 +143,8 @@ class TextLogger(Callback):
         self.text_table.add_data(str(epoch), str(global_step), str(w_ode), str(w_sde))
 
         logger.experiment.log({"generated_samples": self.text_table})
+    
 
-        
 
     
 
