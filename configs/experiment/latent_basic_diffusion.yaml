@@ -52,7 +52,7 @@ model:
   enable_cudnn_tf32: true
   diffusion:
     encoder:
-      embedding_dim: 384
+      embedding_dim: 768
 
 logger:
   wandb:

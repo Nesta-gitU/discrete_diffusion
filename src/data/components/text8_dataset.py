@@ -33,8 +33,10 @@ class Text8Dataset(TorchDataset):
         overfit_one_batch: bool = False,
         return_index: bool = False,
         character_level: bool = False,
+        epoch_length: int = 8000,
     ):
         
+        self.epoch_length = epoch_length
         self.return_index = return_index
         self.block_size = block_size
         self.overfit_one_batch = overfit_one_batch
@@ -45,13 +47,10 @@ class Text8Dataset(TorchDataset):
             self.text8_url = Text8Dataset.get_data_dir(Path(root_dir)) / "text8" / f"bpe_{split}.bin"
 
         data = np.memmap(self.text8_url, dtype=np.uint16, mode='r')
-        num_tokens = len(data)
-        self.num_chunks = num_tokens // block_size
-
     #length is arbitrary so lets just make it the number of chuncks if you stack them after eachother
     #probably just shouldnt use the concept of epoch at all. 
     def __len__(self): 
-        return self.num_chunks
+        return self.epoch_length
 
     def __getitem__(self, index: int):
 

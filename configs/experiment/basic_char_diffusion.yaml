@@ -50,14 +50,14 @@ model:
   compute_diffusion_loss: true
   compute_prior_loss: false
   compute_reconstruction_loss: true
-  reconstruction_loss_type:  collapse #
+  reconstruction_loss_type: collapse #
   enable_matmul_tf32: true
   enable_cudnn_tf32: true
   diffusion:
     pred:
       model:
         small_input_size: 27 #hopefully this is right. 
-        hidden_size: 384 
+        hidden_size: 768
 
 logger:
   wandb:

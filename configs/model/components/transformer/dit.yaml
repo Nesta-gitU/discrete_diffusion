@@ -3,4 +3,5 @@ depth: 12
 block_size: ${data.block_size}
 hidden_size: ${model.diffusion.encoder.embedding_dim}
 output_size: ${model.diffusion.encoder.embedding_dim}
-num_heads: 6
+num_heads: 12
+
