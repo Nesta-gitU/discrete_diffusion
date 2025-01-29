@@ -63,7 +63,7 @@ class Text8Dataset(TorchDataset):
         else:
             #i = 0  #this is for debugging purposes, so we can see the same string over and over again.
             # sample an index between 0-64
-            i = torch.randint(0, 64, (1,)).item()
+            i = 0
        
         x = torch.from_numpy((data[i:i+self.block_size]).astype(np.int64))
         
