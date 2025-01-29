@@ -28,7 +28,7 @@ seed: 12345
 
 data:
   batch_size: 128
-  block_size: 64
+  block_size: 28
   reload_data: true
   overfit_one_batch: true
 
@@ -46,8 +46,8 @@ trainer:
 model:      
   compute_diffusion_loss: true
   compute_prior_loss: false
-  compute_reconstruction_loss: false
-  reconstruction_loss_type: diff_anchor #collapse
+  compute_reconstruction_loss: true
+  reconstruction_loss_type: collapse #collapse
   enable_matmul_tf32: true
   enable_cudnn_tf32: true
   diffusion:

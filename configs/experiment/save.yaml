@@ -4,16 +4,14 @@
 # python train.py experiment=example
 
 defaults:
-
-  #choose which components to use for the diffusion model
+    #choose which components to use for the diffusion model
   - /model/components/encoder@model.diffusion.encoder: simple_embedding_encoder.yaml
   - /model/components/decoder@model.diffusion.decoder: similarity_decoder.yaml
-  - /model/components/forward_process@model.diffusion.affine: nfdm_gaussain.yaml
+  - /model/components/forward_process@model.diffusion.affine: fm_ot.yaml
   - /model/components/predictor@model.diffusion.pred: predictor.yaml
-  - /model/components/volatility@model.diffusion.vol: learned_volatility.yaml
+  - /model/components/volatility@model.diffusion.vol: static_volatility.yaml
 
   #choose which backbone to use for the predictor and forward process
-  - /model/components/transformer@model.diffusion.affine.model: dit_2x_output.yaml
   - /model/components/transformer@model.diffusion.pred.model: dit.yaml
   
   - override /data: text8
@@ -21,32 +19,46 @@ defaults:
   - override /callbacks: default
   - override /trainer: gpu
   
- 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-tags: ["text8", "dit", "neural_diffusion"]
+tags: ["text8", "dit", "basic_diffusion"]
 
 seed: 12345
 
-trainer:
-  limit_train_batches: 2000
-  limit_val_batches: 1
-  limit_test_batches: 1
-  max_epochs: 1
+data:
+  batch_size: 128
+  block_size: 64
+  reload_data: true
+  overfit_one_batch: true
 
-model:
+callbacks:
+  word_sampler:
+   log_train_every_n_steps: 100000000
+  
+
+#one epoch has 12556 batches
+#one val epoch has 1396 batches on batch size 256
+trainer:
+  max_epochs: 15
+  #accumulate_grad_batches: 2
+
+model:      
   compute_diffusion_loss: true
   compute_prior_loss: false
-  compute_reconstruction_loss: true
-  reconstruction_loss_type: collapse
+  compute_reconstruction_loss: false
+  reconstruction_loss_type: diff_anchor #collapse
   enable_matmul_tf32: true
   enable_cudnn_tf32: true
+  diffusion:
+    encoder:
+      embedding_dim: 384
 
 logger:
   wandb:
     tags: ${tags}
     group: "text8"
-    project: "clean_long_runs"
+    project: "clean_long_runs" #if just testing garbage use test
+    #mode: "disabled" if you dont want ot log a debug run 
   aim:
     experiment: "text8test"
