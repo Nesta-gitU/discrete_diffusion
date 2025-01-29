@@ -52,10 +52,10 @@ class CollapseLogger(Callback):
             #print(embeddings.shape, "embedding_shape") [vocab_size, emb_dim]
 
             # Compute cosine similarities (dot products of normalized embeddings)
-            cosine_similarities = torch.matmul(embeddings.T, embeddings)  # Shape: [vocab_size, vocab_size]
+            cosine_similarities = embeddings @ embeddings.T  # Shape: [vocab_size, vocab_size]
 
             # Exclude self-similarities by subtracting the diagonal
-            vocab_size = embeddings.size(1)
+            vocab_size = embeddings.size(0)
             mask = ~torch.eye(vocab_size, dtype=torch.bool, device=embeddings.device)  # Mask for non-diagonal elements
             pairwise_cosines = cosine_similarities[mask]  # Extract only off-diagonal elements
             global_step = trainer.global_step
