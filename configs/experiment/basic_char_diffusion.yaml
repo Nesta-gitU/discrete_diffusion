@@ -31,7 +31,7 @@ data:
   block_size: 64
   vocab_size: 27
   character_level: true
-  overfit_one_batch: false
+  overfit_one_batch: true
   reload_data: true
 
 callbacks:
@@ -55,7 +55,7 @@ model:
     pred:
       model:
         small_input_size: 27 #hopefully this is right. 
-        hidden_size: 386
+        hidden_size: 768
 
 logger:
   wandb:

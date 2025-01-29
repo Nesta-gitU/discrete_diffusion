@@ -30,7 +30,7 @@ data:
   batch_size: 256
   block_size: 64
   reload_data: true
-  overfit_one_batch: false
+  overfit_one_batch: true
 
 callbacks:
   word_sampler:
@@ -47,7 +47,7 @@ model:
   compute_diffusion_loss: true
   compute_prior_loss: false
   compute_reconstruction_loss: true
-  reconstruction_loss_type: diff_anchor #collapse
+  reconstruction_loss_type: collapse #collapse
   enable_matmul_tf32: true
   enable_cudnn_tf32: true
   diffusion:

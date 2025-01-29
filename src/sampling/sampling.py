@@ -171,7 +171,7 @@ def visualize_path(pl_module, sde_path, ode_path, logger, tokenizer):
     if sde_path is None:
         pass
     else:
-        for i in range(sde_path.shape[1]):
+        for i in range(sde_path.shape[0]):
             print("sde", sde_path[i][0])
             #also print the corersponding word
             decoded = pl_module.model.decoder(sde_path[i][0], pl_module.model.encoder.embedding.weight)
@@ -181,7 +181,7 @@ def visualize_path(pl_module, sde_path, ode_path, logger, tokenizer):
     if ode_path is None:
         pass
     else:
-        for i in range(ode_path.shape[1]):
+        for i in range(ode_path.shape[0]):
             print("ode", ode_path[i][0])
             decoded = pl_module.model.decoder(sde_path[i][0], pl_module.model.encoder.embedding.weight)
             decoded = decoded.argmax(dim=-1).squeeze(-1)

@@ -25,7 +25,7 @@ class NFDM_gaussian(nn.Module):
         #x_t = torch.cat([x, t], dim=1)
         #m_ls = self.net(x_t)  
         #TODO: t conditioning not implemented yet
-        if t > 0:
+        if not t == torch.zeros_like(t):
             m_ls = self.net(x, t)
             m, ls = m_ls.chunk(2, dim=2)#why was this 1 before 
 

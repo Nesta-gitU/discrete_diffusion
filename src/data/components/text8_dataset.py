@@ -66,6 +66,7 @@ class Text8Dataset(TorchDataset):
             i = 0
        
         x = torch.from_numpy((data[i:i+self.block_size]).astype(np.int64))
+        print(x)
         
         return x
 
