@@ -47,7 +47,7 @@ model:
   compute_diffusion_loss: true
   compute_prior_loss: false
   compute_reconstruction_loss: true
-  reconstruction_loss_type: collapse #collapse
+  reconstruction_loss_type: diff_anchor #collapse
   enable_matmul_tf32: true
   enable_cudnn_tf32: true
   diffusion:
