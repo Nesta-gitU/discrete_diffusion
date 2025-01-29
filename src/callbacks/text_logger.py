@@ -81,7 +81,8 @@ class TextLogger(Callback):
             ode_solved, path = solve_de(z, 1, 0, self._n_steps, module, 'ode')
             #decode the ode solve back into words
             ode_logits = module.model.decoder(ode_solved, module.model.encoder.embedding.weight)
-            ode_indices = ode_logits.argmax(dim=-1).squeeze(-1)
+            #print(ode_logits.shape, "ode_logits") # [batch_size, block_size, vocab_size]
+            ode_indices = ode_logits.argmax(dim=-1).squeeze(-1) # [batch_size, block_size] argmax the vocab dimension
         return sde_indices, ode_indices
 
         
@@ -102,6 +103,7 @@ class TextLogger(Callback):
     def on_train_epoch_end(self, trainer, pl_module) -> None:
         if trainer.global_step < 20:
             return
+
         logger = get_wandb_logger(trainer)
         if logger is None:
             return
@@ -123,6 +125,8 @@ class TextLogger(Callback):
     def sample_code(self, trainer, pl_module, logger):
         words_sde, words_ode = self.sample_from_diffusion(pl_module, self.batch_size)
         tokenizer = trainer.datamodule.tokenizer
+
+        print(words_sde.shape, "words_sde")
 
         if words_sde is None:
             w_sde = None

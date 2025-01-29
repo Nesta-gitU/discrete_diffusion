@@ -28,38 +28,37 @@ seed: 12345
 
 data:
   batch_size: 256
-  block_size: 28
+  block_size: 64
   reload_data: true
   overfit_one_batch: true
-  vocab_size: 100000
 
 callbacks:
   word_sampler:
-   log_train_every_n_steps: 500
+   log_train_every_n_steps: 1000000
   
 
 #one epoch has 12556 batches
 #one val epoch has 1396 batches on batch size 256
 trainer:
   max_epochs: 15
-  #accumulate_grad_batches: 2
+  accumulate_grad_batches: 2
 
 model:      
   compute_diffusion_loss: true
   compute_prior_loss: false
-  compute_reconstruction_loss: false
-  reconstruction_loss_type: diff_anchor #collapse
-  enable_matmul_tf32: false
-  enable_cudnn_tf32: false
+  compute_reconstruction_loss: true
+  reconstruction_loss_type: collapse #collapse
+  enable_matmul_tf32: true
+  enable_cudnn_tf32: true
   diffusion:
     encoder:
-      embedding_dim: 384
+      embedding_dim: 768
 
 logger:
   wandb:
     tags: ${tags}
     group: "text8"
-    project: "clean_long_runs" #if just testing garbage use test
+    project: "after_finding_bug" #if just testing garbage use test
     #mode: "disabled" if you dont want ot log a debug run 
   aim:
     experiment: "text8test"

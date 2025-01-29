@@ -116,7 +116,9 @@ class NeuralDiffusion(nn.Module):
         #print(not_mask.sum(), "number of unks")
         #mask_expanded = mask.unsqueeze(-1).expand(-1, -1, loss.shape[2])
         #loss = loss * mask_expanded
-        #loss = loss.sum(dim=(1,2))
+        
+        #do not comment out this line!!!!!!!!!!!!!!!!
+        loss = loss.sum(dim=(1,2))
 
         return loss
 

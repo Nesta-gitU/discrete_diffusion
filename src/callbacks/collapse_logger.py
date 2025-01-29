@@ -48,7 +48,8 @@ class CollapseLogger(Callback):
             embeddings = pl_module.model.encoder.embedding.weight
 
             # Normalize the embeddings to unit vectors
-            embeddings = torch.nn.functional.normalize(embeddings, dim=0)  # Shape remains [embedding_dim, vocab_size]
+            embeddings = torch.nn.functional.normalize(embeddings, dim=1)  # Shape remains [vocab_size, emb_dim]
+            #print(embeddings.shape, "embedding_shape") [vocab_size, emb_dim]
 
             # Compute cosine similarities (dot products of normalized embeddings)
             cosine_similarities = torch.matmul(embeddings.T, embeddings)  # Shape: [vocab_size, vocab_size]
