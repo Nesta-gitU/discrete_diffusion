@@ -25,12 +25,12 @@ defaults:
 tags: ["text8", "dit", "basic_diffusion"]
 
 seed: 12345
-
+#commment
 data:
   batch_size: 256
   block_size: 64
   reload_data: true
-  overfit_one_batch: true
+  overfit_one_batch: false
 
 callbacks:
   word_sampler:
