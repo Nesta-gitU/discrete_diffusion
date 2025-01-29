@@ -55,7 +55,7 @@ class TextLogger(Callback):
         for sequence in index:
             decoded_texts.append(tokenizer.decode(sequence.tolist()))
         return decoded_texts
-    gi
+        
     def sample_from_diffusion(self, module, batch_size):
         # sample batch size random z's, these must have the shape equal to our datapoints so that is [batch_size, block_size, n_embed]
         # I should be able to get the from the input_size and block_size of the transformer model
