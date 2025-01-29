@@ -5,7 +5,7 @@ from src.models.diffusions import t_dir
 
 
 @torch.no_grad()
-def solve_de(z, ts, tf, n_steps, module, mode):
+def solve_de(z, ts, tf, n_steps, module, mode, clamping = False):
     #tf = time start
     #ts = time end
     assert mode in ['sde', 'ode'], "mode must be either 'sde' or 'ode'"
@@ -27,7 +27,13 @@ def solve_de(z, ts, tf, n_steps, module, mode):
 
         w = torch.randn_like(z)
         z = z + f * dt + g * w * dt_2
-        
+
+        if clamping:
+            #clamp z to the nearest actual embedding in the embedding matrix, use the dot product to find the closest embedding
+            logits = module.model.decoder(z, module.model.encoder.embedding.weight)
+            indices = logits.argmax(dim=-1).squeeze(-1)
+            z = module.encoder.embedding(indices)
+
         path.append(z)
         
     return z, torch.stack(path)

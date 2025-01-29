@@ -16,8 +16,17 @@ tags: ["dev"]
 
 get_sde: true
 get_ode: true
-n_steps: 5
+n_steps: 5000
 batch_size: 2
 
+debug: false
+clamping: true
+top_k: true
+k: 5
+top_p: false
+p: 0.9
+temperature: 1.0
+
+
 # passing checkpoint path is necessary for evaluation
-ckpt_path: /teamspace/studios/this_studio/discrete_diffusion/logs/train/runs/2025-01-28_19-59-05/checkpoints/epoch_002.ckpt
+ckpt_path: /teamspace/studios/this_studio/discrete_diffusion/epoch_014.ckpt

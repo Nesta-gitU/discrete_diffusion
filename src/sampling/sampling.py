@@ -4,27 +4,33 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from src.utils.differential_equations import sde_drift, solve_de
+from src.sampling.methods import top_k, top_p, argmax_sample
+import json
+
+import os
 
 
-
-def sample_code(pl_module, datamodule, logger, get_sde, get_ode, n_steps, batch_size): #add clamping as an option, also add sampling instead of argmax as an option later, 
+def sample_code(pl_module, datamodule, logger, get_sde, get_ode, n_steps, batch_size, debug, clamping, do_top_k, k, do_top_p, p, temperature): #add clamping as an option, also add sampling instead of argmax as an option later, 
         tokenizer = datamodule.tokenizer
-        text_table = wandb.Table(columns=["epoch", "global_step", "text_ode", "text_sde"])
 
-        words_sde, words_ode, sde_path, ode_path = sample_from_diffusion(pl_module, batch_size, get_sde, get_ode, n_steps)
+        latent_sde, latent_ode, words_sde, words_ode, sde_path, ode_path = sample_from_diffusion(pl_module, batch_size, get_sde, get_ode, n_steps, clamping, do_top_k, k, do_top_p, p, temperature)
 
-        #visualize the embedding matrix with color coding 
-        print("visualizing embedding matrix")
-        visualize_embedding_matrix(pl_module)
+        print(latent_sde.shape, "sde this should have the shape [batch_size, block_size, hidden_size]")
+        print(latent_ode.shape, "ode this should have the shape [batch_size, block_size, hidden_size]")
 
-        #visualize the path somehow
-        print("visualizing path")
-        visualize_path(pl_module, sde_path, ode_path, logger, tokenizer)
+        if debug:
+            #visualize the embedding matrix with color coding 
+            print("visualizing embedding matrix")
+            visualize_embedding_matrix(pl_module)
 
-        #take the first latent matrix in the batch, print each time the word vector and the word to which it was decoded
-        # #maybe also the original word vector
-        print("visualizing latent")
-        visualize_latent(pl_module, words_sde, words_ode, tokenizer) 
+            #visualize the path somehow
+            print("visualizing path")
+            visualize_path(pl_module, sde_path, ode_path, logger, tokenizer)
+
+            #take the first latent matrix in the batch, print each time the word vector and the word to which it was decoded
+            # #maybe also the original word vector
+            print("visualizing latent")
+            visualize_latent(pl_module, latent_sde, latent_ode, tokenizer) 
 
         tokenizer = datamodule.tokenizer
 
@@ -36,12 +42,21 @@ def sample_code(pl_module, datamodule, logger, get_sde, get_ode, n_steps, batch_
             w_ode = None
         else:
             w_ode = idx_to_words(words_ode, tokenizer)
+        
+        output_file = "/teamspace/studios/this_studio/discrete_diffusion/output/samples.json"
 
-        text_table.add_data(str(w_ode), str(w_sde))
+        samples = {
+            "text_ode": str(w_ode),
+            "text_sde": str(w_sde)
+        }
+        #create the dir
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
-        logger.experiment.log({"generated_samples": text_table})
+        with open(output_file, 'w') as f:
+            json.dump(samples, f)
 
-def sample_from_diffusion(module, batch_size, get_sde=True, get_ode=True, _n_steps=100):
+def sample_from_diffusion(module, batch_size, get_sde=True, get_ode=True, _n_steps=100, clamping=False, do_top_k=False, k=10, do_top_p=False, p=0.9, temperature=1.0):
+    assert top_k != top_p, "top_k and top_p cannot be used together"
     # sample batch size random z's, these must have the shape equal to our datapoints so that is [batch_size, block_size, n_embed]
     # I should be able to get the from the input_size and block_size of the transformer model
     block_size = module.model.pred.model.block_size
@@ -58,18 +73,27 @@ def sample_from_diffusion(module, batch_size, get_sde=True, get_ode=True, _n_ste
     ode_indices = None
 
     if get_sde:
-        sde_solved, sde_path = solve_de(z, 1, 0, _n_steps, module, 'sde')
+        sde_solved, sde_path = solve_de(z, 1, 0, _n_steps, module, 'sde', clamping)
         #decode the sde solve back into words 
         sde_logits = module.model.decoder(sde_solved, module.model.encoder.embedding.weight)
-        sde_indices = sde_logits.argmax(dim=-1).squeeze(-1)
+        
+        
     if get_ode:
-        ode_solved, ode_path = solve_de(z, 1, 0, _n_steps, module, 'ode')
+        ode_solved, ode_path = solve_de(z, 1, 0, _n_steps, module, 'ode', clamping)
         #decode the ode solve back into words
         ode_logits = module.model.decoder(ode_solved, module.model.encoder.embedding.weight)
-        ode_indices = ode_logits.argmax(dim=-1).squeeze(-1)
+    
+    if do_top_k:
+        sde_indices = top_k(sde_logits, k, temperature)
+        ode_indices = top_k(ode_logits, k, temperature)
+    elif do_top_p:
+        sde_indices = top_p(sde_logits, p, temperature)
+        ode_indices = top_p(ode_logits, p, temperature)
+    else:
+        sde_indices = argmax_sample(sde_logits)
+        ode_indices = argmax_sample(ode_logits)
 
-
-    return sde_indices, ode_indices, sde_path, ode_path
+    return sde_solved, ode_solved, sde_indices, ode_indices, sde_path, ode_path
 
 def visualize_embedding_matrix(pl_module):
     embeddings = pl_module.model.encoder.embedding.weight
@@ -86,43 +110,46 @@ def visualize_embedding_matrix(pl_module):
     plt.title('Embedding Matrix Visualization')
     plt.xlabel('Columns')
     plt.ylabel('Rows')
-    plt.show()
+    plt.savefig("embedding_matrix.png")
 
 
 def visualize_latent(pl_module, words_sde, words_ode, tokenizer):
     
-    if words_ode is None:
-        pass
-    else:
-        first_latent = words_sde #shape [block_size, hidden_size]
-        print(first_latent.shape)
-
-        for i in range(first_latent.shape[0]):
-            latent_vector = first_latent[i]
-            print("the latent,", i, " ", latent_vector)
-            decoded = pl_module.model.decoder(first_latent, pl_module.model.encoder.embedding.weight)
-            decoded = decoded.argmax(dim=-1).squeeze(-1)[i]
-
-            print(tokenizer.decode(decoded.tolist()))
-
     if words_sde is None:
         pass
     else:
-        first_latent = words_ode[0]
+        first_latent = words_sde[0] #shape [block_size, hidden_size]
+        print(first_latent.shape, "first latent shape")
 
         for i in range(first_latent.shape[0]):
             latent_vector = first_latent[i]
             print("the latent,", i, " ", latent_vector)
-            decoded = pl_module.model.decoder(first_latent, pl_module.model.encoder.embedding.weight)
-            decoded = decoded.argmax(dim=-1).squeeze(-1)[i]
+            decoded = pl_module.model.decoder(latent_vector, pl_module.model.encoder.embedding.weight)
+            decoded = decoded.argmax(dim=-1).squeeze(-1)
+            print(decoded.shape, "decoded shape")
+            print(tokenizer.decode([decoded.item()]))
 
-            print(tokenizer.decode(decoded.tolist()))
+    if words_ode is None:
+        pass
+    else:
+        
+        first_latent = words_ode[0]
+        print(first_latent.shape, "first latent shape")   
+
+        for i in range(first_latent.shape[0]):
+            latent_vector = first_latent[i]
+            
+            print("the latent,", i, " ", latent_vector)
+            decoded = pl_module.model.decoder(latent_vector, pl_module.model.encoder.embedding.weight)
+            decoded = decoded.argmax(dim=-1).squeeze(-1)
+            print(decoded.shape, "decoded shape")
+
+            print(tokenizer.decode([decoded.item()]))
 
 
 
 def visualize_path(pl_module, sde_path, ode_path, logger, tokenizer):
     # for the sde path print all the intermediate steps in a row for the first token
-    print("sde path")
     """
     path = [z]
     for t in tqdm(tt):
@@ -140,13 +167,14 @@ def visualize_path(pl_module, sde_path, ode_path, logger, tokenizer):
         
     return z, torch.stack(path)
     """
+    print("sde_path_shape", sde_path.shape)
     if sde_path is None:
         pass
     else:
         for i in range(sde_path.shape[1]):
-            print("sde", sde_path[0][i])
+            print("sde", sde_path[i][0])
             #also print the corersponding word
-            decoded = pl_module.model.decoder(sde_path[0][i], pl_module.model.encoder.embedding.weight)
+            decoded = pl_module.model.decoder(sde_path[i][0], pl_module.model.encoder.embedding.weight)
             decoded = decoded.argmax(dim=-1).squeeze(-1)
             print('sde', tokenizer.decode(decoded.tolist()))
     # for the ode path print all the intermediate steps in a row for the first token
@@ -154,8 +182,8 @@ def visualize_path(pl_module, sde_path, ode_path, logger, tokenizer):
         pass
     else:
         for i in range(ode_path.shape[1]):
-            print("ode", ode_path[0][i])
-            decoded = pl_module.model.decoder(sde_path[0][i], pl_module.model.encoder.embedding.weight)
+            print("ode", ode_path[i][0])
+            decoded = pl_module.model.decoder(sde_path[i][0], pl_module.model.encoder.embedding.weight)
             decoded = decoded.argmax(dim=-1).squeeze(-1)
             print("ode", tokenizer.decode(decoded.tolist()))
 

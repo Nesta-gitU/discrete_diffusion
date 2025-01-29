@@ -15,4 +15,4 @@ task_name: "eval"
 tags: ["dev"]
 
 # passing checkpoint path is necessary for evaluation
-ckpt_path: /teamspace/studios/this_studio/discrete_diffusion/epoch_017.ckpt
+ckpt_path:  /teamspace/studios/this_studio/discrete_diffusion/logs/train/runs/2025-01-28_19-59-05/checkpoints/epoch_002.ckpt

@@ -60,8 +60,6 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     model = DiffusionModule.load_from_checkpoint(cfg.ckpt_path)
     #model: LightningModule = hydra.utils.instantiate(cfg.model)
 
-    
-
     datamodule.setup(stage="fit")
 
     log.info("Instantiating loggers...")
@@ -88,7 +86,21 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     n_steps = cfg.get("n_steps")
     batch_size = cfg.get("batch_size")
 
-    sample_code(model, datamodule, logger, get_sde, get_ode, n_steps, batch_size)
+    debug = cfg.get("debug", False)
+    clamp = cfg.get("clamp", False)
+    top_k = cfg.get("top_k", False)
+    k = cfg.get("k", 1)
+    top_p = cfg.get("top_p", False)
+    p = cfg.get("p", 0.9)
+    temperature = cfg.get("temperature", 1.0)
+
+    print("getting ode:", get_ode)
+    print("getting sde:", get_sde)
+
+    sample_code(model, datamodule, logger, get_sde, get_ode, n_steps, batch_size, debug, clamp, top_k, k, top_p, p, temperature)
+
+    print("done sampling!")
+    #it crashes at the end for some reason I have no idea why?
 
     
 
