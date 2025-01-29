@@ -27,7 +27,7 @@ tags: ["text8", "dit", "basic_diffusion"]
 seed: 12345
 
 data:
-  batch_size: 256
+  batch_size: 128
   block_size: 64
   reload_data: true
   overfit_one_batch: true
@@ -41,18 +41,18 @@ callbacks:
 #one val epoch has 1396 batches on batch size 256
 trainer:
   max_epochs: 15
-  accumulate_grad_batches: 2
+  #accumulate_grad_batches: 2
 
 model:      
   compute_diffusion_loss: true
   compute_prior_loss: false
-  compute_reconstruction_loss: true
-  reconstruction_loss_type: collapse #collapse
+  compute_reconstruction_loss: false
+  reconstruction_loss_type: diff_anchor #collapse
   enable_matmul_tf32: true
   enable_cudnn_tf32: true
   diffusion:
     encoder:
-      embedding_dim: 768
+      embedding_dim: 384
 
 logger:
   wandb:
