@@ -125,7 +125,7 @@ class DiffusionModule(LightningModule):
         self.log("train/elbo", elbo, on_step=True, prog_bar=True)
 
         # return loss or backpropagation will fail
-        return elbo.sum()
+        return elbo
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         """Perform a single validation step on a batch of data from the validation set.
@@ -134,11 +134,11 @@ class DiffusionModule(LightningModule):
             labels.
         :param batch_idx: The index of the current batch.
         """
-        diffusion_loss, reconstruction_loss, prior_loss = self.forward(batch, 
-                                            compute_diffusion_loss=True,
-                                            compute_prior_loss=True,
-                                            compute_reconstruction_loss=True,
-                                            reconstruction_loss_type =self.hparams.reconstruction_loss_type)
+        diffusion_loss, reconstruction_loss, prior_loss = self.forward(batch,
+                                            compute_diffusion_loss=self.hparams.compute_diffusion_loss,
+                                            compute_prior_loss=self.hparams.compute_prior_loss,
+                                            compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
+                                            reconstruction_loss_type = self.hparams.reconstruction_loss_type)
 
 
         diffusion_loss = diffusion_loss.mean()
@@ -164,11 +164,13 @@ class DiffusionModule(LightningModule):
             labels.
         :param batch_idx: The index of the current batch.
         """
-        diffusion_loss, reconstruction_loss, prior_loss = self.forward(batch, 
-                                            compute_diffusion_loss=True,
-                                            compute_prior_loss=True,
-                                            compute_reconstruction_loss=True,
-                                            reconstruction_loss_type =self.hparams.reconstruction_loss_type)
+        print(batch.shape[0], "batch size")
+        diffusion_loss, reconstruction_loss, prior_loss  = self.forward(batch,
+                                            compute_diffusion_loss=self.hparams.compute_diffusion_loss,
+                                            compute_prior_loss=self.hparams.compute_prior_loss,
+                                            compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
+                                            reconstruction_loss_type = self.hparams.reconstruction_loss_type)
+
         diffusion_loss = diffusion_loss.mean()
         reconstruction_loss = reconstruction_loss
         prior_loss = prior_loss.mean()

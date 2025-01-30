@@ -46,7 +46,6 @@ class Text8Dataset(TorchDataset):
         else:
             self.text8_url = Text8Dataset.get_data_dir(Path(root_dir)) / "text8" / f"bpe_{split}.bin"
 
-        data = np.memmap(self.text8_url, dtype=np.uint16, mode='r')
     #length is arbitrary so lets just make it the number of chuncks if you stack them after eachother
     #probably just shouldnt use the concept of epoch at all. 
     def __len__(self): 
@@ -80,9 +79,9 @@ class Text8Dataset(TorchDataset):
         print(f"length of dataset in characters: {len(data):,}")
 
         n = len(data)
-        train_data = data[:int(n*0.8)] 
-        val_data = data[int(n*0.8):int(n*0.9)] 
-        test_data = data[int(n*0.9):]
+        test_data = data[:int(n*0.8)] 
+        train_data = data[int(n*0.8):int(n*0.9)] 
+        val_data = data[int(n*0.9):]
 
         #initialize a tokenizer here
         if character_level:
