@@ -20,8 +20,8 @@ n_steps: 300
 batch_size: 2
 
 debug: true
-clamping: false
-top_k: true
+clamping: true
+top_k: false
 k: 5
 top_p: false
 p: 0.9
@@ -29,4 +29,4 @@ temperature: 1.0
 
 
 # passing checkpoint path is necessary for evaluation
-ckpt_path: /teamspace/studios/this_studio/discrete_diffusion/logs/epoch_014.ckpt
+ckpt_path: /teamspace/studios/this_studio/discrete_diffusion/logs/last.ckpt

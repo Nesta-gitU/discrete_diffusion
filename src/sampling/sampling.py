@@ -29,8 +29,8 @@ def sample_code(pl_module, datamodule, logger, get_sde, get_ode, n_steps, batch_
 
             #take the first latent matrix in the batch, print each time the word vector and the word to which it was decoded
             # #maybe also the original word vector
-            print("visualizing latent")
-            visualize_latent(pl_module, latent_sde, latent_ode, tokenizer) 
+            #print("visualizing latent")
+            #visualize_latent(pl_module, latent_sde, latent_ode, tokenizer) 
 
         tokenizer = datamodule.tokenizer
 

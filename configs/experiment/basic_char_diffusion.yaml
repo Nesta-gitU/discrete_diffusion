@@ -28,7 +28,7 @@ seed: 12345
 
 data:
   batch_size: 128
-  block_size: 64
+  block_size: 256
   vocab_size: 27
   character_level: true
   overfit_one_batch: true
