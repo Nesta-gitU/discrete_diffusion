@@ -4,6 +4,7 @@ defaults:
   - model_summary
   - _self_
   - word_sampler
+  - collapse
 
 model_checkpoint:
   dirpath: ${paths.output_dir}/checkpoints
