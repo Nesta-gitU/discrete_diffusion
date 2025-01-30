@@ -80,8 +80,8 @@ class Text8Dataset(TorchDataset):
         print(f"length of dataset in characters: {len(data):,}")
 
         n = len(data)
-        train_data = data[:int(n*0.9)]
-        val_data = data[int(n*0.8):int(n*0.9)] #this isnt great but otherwise pl will complain 
+        train_data = data[:int(n*0.8)] 
+        val_data = data[int(n*0.8):int(n*0.9)] 
         test_data = data[int(n*0.9):]
 
         #initialize a tokenizer here
