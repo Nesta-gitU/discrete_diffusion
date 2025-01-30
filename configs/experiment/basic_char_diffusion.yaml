@@ -31,7 +31,7 @@ data:
   block_size: 256
   vocab_size: 27
   character_level: true
-  overfit_one_batch: true
+  overfit_one_batch: false
   reload_data: true
 
 callbacks:
