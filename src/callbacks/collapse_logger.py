@@ -61,8 +61,7 @@ class CollapseLogger(Callback):
             global_step = trainer.global_step
             # Compute ANI
             ani = pairwise_cosines.mean().item()
-            wandb.log({"trainer/global_step": global_step, "ani": ani})
-                
+            wandb.log({"trainer/global_step": global_step, "ani": ani})                
 
     
 
