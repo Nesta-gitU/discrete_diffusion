@@ -143,8 +143,11 @@ class NeuralDiffusion(nn.Module):
         #    print("Actual sequence: ", x[i])
         #    print("Predicted sequence: ", torch.argmax(logits[i], dim=1))
         #    print("\n")
-
-        loss = torch.nn.functional.cross_entropy(logits.view(-1, logits.size(-1)), x.view(-1), ignore_index=0) #use ignore_index here if we ever do any padding
+        folded_logits = logits.view(-1, logits.size(-1))
+        #print(folded_logits.shape, "folded_logits_shape")
+        loss = torch.nn.functional.cross_entropy(folded_logits, x.view(-1), reduction="sum", ignore_index=0) #use ignore_index here if we ever do any padding
+        #print(loss.shape, "loss_shape")
+        loss = loss/bs
 
         return loss
 

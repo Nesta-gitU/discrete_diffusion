@@ -120,7 +120,7 @@ class DiffusionModule(LightningModule):
 
         # update and log metrics
         self.log("train/diffusion_loss", diffusion_loss, on_step=True, prog_bar=False)
-        self.log("train/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=False)
+        self.log("train/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=True)
         self.log("train/prior_loss", prior_loss, on_step=True, prog_bar=False)
         self.log("train/elbo", elbo, on_step=True, prog_bar=True)
 
@@ -152,7 +152,7 @@ class DiffusionModule(LightningModule):
 
         # update and log metrics
         self.log("val/diffusion_loss", diffusion_loss, on_step=True, prog_bar=False)
-        self.log("val/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=False)
+        self.log("val/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=True)
         self.log("val/prior_loss", prior_loss, on_step=True, prog_bar=False)
         self.log("val/elbo", elbo, on_step=True, prog_bar=True)
        
