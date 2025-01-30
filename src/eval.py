@@ -32,6 +32,7 @@ from src.utils import (
     task_wrapper,
 )
 
+from src.models.language_diff_module import DiffusionModule
 
 log = RankedLogger(__name__, rank_zero_only=True)
 
@@ -52,7 +53,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.data)
 
     log.info(f"Instantiating model <{cfg.model._target_}>")
-    model: LightningModule = hydra.utils.instantiate(cfg.model)
+    model = DiffusionModule.load_from_checkpoint(cfg.ckpt_path)
 
     log.info("Instantiating loggers...")
     logger: List[Logger] = instantiate_loggers(cfg.get("logger"))

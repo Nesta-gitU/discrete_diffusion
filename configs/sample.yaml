@@ -27,6 +27,7 @@ top_p: false
 p: 0.9
 temperature: 1.0
 
+compute_ani: true
 
 # passing checkpoint path is necessary for evaluation
 ckpt_path: /teamspace/studios/this_studio/discrete_diffusion/logs/last.ckpt

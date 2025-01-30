@@ -9,9 +9,33 @@ import json
 
 import os
 
+def ani(pl_module, datamodule, logger, tokenizer):
+    #get embeddings from the encoder
+    embeddings = pl_module.model.encoder.embedding.weight
 
-def sample_code(pl_module, datamodule, logger, get_sde, get_ode, n_steps, batch_size, debug, clamping, do_top_k, k, do_top_p, p, temperature): #add clamping as an option, also add sampling instead of argmax as an option later, 
+    # Normalize the embeddings to unit vectors
+    new_embds = torch.nn.functional.normalize(embeddings, dim=1)  # Shape remains [vocab_size, emb_dim]
+    #print(embeddings.shape, "embedding_shape") [vocab_size, emb_dim]
+
+    # Compute cosine similarities (dot products of normalized embeddings)
+    cosine_similarities = new_embds @ new_embds.T  # Shape: [vocab_size, vocab_size]
+
+    # Exclude self-similarities by subtracting the diagonal
+    vocab_size = new_embds.size(0)
+    mask = ~torch.eye(vocab_size, dtype=torch.bool, device=embeddings.device)  # Mask for non-diagonal elements
+    pairwise_cosines = cosine_similarities[mask]  # Extract only off-diagonal elements
+    # Compute ANI
+    ani = pairwise_cosines.mean().item()
+    print("ani is:")
+    print(ani, "------------------------------------")             
+
+
+
+def sample_code(pl_module, datamodule, logger, get_sde, get_ode, n_steps, batch_size, debug, clamping, do_top_k, k, do_top_p, p, temperature, compute_ani): #add clamping as an option, also add sampling instead of argmax as an option later, 
         tokenizer = datamodule.tokenizer
+
+        if compute_ani:
+            ani(pl_module, datamodule, logger, tokenizer)
 
         latent_sde, latent_ode, words_sde, words_ode, sde_path, ode_path = sample_from_diffusion(pl_module, batch_size, get_sde, get_ode, n_steps, clamping, do_top_k, k, do_top_p, p, temperature)
 

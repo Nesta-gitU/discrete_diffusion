@@ -93,11 +93,12 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     top_p = cfg.get("top_p", False)
     p = cfg.get("p", 0.9)
     temperature = cfg.get("temperature", 1.0)
+    compute_ani = cfg.get("compute_ani", False)
 
     print("getting ode:", get_ode)
     print("getting sde:", get_sde)
 
-    sample_code(model, datamodule, logger, get_sde, get_ode, n_steps, batch_size, debug, clamp, top_k, k, top_p, p, temperature)
+    sample_code(model, datamodule, logger, get_sde, get_ode, n_steps, batch_size, debug, clamp, top_k, k, top_p, p, temperature, compute_ani)
 
     print("done sampling!")
     #it crashes at the end for some reason I have no idea why?

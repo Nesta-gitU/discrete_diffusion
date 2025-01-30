@@ -9,10 +9,13 @@ defaults:
   - paths: default
   - extras: default
   - hydra: default
+  - callbacks: default
+
+  - experiment: null
 
 task_name: "eval"
 
 tags: ["dev"]
 
 # passing checkpoint path is necessary for evaluation
-ckpt_path:  /teamspace/studios/this_studio/discrete_diffusion/logs/last.ckpt
+ckpt_path:  /teamspace/studios/this_studio/discrete_diffusion/logs/epoch_012.ckpt
