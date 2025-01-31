@@ -61,6 +61,7 @@ class Text8DataModule(LightningDataModule):
                     self.tokenizer = Text8Dataset.prepare(root_dir=self.hparams.root_dir, character_level=self.hparams.character_level, vocab_size=self.hparams.vocab_size)
             else:
                 print("relaoading data with function...")
+                print(self.hparams.character_level)
                 self.tokenizer = Text8Dataset.prepare(root_dir=self.hparams.root_dir, character_level=self.hparams.character_level, vocab_size=self.hparams.vocab_size)
 
 
@@ -71,6 +72,9 @@ class Text8DataModule(LightningDataModule):
                 overfit_one_batch= self.hparams.overfit_one_batch, character_level=self.hparams.character_level, epoch_length=self.hparams.epoch_length)
             self.data_test = Text8Dataset(split="test", block_size=self.hparams.block_size, root_dir=self.hparams.root_dir, 
                 overfit_one_batch=self.hparams.overfit_one_batch, character_level=self.hparams.character_level, epoch_length=self.hparams.epoch_length)
+
+
+            #made some insane changes here
             
 
     def train_dataloader(self) -> DataLoader[Any]:
@@ -83,7 +87,7 @@ class Text8DataModule(LightningDataModule):
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
-            shuffle=True,
+            shuffle=False,
         )
 
     def val_dataloader(self) -> DataLoader[Any]:

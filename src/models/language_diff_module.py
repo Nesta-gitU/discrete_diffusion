@@ -80,6 +80,13 @@ class DiffusionModule(LightningModule):
         :return: A tensor of logits.
         """
         t = torch.rand(x.size(0), 1).unsqueeze(2).to(x.device) #sample a random time for each example in the batch
+        #fix t to 0.5 for debug
+        #t = torch.ones(x.size(0), 1).unsqueeze(2).to(x.device)/100
+        t.requires_grad = True
+
+
+        #print(t, "t ")
+        #print(t.requires_grad, "t requires grad")
         #for i in range(3):
         #    print(f"t: {t[i]}")
         # sample just t = 1 the most corupted noise level
@@ -103,6 +110,7 @@ class DiffusionModule(LightningModule):
         :param batch_idx: The index of the current batch.
         :return: A tensor of losses between model predictions and targets.
         """
+        #with torch.no_grad():
         diffusion_loss, reconstruction_loss, prior_loss = self.forward(batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,
                                             compute_prior_loss=self.hparams.compute_prior_loss,
@@ -112,6 +120,7 @@ class DiffusionModule(LightningModule):
         diffusion_loss = diffusion_loss.mean()
         reconstruction_loss = reconstruction_loss
         prior_loss = prior_loss.mean()
+        #print(diffusion_loss, "----------------------diffusion_loss")
 
         #print(f"diffusion_loss: {self.hparams.compute_diffusion_loss}, reconstruction_loss: {self.hparams.compute_reconstruction_loss}, prior_loss: {self.hparams.compute_prior_loss}")
 
@@ -119,10 +128,10 @@ class DiffusionModule(LightningModule):
         elbo = diffusion_loss + reconstruction_loss + prior_loss 
 
         # update and log metrics
-        self.log("train/diffusion_loss", diffusion_loss, on_step=True, prog_bar=False)
+        self.log("train/diffusion_loss", diffusion_loss, on_step=True, prog_bar=True)
         self.log("train/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=True)
         self.log("train/prior_loss", prior_loss, on_step=True, prog_bar=False)
-        self.log("train/elbo", elbo, on_step=True, prog_bar=True)
+        self.log("train/elbo", elbo, on_step=True, prog_bar=False)
 
         # return loss or backpropagation will fail
         return elbo
@@ -156,7 +165,6 @@ class DiffusionModule(LightningModule):
         self.log("val/prior_loss", prior_loss, on_step=True, prog_bar=False)
         self.log("val/elbo", elbo, on_step=True, prog_bar=True)
        
-
     def test_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         """Perform a single test step on a batch of data from the test set.
 
@@ -164,7 +172,8 @@ class DiffusionModule(LightningModule):
             labels.
         :param batch_idx: The index of the current batch.
         """
-        print(batch.shape[0], "batch size")
+        
+
         diffusion_loss, reconstruction_loss, prior_loss  = self.forward(batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,
                                             compute_prior_loss=self.hparams.compute_prior_loss,
@@ -177,11 +186,12 @@ class DiffusionModule(LightningModule):
 
         #note elbo may or may not be valid depending on what we actualy calculatte in the forward pass
         elbo = diffusion_loss + reconstruction_loss + prior_loss 
+        print(diffusion_loss)
 
         # update and log metrics
-        self.log("test/diffusion_loss", diffusion_loss, on_step=True, prog_bar=False)
-        self.log("test/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=False)
-        self.log("test/prior_loss", prior_loss, on_step=True, prog_bar=False)
+        self.log("test/diffusion_loss", diffusion_loss, on_step=True, prog_bar=True)
+        self.log("test/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=True)
+        self.log("test/prior_loss", prior_loss, on_step=True, prog_bar=True)
         self.log("test/elbo", elbo, on_step=True, prog_bar=True)
 
     def setup(self, stage: str) -> None:

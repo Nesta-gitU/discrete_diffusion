@@ -36,7 +36,6 @@ class NFDM_gaussian(nn.Module):
             #no point in doing a forward pass if t = 0.
             m = x
             ls = np.log(0.01)
-
         return m, torch.exp(ls)
 
 class FM_OT(nn.Module):
@@ -46,9 +45,15 @@ class FM_OT(nn.Module):
 
     def __init__(self):
         super().__init__()
-        
+    
     def forward(self, x, t):
         # Conditional optimal transport (FM-OT)
-        return (1 - t) * x, t + (1 - t) * 0.01
+        output0 = (1 - t) * x
+        output1 = t + (1 - t) * 0.01
+        #print("output0 requires grad: ", output0.requires_grad)
+        #print("output1 requires grad: ", output1.requires_grad)
+
+
+        return output0, output1
 
         

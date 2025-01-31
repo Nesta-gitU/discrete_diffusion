@@ -18,4 +18,4 @@ task_name: "eval"
 tags: ["dev"]
 
 # passing checkpoint path is necessary for evaluation
-ckpt_path:  Diffusion-LM Improves Controllable Text Generation
+ckpt_path: /teamspace/studios/this_studio/discrete_diffusion/logs/epoch_012.ckpt

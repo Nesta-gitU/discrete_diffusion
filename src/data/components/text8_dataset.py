@@ -63,7 +63,7 @@ class Text8Dataset(TorchDataset):
             #i = 0  #this is for debugging purposes, so we can see the same string over and over again.
             # sample an index between 0-64
             i = 0
-       
+
         x = torch.from_numpy((data[i:i+self.block_size]).astype(np.int64))
         
         
@@ -79,9 +79,9 @@ class Text8Dataset(TorchDataset):
         print(f"length of dataset in characters: {len(data):,}")
 
         n = len(data)
-        test_data = data[:int(n*0.8)] 
-        train_data = data[int(n*0.8):int(n*0.9)] 
-        val_data = data[int(n*0.9):]
+        train_data = data[:int(n*0.8)] 
+        val_data = data[int(n*0.8):int(n*0.9)] 
+        test_data = data[int(n*0.9):]
 
         #initialize a tokenizer here
         if character_level:

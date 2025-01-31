@@ -14,6 +14,14 @@ class Predictor(nn.Module):
         #x = self.model(z_t)
         
         x = self.model(z, t) # t conditioning not implemented yet in the model
+        
+        #with torch.no_grad():
+            #out1 = self.model(x, t)
+            #out2 = self.model(x, t)
+            #print("out1", out1)
+            #print("out2", out2)
+            #print("next iteration")
+        #print(torch.allclose(out1, out2, atol=1e-6), "what is going on this should be true")
 
         # Reparametrization for numerical stability
         x = (1 - t) * z + (t + 0.01) * x
