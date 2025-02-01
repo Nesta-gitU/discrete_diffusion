@@ -71,9 +71,9 @@ class NeuralDiffusion(nn.Module):
 
         # sample z_t from q(z_t | x)
         # z_t should obtained from putting epsilon into the forward process
-        #eps = torch.randn_like(embeddings)
+        eps = torch.randn_like(embeddings)
         #fix epsilon to some value
-        eps = torch.ones_like(embeddings)/10
+        #eps = torch.ones_like(embeddings)/10
         z = f_m + f_s * eps # function evaluation of F(e(x), t, eps)
 
         #also deocde z to see if pred is doing a  hard job?
