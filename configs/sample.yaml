@@ -15,19 +15,19 @@ task_name: "sample"
 tags: ["dev"]
 
 get_sde: true
-get_ode: true
-n_steps: 300
+get_ode: false
+n_steps: 150
 batch_size: 2
 
-debug: true
-clamping: true
+debug: false
+clamping: false
 top_k: false
 k: 5
 top_p: false
 p: 0.9
 temperature: 1.0
 
-compute_ani: true
+compute_ani: false
 
 # passing checkpoint path is necessary for evaluation
-ckpt_path: /teamspace/studios/this_studio/discrete_diffusion/logs/last.ckpt
+ckpt_path: /teamspace/studios/this_studio/discrete_diffusion/logs/last_new.ckpt

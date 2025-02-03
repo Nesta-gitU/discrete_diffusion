@@ -39,8 +39,8 @@ def sample_code(pl_module, datamodule, logger, get_sde, get_ode, n_steps, batch_
 
         latent_sde, latent_ode, words_sde, words_ode, sde_path, ode_path = sample_from_diffusion(pl_module, batch_size, get_sde, get_ode, n_steps, clamping, do_top_k, k, do_top_p, p, temperature)
 
-        print(latent_sde.shape, "sde this should have the shape [batch_size, block_size, hidden_size]")
-        print(latent_ode.shape, "ode this should have the shape [batch_size, block_size, hidden_size]")
+        #print(latent_sde.shape, "sde this should have the shape [batch_size, block_size, hidden_size]")
+        #print(latent_ode.shape, "ode this should have the shape [batch_size, block_size, hidden_size]")
 
         if debug:
             #visualize the embedding matrix with color coding 
@@ -100,12 +100,20 @@ def sample_from_diffusion(module, batch_size, get_sde=True, get_ode=True, _n_ste
         sde_solved, sde_path = solve_de(z, 1, 0, _n_steps, module, 'sde', clamping)
         #decode the sde solve back into words 
         sde_logits = module.model.decoder(sde_solved, module.model.encoder.embedding.weight)
+    else:
+        sde_solved = None
+        sde_path = None
+        sde_logits = None
         
         
     if get_ode:
         ode_solved, ode_path = solve_de(z, 1, 0, _n_steps, module, 'ode', clamping)
         #decode the ode solve back into words
         ode_logits = module.model.decoder(ode_solved, module.model.encoder.embedding.weight)
+    else:
+        ode_solved = None
+        ode_path = None
+        ode_logits = None
     
     if do_top_k:
         sde_indices = top_k(sde_logits, k, temperature)
@@ -114,8 +122,12 @@ def sample_from_diffusion(module, batch_size, get_sde=True, get_ode=True, _n_ste
         sde_indices = top_p(sde_logits, p, temperature)
         ode_indices = top_p(ode_logits, p, temperature)
     else:
-        sde_indices = argmax_sample(sde_logits)
-        ode_indices = argmax_sample(ode_logits)
+        sde_indices = None
+        ode_indices = None
+        if get_sde:
+            sde_indices = argmax_sample(sde_logits)
+        if get_ode:
+            ode_indices = argmax_sample(ode_logits)
 
     return sde_solved, ode_solved, sde_indices, ode_indices, sde_path, ode_path
 
