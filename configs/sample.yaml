@@ -20,7 +20,7 @@ n_steps: 150
 batch_size: 2
 
 debug: false
-clamping: false
+clamping: true
 top_k: false
 k: 5
 top_p: false
