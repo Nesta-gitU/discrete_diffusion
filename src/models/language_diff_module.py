@@ -74,7 +74,7 @@ class DiffusionModule(LightningModule):
         for p in self.ema.parameters():
             p.requires_grad = False
 
-        self.update_ema(self.ema, self.model.module, decay=0) 
+        self.update_ema(self.ema, self.model, decay=0) 
         self.ema.eval()
 
 
