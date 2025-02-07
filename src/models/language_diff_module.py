@@ -157,7 +157,7 @@ class DiffusionModule(LightningModule):
         # return loss or backpropagation will fail
         return elbo
     
-    def on_after_backward(self, trainer, module) -> None:
+    def on_after_backward(self) -> None:
         self.update_ema(self.ema, self.model.module, decay=0.999)
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
