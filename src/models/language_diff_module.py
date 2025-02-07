@@ -8,7 +8,7 @@ import inspect
 
 from src.models.diffusions import NeuralDiffusion
 import copy
-
+from collections import OrderedDict
 
 
 class DiffusionModule(LightningModule):
