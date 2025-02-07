@@ -7,6 +7,7 @@ from torchmetrics.classification.accuracy import Accuracy
 import inspect
 
 from src.models.diffusions import NeuralDiffusion
+import copy
 
 
 
@@ -69,9 +70,28 @@ class DiffusionModule(LightningModule):
         self.save_hyperparameters(logger=False)
 
         self.model = diffusion
+        self.ema = copy.deepcopy(self.model)
+        for p in self.ema.parameters():
+            p.requires_grad = False
+
+        self.update_ema(self.ema, self.model.module, decay=0) 
+        self.ema.eval()
+
 
         # initialize the metrics to track:
         # recon_loss, diffusion_loss, prior_loss, elbo, bits-per-character 
+
+    @torch.no_grad()
+    def update_ema(self, ema_model, model, decay=0.9999):
+        """
+        Step the EMA model towards the current model.
+        """
+        ema_params = OrderedDict(ema_model.named_parameters())
+        model_params = OrderedDict(model.named_parameters())
+
+        for name, param in model_params.items():
+            # TODO: Consider applying only to params that require_grad to avoid small numerical changes of pos_embed
+            ema_params[name].mul_(decay).add_(param.data, alpha=1 - decay)
 
     def forward(self, x: torch.Tensor, compute_diffusion_loss, compute_reconstruction_loss, compute_prior_loss, reconstruction_loss_type) -> torch.Tensor:
         """Perform a forward pass through the model `self.net`.
@@ -99,6 +119,7 @@ class DiffusionModule(LightningModule):
         # by default lightning executes validation step sanity checks before training starts,
         # so it's worth to make sure validation metrics don't store results from these checks
         pass
+    
 
     def training_step(
         self, batch: torch.Tensor, batch_idx: int
@@ -135,6 +156,9 @@ class DiffusionModule(LightningModule):
 
         # return loss or backpropagation will fail
         return elbo
+    
+    def on_after_backward(self, trainer, module) -> None:
+        self.update_ema(self.ema, self.model.module, decay=0.999)
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         """Perform a single validation step on a batch of data from the validation set.

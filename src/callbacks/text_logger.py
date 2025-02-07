@@ -59,11 +59,11 @@ class TextLogger(Callback):
     def sample_from_diffusion(self, module, batch_size):
         # sample batch size random z's, these must have the shape equal to our datapoints so that is [batch_size, block_size, n_embed]
         # I should be able to get the from the input_size and block_size of the transformer model
-        block_size = module.model.pred.model.block_size
-        if module.model.pred.model.small_input_size is not None:
-            hidden_size = module.model.pred.model.small_input_size
+        block_size = module.ema.pred.model.block_size
+        if module.ema.pred.model.small_input_size is not None:
+            hidden_size = module.ema.pred.model.small_input_size
         else:
-            hidden_size = module.model.pred.model.hidden_size
+            hidden_size = module.ema.pred.model.hidden_size
 
         #z = torch.randn(torch.Size(batch_size, block_size, hidden_size))
         z = torch.randn(batch_size, block_size, hidden_size)
@@ -75,12 +75,12 @@ class TextLogger(Callback):
         if self.get_sde:
             sde_solved, path = solve_de(z, 1, 0, self._n_steps, module, 'sde')
             #decode the sde solve back into words 
-            sde_logits = module.model.decoder(sde_solved, module.model.encoder.embedding.weight)
+            sde_logits = module.ema.decoder(sde_solved, module.ema.encoder.embedding.weight)
             sde_indices = sde_logits.argmax(dim=-1).squeeze(-1)
         if self.get_ode:
             ode_solved, path = solve_de(z, 1, 0, self._n_steps, module, 'ode')
             #decode the ode solve back into words
-            ode_logits = module.model.decoder(ode_solved, module.model.encoder.embedding.weight)
+            ode_logits = module.ema.decoder(ode_solved, module.ema.encoder.embedding.weight)
             #print(ode_logits.shape, "ode_logits") # [batch_size, block_size, vocab_size]
             ode_indices = ode_logits.argmax(dim=-1).squeeze(-1) # [batch_size, block_size] argmax the vocab dimension
         return sde_indices, ode_indices
