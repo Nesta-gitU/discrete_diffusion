@@ -5,4 +5,4 @@ vocab_size: 821 # use in other spots.
 batch_size: 32 # Needs to be divisible by the number of devices (e.g., if in a distributed setup)
 num_workers: 8
 
-epoch_length: 3200000 #50000*64
+#epoch_length: 3200000 #50000*64, 6
