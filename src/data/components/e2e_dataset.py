@@ -138,6 +138,8 @@ class E2EDataset(TorchDataset):
             tokenizer.train_from_iterator(sentence_lst, trainer=trainer)
             
         self.tokenizer = tokenizer
+        #print vocab size
+        print(f"Vocab size: {tokenizer.get_vocab_size()}")
 
         # Encode each sentence separately.
         encoded_ids = []
