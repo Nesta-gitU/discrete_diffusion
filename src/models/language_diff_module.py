@@ -139,7 +139,8 @@ class DiffusionModule(LightningModule):
                                             reconstruction_loss_type = self.hparams.reconstruction_loss_type)
 
         diffusion_loss = diffusion_loss.mean()
-        reconstruction_loss = reconstruction_loss
+        #print(reconstruction_loss, "----------------------reconstruction_loss")
+        reconstruction_loss = reconstruction_loss.mean()
         prior_loss = prior_loss.mean()
         #print(diffusion_loss, "----------------------diffusion_loss")
 
@@ -175,7 +176,7 @@ class DiffusionModule(LightningModule):
 
 
         diffusion_loss = diffusion_loss.mean()
-        reconstruction_loss = reconstruction_loss
+        reconstruction_loss = reconstruction_loss.mean()
         prior_loss = prior_loss.mean()
 
         #note elbo may or may not be valid depending on what we actualy calculatte in the forward pass
@@ -205,7 +206,7 @@ class DiffusionModule(LightningModule):
                                             reconstruction_loss_type = self.hparams.reconstruction_loss_type)
 
         diffusion_loss = diffusion_loss.mean()
-        reconstruction_loss = reconstruction_loss
+        reconstruction_loss = reconstruction_loss.mean()
         prior_loss = prior_loss.mean()
 
         #note elbo may or may not be valid depending on what we actualy calculatte in the forward pass
