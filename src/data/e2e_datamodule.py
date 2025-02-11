@@ -70,6 +70,7 @@ class E2EDataModule(LightningDataModule):
             overfit_one_batch=self.hparams.overfit_one_batch,
         )
         tokenizer = self.data_train.prepare(data_args)
+        self.tokenizer = tokenizer
 
         # Prepare the validation dataset.
         self.data_val = E2EDataset(
