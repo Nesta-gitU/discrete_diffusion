@@ -170,13 +170,19 @@ class NeuralDiffusion(nn.Module):
         #    print("Actual sequence: ", x[i])
         #    print("Predicted sequence: ", torch.argmax(logits[i], dim=1))
         #    print("\n")
-        folded_logits = logits.view(-1, logits.size(-1))
+        #folded_logits = logits.view(-1, logits.size(-1))
         #print(folded_logits.shape, "folded_logits_shape")
-        loss = torch.nn.functional.cross_entropy(folded_logits, x.view(-1), reduction="sum", ignore_index=0) #use ignore_index here if we ever do any padding
+        #loss = torch.nn.functional.cross_entropy(folded_logits, x.view(-1), reduction="sum", ignore_index=0) #use ignore_index here if we ever do any padding
         #print(loss.shape, "loss_shape")
-        loss = loss/bs
+        #loss = loss/bs
 
-        return loss
+        loss_fct = torch.nn.CrossEntropyLoss(reduction='none')
+        decoder_nll = loss_fct(logits.view(-1, logits.size(-1)), x.view(-1)).view(x.shape)
+        # print(decoder_nll.shape)
+        decoder_nll = decoder_nll.mean(dim=-1)
+        decoder_nll = decoder_nll / embeddings.size(-1)
+
+        return decoder_nll
 
     #this should only be computed if the forward process isnt implemented to have exactly n(0,1) at time 1. 
     def prior_loss(self, embeddings, bs):

@@ -71,6 +71,9 @@ class E2EDataset(TorchDataset):
             pad_tensor = torch.full((pad_len,), pad_id, dtype=torch.long)
             sample_tensor = torch.cat([sample_tensor, pad_tensor], dim=0)
 
+        #print(self.tokenizer.decode(sample_ids), "am I inputting vallid stuff?")
+        #print(sample_ids, "am I inputting vallid ids?")
+
         return sample_tensor
 
     def prepare(self, data_args, tokenizer=None) -> Tokenizer:
