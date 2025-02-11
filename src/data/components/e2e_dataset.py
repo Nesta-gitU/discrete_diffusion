@@ -41,7 +41,7 @@ class E2EDataset(TorchDataset):
         self.data: Optional[list[list[int]]] = None
 
     def __len__(self) -> int:
-        return self.epoch_length
+        return len(self.data)
 
     def __getitem__(self, index: int) -> Tensor:
         """
