@@ -1,117 +1,116 @@
 from typing import Any, Optional
+import os
+from types import SimpleNamespace
+import logging
 
 from lightning import LightningDataModule
-from torch.utils.data import DataLoader, Dataset
-from src.data.components.text8_dataset import Text8Dataset
-import logging
-import itertools
-import os 
+from torch.utils.data import DataLoader
 
-from src.data.components.custom_tokenizers import CharTokenizer
-from tokenizers import Tokenizer
+from src.data.components.e2e_dataset import E2EDataset  # Adjust the import path as needed
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
-class Text8DataModule(LightningDataModule):
+class E2EDataModule(LightningDataModule):
     def __init__(
         self,
         batch_size: int = 64,
-        block_size: int = 256,
-        vocab_size: int = 100000,
-        root_dir: str = "data/text8",
+        block_size: int = 128,
+        vocab_size: int = 10000,
+        root_dir: str = "data/e2e",
         num_workers: int = 0,
         overfit_one_batch: bool = False,
-        pin_memory: bool = False,
-        character_level: bool = False,
-        reload_data: bool = False,
         epoch_length: int = 8000,
     ) -> None:
-        super().__init__()
+        """
+        LightningDataModule for the E2E dataset.
         
-        # this line allows to access init params with 'self.hparams' attribute
-        # also ensures init params will be stored in ckpt
+        Args:
+            batch_size (int): Batch size.
+            block_size (int): Fixed length of each token sequence.
+            vocab_size (int): Vocabulary size for the tokenizer.
+            root_dir (str): Directory where the data files reside. Expected to contain:
+                            - src1_train.txt
+                            - src1_valid.txt
+                            - src1_test.txt
+                            - debug.txt (for debug split)
+            num_workers (int): Number of subprocesses to use for data loading.
+            overfit_one_batch (bool): If True, each __getitem__ returns the same sample.
+            epoch_length (int): Used only if the dataset is not yet prepared.
+        """
+        super().__init__()
         self.save_hyperparameters(logger=False)
-        self.logger = logging.getLogger(__name__)
-
-        # data transformations
-        self.data_train: Optional[Dataset] = None
-        self.data_val: Optional[Dataset] = None
-        self.data_test: Optional[Dataset] = None
-
+        self.data_train: Optional[E2EDataset] = None
+        self.data_val: Optional[E2EDataset] = None
+        self.data_test: Optional[E2EDataset] = None
 
     def prepare_data(self) -> None:
-        Text8Dataset.download_and_extract(root_dir=self.hparams.root_dir)
+        """
+        No downloading or extraction is required because the data is assumed to be already available.
+        """
+        pass
 
     def setup(self, stage: Optional[str] = None) -> None:
-        # Divide batch size by the number of devices. -> I deleted this for now
-        
-        # load and split datasets only if not loaded already
-        if not self.data_train:
-            print("loading data...")
-            if not self.hparams.reload_data:
-                if self.hparams.character_level and os.path.exists(os.path.join(self.hparams.root_dir, 'data', 'text8', 'char_train.bin')):
-                        print("char_data data already loaded, skipping...")
-                        self.tokenizer = CharTokenizer.load("char_tokenizer_text8.pkl")
-                elif os.path.exists(os.path.join(self.hparams.root_dir, 'data', 'text8', 'bpe_train.bin')) and not self.hparams.character_level:
-                    print("bpe_data data already loaded, skipping...")
-                    self.tokenizer = Tokenizer.from_file("tokenizer_text8.json")
-                else:
-                    print("loading data with function...")
-                    self.tokenizer = Text8Dataset.prepare(root_dir=self.hparams.root_dir, character_level=self.hparams.character_level, vocab_size=self.hparams.vocab_size)
-            else:
-                print("relaoading data with function...")
-                print(self.hparams.character_level)
-                self.tokenizer = Text8Dataset.prepare(root_dir=self.hparams.root_dir, character_level=self.hparams.character_level, vocab_size=self.hparams.vocab_size)
+        """
+        Instantiates and prepares the train, validation, and test datasets.
+        """
+        # Create a simple config object for the dataset.
+        data_args = SimpleNamespace(
+            e2e_train=self.hparams.root_dir,  # This folder should contain src1_train.txt, etc.
+            debug_path=os.path.join(self.hparams.root_dir, "debug.txt"),
+        )
 
+        # Prepare the training dataset.
+        self.data_train = E2EDataset(
+            split="train",
+            vocab_size=self.hparams.vocab_size,
+            block_size=self.hparams.block_size,
+            epoch_length=self.hparams.epoch_length,
+            overfit_one_batch=self.hparams.overfit_one_batch,
+        )
+        self.data_train.prepare(data_args)
 
+        # Prepare the validation dataset.
+        self.data_val = E2EDataset(
+            split="valid",
+            vocab_size=self.hparams.vocab_size,
+            block_size=self.hparams.block_size,
+            epoch_length=self.hparams.epoch_length,
+            overfit_one_batch=self.hparams.overfit_one_batch,
+        )
+        self.data_val.prepare(data_args)
 
-            self.data_train = Text8Dataset(split= "train" ,block_size=self.hparams.block_size, root_dir=self.hparams.root_dir, 
-                overfit_one_batch=self.hparams.overfit_one_batch, character_level=self.hparams.character_level, epoch_length=self.hparams.epoch_length)
-            self.data_val = Text8Dataset(split= "val", block_size=self.hparams.block_size, root_dir=self.hparams.root_dir, 
-                overfit_one_batch= self.hparams.overfit_one_batch, character_level=self.hparams.character_level, epoch_length=self.hparams.epoch_length)
-            self.data_test = Text8Dataset(split="test", block_size=self.hparams.block_size, root_dir=self.hparams.root_dir, 
-                overfit_one_batch=self.hparams.overfit_one_batch, character_level=self.hparams.character_level, epoch_length=self.hparams.epoch_length)
-
-
-            #made some insane changes here
-            
+        # Prepare the test dataset.
+        self.data_test = E2EDataset(
+            split="test",
+            vocab_size=self.hparams.vocab_size,
+            block_size=self.hparams.block_size,
+            epoch_length=self.hparams.epoch_length,
+            overfit_one_batch=self.hparams.overfit_one_batch,
+        )
+        self.data_test.prepare(data_args)
 
     def train_dataloader(self) -> DataLoader[Any]:
-        """Create and return the train dataloader.
-
-        :return: The train dataloader.
-        """
         return DataLoader(
             dataset=self.data_train,
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
-            pin_memory=self.hparams.pin_memory,
-            shuffle=False,
+            shuffle=True,  # Typically, you want to shuffle training data.
         )
 
     def val_dataloader(self) -> DataLoader[Any]:
-        """Create and return the validation dataloader.
-
-        :return: The validation dataloader.
-        """
         return DataLoader(
             dataset=self.data_val,
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
-            pin_memory=self.hparams.pin_memory,
             shuffle=False,
         )
 
     def test_dataloader(self) -> DataLoader[Any]:
-        """Create and return the test dataloader.
-
-        :return: The test dataloader.
-        """
         return DataLoader(
             dataset=self.data_test,
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
-            pin_memory=self.hparams.pin_memory,
             shuffle=False,
         )
