@@ -36,7 +36,8 @@ class TextLogger(Callback):
         sample_seed: Optional[int] = 42,
         get_sde: Optional[bool] = True,
         get_ode: Optional[bool] = True,
-        vizualize: Optional[bool] = False
+        vizualize: Optional[bool] = False,
+        no_epoch_logging: Optional[bool] = False,
     ):
         self._odeint_params = odeint_params
         self._n_steps = n_steps
@@ -49,6 +50,7 @@ class TextLogger(Callback):
 
         self.get_sde = get_sde
         self.get_ode = get_ode
+        self.no_epoch_logging = no_epoch_logging
 
     def idx_to_words(self, index, tokenizer):
         decoded_texts = []
@@ -102,6 +104,8 @@ class TextLogger(Callback):
     @rank_zero_only
     def on_train_epoch_end(self, trainer, pl_module) -> None:
         if trainer.global_step < 20:
+            return
+        if self.no_epoch_logging:
             return
 
         logger = get_wandb_logger(trainer)
