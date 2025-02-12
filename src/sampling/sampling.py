@@ -67,7 +67,7 @@ def sample_code(pl_module, datamodule, logger, get_sde, get_ode, n_steps, batch_
         else:
             w_ode = idx_to_words(words_ode, tokenizer)
         
-        output_file = "/teamspace/studios/this_studio/discrete_diffusion/output/samples.json"
+        output_file = "./discrete_diffusion/output/samples.json"
 
         samples = {
             "text_ode": str(w_ode),
