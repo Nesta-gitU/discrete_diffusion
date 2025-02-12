@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/sample.py ckpt_path=/gpfs/home4/nmidavaine1/discrete_diffusion/logs/train/runs/2025-01-30_12-05-14/checkpoints/epoch_012.ckpt
+srun python src/sample.py ckpt_path=/gpfs/home4/nmidavaine1/discrete_diffusion/logs/train/runs/2025-02-11_21-10-58/checkpoints/epoch_299.ckpt
