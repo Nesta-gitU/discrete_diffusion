@@ -220,8 +220,10 @@ def visualize_path(pl_module, sde_path, ode_path, logger, tokenizer):
         for i in range(ode_path.shape[0]):
             print("ode", ode_path[i][0])
             decoded = pl_module.model.decoder(sde_path[i][0], pl_module.model.encoder.embedding.weight)
+            print(decoded, "decoded")
             decoded = decoded.argmax(dim=-1).squeeze(-1)
             print("ode", tokenizer.decode(decoded.tolist()))
+            print(decoded.tolist(), "ode indices")
 
 
 def idx_to_words(index, tokenizer):
