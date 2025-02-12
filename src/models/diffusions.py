@@ -28,8 +28,9 @@ class NeuralDiffusion(nn.Module):
 
         self.encoder = encoder
         self.decoder = decoder
-        if hasattr(self.encoder, "lm_head"):
-            self.decoder = self.encoder.lm_head
+        if hasattr(self.decoder, "lm_head"):
+            with torch.no_grad():
+                self.decoder.lm_head.weight = self.encoder.embedding.weight
         
     def forward(self, x, t, 
                 compute_diffusion_loss=True,

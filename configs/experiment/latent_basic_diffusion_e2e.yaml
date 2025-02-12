@@ -6,7 +6,7 @@
 defaults:
     #choose which components to use for the diffusion model
   - /model/components/encoder@model.diffusion.encoder: simple_embedding_encoder.yaml
-  - /model/components/decoder@model.diffusion.decoder: similarity_decoder.yaml
+  - /model/components/decoder@model.diffusion.decoder: lm_head_decoder.yaml
   - /model/components/forward_process@model.diffusion.affine: fm_ot.yaml
   - /model/components/predictor@model.diffusion.pred: predictor.yaml
   - /model/components/volatility@model.diffusion.vol: static_volatility.yaml
