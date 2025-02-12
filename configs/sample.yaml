@@ -2,7 +2,7 @@
 
 defaults:
   - _self_
-  - data: text8 # choose datamodule with `test_dataloader()` for evaluation
+  - data: e2e # choose datamodule with `test_dataloader()` for evaluation
   - model: language_diff_module
   - logger: wandb
   - trainer: default
