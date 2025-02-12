@@ -28,6 +28,8 @@ class NeuralDiffusion(nn.Module):
 
         self.encoder = encoder
         self.decoder = decoder
+        if hasattr(self.encoder, "lm_head"):
+            self.decoder = self.encoder.lm_head
         
     def forward(self, x, t, 
                 compute_diffusion_loss=True,
