@@ -33,7 +33,7 @@ data:
 
 callbacks:
   word_sampler:
-   log_train_every_n_steps: 50000
+   log_train_every_n_steps: 25000
    no_epoch_logging: true
   
 
