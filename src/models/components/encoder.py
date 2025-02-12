@@ -29,7 +29,7 @@ class SimpleEmbeddingEncoder(nn.Module):
         self.embedding = nn.Embedding(self.vocab_size, embedding_dim)
         self.lm_head = nn.Linear(embedding_dim, vocab_size)
         with torch.no_grad():
-            self.lm_head.weight = self.word_embedding.weight
+            self.lm_head.weight = self.embedding.weight
         #torch.nn.init.normal_(self.embedding.weight, mean=0.0, std=0.02)
     
 
