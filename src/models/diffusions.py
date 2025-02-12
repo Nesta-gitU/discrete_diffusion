@@ -164,6 +164,7 @@ class NeuralDiffusion(nn.Module):
 
             logits = self.decoder(z_0, self.encoder.embedding.weight) #check 
             #this doesnt make any sense, because the embeddins are being decoded by similarity to all, but I just got them from there so this will always be zero. 
+            #no you add a little bit of noise in the first step t=0 already so thats not true anymore.
         elif loss_type == "diff_anchor":
             # e prediction used in the reverse process
             logits = self.decoder(embeddings_, self.encoder.embedding.weight)

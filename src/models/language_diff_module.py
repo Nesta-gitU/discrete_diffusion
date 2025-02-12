@@ -10,6 +10,8 @@ from src.models.diffusions import NeuralDiffusion
 import copy
 from collections import OrderedDict
 
+from src.likelihoods.compute_nll import get_likelihood_fn
+
 
 class DiffusionModule(LightningModule):
     """Example of a `LightningModule` for MNIST classification.
@@ -76,6 +78,10 @@ class DiffusionModule(LightningModule):
 
         self.update_ema(self.ema, self.model, decay=0) 
         self.ema.eval()
+
+        #initialize a mean metric for tracking nll over the entire dataset
+        #not that in the future I should add the option to iterate over the test set multiple times to the eval script. 
+        #I suppose a hacky easy way to do this would be to just make the len larger and than use module operator on the index in the get_item
 
 
         # initialize the metrics to track:
@@ -189,6 +195,8 @@ class DiffusionModule(LightningModule):
         self.log("val/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=True)
         self.log("val/prior_loss", prior_loss, on_step=True, prog_bar=False)
         self.log("val/elbo", elbo, on_step=True, prog_bar=True)
+
+
        
     def test_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         """Perform a single test step on a batch of data from the test set.
@@ -197,7 +205,13 @@ class DiffusionModule(LightningModule):
             labels.
         :param batch_idx: The index of the current batch.
         """
-        
+        #this is because I did runs without this attribute and thus it would not checkpoint load correctly otherwise...
+        if batch_idx == 0:
+            print("batch_idx == 0")
+            self.loglikelihood = MeanMetric()
+            self.likelihood_fn = get_likelihood_fn(self.ema)
+
+        self.loglikelihood.update(self.likelihood_fn(batch))
 
         diffusion_loss, reconstruction_loss, prior_loss  = self.forward(batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,
@@ -218,6 +232,7 @@ class DiffusionModule(LightningModule):
         self.log("test/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=True)
         self.log("test/prior_loss", prior_loss, on_step=True, prog_bar=True)
         self.log("test/elbo", elbo, on_step=True, prog_bar=True)
+        self.log("test/likelihood", self.loglikelihood.compute(), on_step=True, prog_bar=True)
 
     def setup(self, stage: str) -> None:
         """Lightning hook that is called at the beginning of fit (train + validate), validate,
