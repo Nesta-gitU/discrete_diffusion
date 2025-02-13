@@ -69,7 +69,7 @@ def get_prior_logp(z):
 
 
 def get_likelihood_fn(model, hutchinson_type='Rademacher',
-                      rtol=1e-5, atol=1e-5, method='RK45', eps=1e-5):
+                      rtol=1e-9, atol=1e-9, method='RK45', eps=1e-5):
 
     def likelihood_fn(data):
         """Compute an unbiased estimate to the log-likelihood in bits/dim.
@@ -108,11 +108,11 @@ def get_likelihood_fn(model, hutchinson_type='Rademacher',
                 drift = to_flattened_numpy(get_prob_flow_ode_drift(model, sample, vec_t))
                 #get the logp_gradient 
                 logp_grad = to_flattened_numpy(div_fn(model, sample, vec_t, epsilon))
-                return np.concatenate([drift, -logp_grad], axis=0)
+                return np.concatenate([drift, logp_grad], axis=0)
 
             
             init = np.concatenate([to_flattened_numpy(data), np.zeros((shape[0],))], axis=0)
-            solution = integrate.solve_ivp(ode_func, (eps, 1), init, rtol=rtol, atol=atol, method=method)
+            solution = integrate.solve_ivp(ode_func, (0, 1), init, rtol=rtol, atol=atol, method=method)
             nfe = solution.nfev
             zp = solution.y[:, -1]
             z = from_flattened_numpy(zp[:-shape[0]], shape).to(data.device).type(torch.float32)
