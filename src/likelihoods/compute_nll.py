@@ -31,14 +31,15 @@ def get_div_fn(fn):
 
 def get_prob_flow_ode_drift(model, z, t):
     #print(z.shape)
-    
-    
+
     x = model.pred(z, t)
 
     def f(t_in):
         return model.affine(x, t_in)
 
     (m, s), (dm, ds) = t_dir(f, t)
+    print(dm, "dm")
+    print(ds, "ds")
 
     dz = dm + ds / s * (z - m)
     return dz
