@@ -122,6 +122,9 @@ def get_likelihood_fn(model, hutchinson_type='Rademacher',
             #compute the prior logp
             #In our case.....
             prior_logp = get_prior_logp(z)
+
+            print(prior_logp, "prior logp")
+            print(delta_logp, "delta logp")
             
             bpd = -(prior_logp + delta_logp) / np.log(2)
             N = np.prod(shape[1:])
