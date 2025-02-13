@@ -69,7 +69,7 @@ def get_prior_logp(z):
 
 
 def get_likelihood_fn(model, hutchinson_type='Rademacher',
-                      rtol=1e-9, atol=1e-9, method='RK45', eps=1e-5):
+                      rtol=1e-6, atol=1e-6, method='RK45', eps=1e-5):
 
     def likelihood_fn(data):
         """Compute an unbiased estimate to the log-likelihood in bits/dim.
