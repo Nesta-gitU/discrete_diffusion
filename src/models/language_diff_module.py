@@ -214,7 +214,7 @@ class DiffusionModule(LightningModule):
         bpd, z, nfe = self.likelihood_fn(batch)        
         bpc = bpd * self.model.encoder.embedding.weight.shape[1]
         print(self.model.encoder.embedding.weight.shape[1])
-        self.loglikelihood.update(bpc)
+        self.loglikelihood.update(bpc.to(self.loglikelihood.device))
 
         diffusion_loss, reconstruction_loss, prior_loss  = self.forward(batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,
