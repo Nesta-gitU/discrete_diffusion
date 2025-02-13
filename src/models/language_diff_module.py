@@ -211,7 +211,10 @@ class DiffusionModule(LightningModule):
             self.loglikelihood = MeanMetric()
             self.likelihood_fn = get_likelihood_fn(self.ema)
 
-        self.loglikelihood.update(self.likelihood_fn(batch))
+        bpd, z, nfe = self.likelihood_fn(batch)        
+        bpc = bpd * self.embedding.weight.shape[1]
+        print(self.embedding.weight.shape[1])
+        self.loglikelihood.update(bpc)
 
         diffusion_loss, reconstruction_loss, prior_loss  = self.forward(batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,
@@ -233,6 +236,7 @@ class DiffusionModule(LightningModule):
         self.log("test/prior_loss", prior_loss, on_step=True, prog_bar=True)
         self.log("test/elbo", elbo, on_step=True, prog_bar=True)
         self.log("test/likelihood", self.loglikelihood.compute(), on_step=True, prog_bar=True)
+        self.log("test/nfe", nfe, on_step=True, prog_bar=True)
 
     def setup(self, stage: str) -> None:
         """Lightning hook that is called at the beginning of fit (train + validate), validate,
