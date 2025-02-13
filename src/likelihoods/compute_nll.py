@@ -69,7 +69,7 @@ def get_prior_logp(z):
     return log_prob
 
 
-def get_likelihood_fn(model, hutchinson_type='Rademacher',
+def get_likelihood_fn(model, hutchinson_type='Gaussian',
                       rtol=1e-6, atol=1e-6, method='RK45', eps=1e-5):
 
     def likelihood_fn(data):
