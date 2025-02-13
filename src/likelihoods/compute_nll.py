@@ -108,7 +108,7 @@ def get_likelihood_fn(model, hutchinson_type='Rademacher',
                 drift = to_flattened_numpy(get_prob_flow_ode_drift(model, sample, vec_t))
                 #get the logp_gradient 
                 logp_grad = to_flattened_numpy(div_fn(model, sample, vec_t, epsilon))
-                return np.concatenate([drift, logp_grad], axis=0)
+                return np.concatenate([drift, -logp_grad], axis=0)
 
             
             init = np.concatenate([to_flattened_numpy(data), np.zeros((shape[0],))], axis=0)
@@ -121,6 +121,7 @@ def get_likelihood_fn(model, hutchinson_type='Rademacher',
             #compute the prior logp
             #In our case.....
             print("Mean of z:", z.mean().item(), "Std of z:", z.std().item(), "is the final z gaussian noise?")
+            #it is certainly not gaussian noise.
             prior_logp = get_prior_logp(z)
 
             print(prior_logp, "prior logp")
