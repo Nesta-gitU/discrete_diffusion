@@ -211,9 +211,12 @@ class DiffusionModule(LightningModule):
             self.loglikelihood = MeanMetric()
             self.likelihood_fn = get_likelihood_fn(self.ema)
 
-        bpd, z, nfe = self.likelihood_fn(batch)        
+        bpd, z, nfe = self.likelihood_fn(batch)
+        print(bpd.shape, "bpd shape")
+        bpd = bpd.mean()  
         bpc = bpd * self.model.encoder.embedding.weight.shape[1]
         print(self.model.encoder.embedding.weight.shape[1])
+    
         self.loglikelihood.update(bpc.to(self.loglikelihood.device))
 
         diffusion_loss, reconstruction_loss, prior_loss  = self.forward(batch,

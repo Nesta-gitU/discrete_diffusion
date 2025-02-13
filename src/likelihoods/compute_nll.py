@@ -38,8 +38,6 @@ def get_prob_flow_ode_drift(model, z, t):
         return model.affine(x, t_in)
 
     (m, s), (dm, ds) = t_dir(f, t)
-    print(dm, "dm")
-    print(ds, "ds")
 
     dz = dm + ds / s * (z - m)
     return dz
@@ -122,6 +120,7 @@ def get_likelihood_fn(model, hutchinson_type='Rademacher',
 
             #compute the prior logp
             #In our case.....
+            print("Mean of z:", z.mean().item(), "Std of z:", z.std().item(), "is the final z gaussian noise?")
             prior_logp = get_prior_logp(z)
 
             print(prior_logp, "prior logp")
