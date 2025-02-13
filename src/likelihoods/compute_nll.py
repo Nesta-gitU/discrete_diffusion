@@ -24,7 +24,7 @@ def get_div_fn(fn):
       #print(eps.shape, "eps")
       fn_eps = torch.sum(fn(x, t) * eps)
       grad_fn_eps = torch.autograd.grad(fn_eps, x)[0]
-      print(grad_fn_eps, "grad_fn_eps")
+      #print(grad_fn_eps, "grad_fn_eps")
     x.requires_grad_(False)
     return torch.sum(grad_fn_eps * eps, dim=tuple(range(1, len(x.shape))))
 
@@ -107,8 +107,10 @@ def get_likelihood_fn(model, hutchinson_type='Rademacher',
 
                 # get the drift 
                 drift = to_flattened_numpy(get_prob_flow_ode_drift(model, sample, vec_t))
+                print(drift, "drift")
                 #get the logp_gradient 
                 logp_grad = to_flattened_numpy(div_fn(model, sample, vec_t, epsilon))
+                print(logp_grad, "logp_grad")
                 return np.concatenate([drift, logp_grad], axis=0)
 
             
