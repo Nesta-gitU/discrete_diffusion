@@ -24,6 +24,7 @@ def get_div_fn(fn):
       #print(eps.shape, "eps")
       fn_eps = torch.sum(fn(x, t) * eps)
       grad_fn_eps = torch.autograd.grad(fn_eps, x)[0]
+      print(grad_fn_eps, "grad_fn_eps")
     x.requires_grad_(False)
     return torch.sum(grad_fn_eps * eps, dim=tuple(range(1, len(x.shape))))
 
@@ -112,7 +113,7 @@ def get_likelihood_fn(model, hutchinson_type='Rademacher',
 
             
             init = np.concatenate([to_flattened_numpy(data), np.zeros((shape[0],))], axis=0)
-            solution = integrate.solve_ivp(ode_func, (0, 1), init, rtol=rtol, atol=atol, method=method)
+            solution = integrate.solve_ivp(ode_func, (eps, 1), init, rtol=rtol, atol=atol, method=method)
             nfe = solution.nfev
             zp = solution.y[:, -1]
             z = from_flattened_numpy(zp[:-shape[0]], shape).to(data.device).type(torch.float32)
