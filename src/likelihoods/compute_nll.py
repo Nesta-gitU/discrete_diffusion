@@ -101,7 +101,7 @@ def get_likelihood_fn(model, hutchinson_type='Gaussian',
                 #idk if this line is correct 
                 sample = from_flattened_numpy(x[:-shape[0]], shape).to(data.device).type(torch.float32)
                 #print(sample.shape, "sample")
-                vec_t = (torch.ones(sample.shape[0], device=sample.device) * t).unsqueeze(-1) #I added the unsqueeze
+                vec_t = (torch.ones(sample.shape[0], device=sample.device) * t).unsqueeze(-1).unsqueeze(-1) #I added the unsqueeze
                 #print(vec_t.shape)
                 #print(x.shape)
 
