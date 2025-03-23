@@ -1,0 +1,8 @@
+_target_: src.data.e2e_datamodule.E2EDataModule
+root_dir: ${paths.root_dir}
+block_size: 64
+vocab_size: 10767 # use in other spots. 
+batch_size: 64 # Needs to be divisible by the number of devices (e.g., if in a distributed setup)
+num_workers: 8
+
+#epoch_length: 3200000 #50000*64, 6

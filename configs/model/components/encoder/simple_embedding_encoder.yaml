@@ -1,4 +1,0 @@
-_target_: models.components.encoder.SimpleEmbeddingEncoder
-vocab_size: ${data.vocab_size}
-embedding_dim: 120
-

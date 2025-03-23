@@ -79,14 +79,6 @@ class DiffusionModule(LightningModule):
         self.update_ema(self.ema, self.model, decay=0) 
         self.ema.eval()
 
-        #initialize a mean metric for tracking nll over the entire dataset
-        #not that in the future I should add the option to iterate over the test set multiple times to the eval script. 
-        #I suppose a hacky easy way to do this would be to just make the len larger and than use module operator on the index in the get_item
-
-
-        # initialize the metrics to track:
-        # recon_loss, diffusion_loss, prior_loss, elbo, bits-per-character 
-
     @torch.no_grad()
     def update_ema(self, ema_model, model, decay=0.9999):
         """
@@ -117,7 +109,12 @@ class DiffusionModule(LightningModule):
         #    print(f"t: {t[i]}")
         # sample just t = 1 the most corupted noise level
         #t = torch.ones(x.size(0), 1).unsqueeze(2).to(x.device)
-        diffusion_loss, reconstruction_loss, prior_loss = self.model(x, t, compute_diffusion_loss, compute_prior_loss, compute_reconstruction_loss, reconstruction_loss_type)
+        diffusion_loss, reconstruction_loss, prior_loss = self.model.get_losses(x, t, 
+                                                                                compute_diffusion_loss, 
+                                                                                compute_prior_loss, 
+                                                                                compute_reconstruction_loss, 
+                                                                                reconstruction_loss_type,
+                                                                                compute_their_loss=False)
         return diffusion_loss, reconstruction_loss, prior_loss
 
     def on_train_start(self) -> None:

@@ -1,0 +1,9 @@
+__target__: src.models.nfdm.NeuralDiffusion
+
+affine: 
+  _target_: src.models.nfdm.components.forward_process.Sqrt
+
+vol:
+  _target_: src.models.nfdm.components.volatility.SqrtVolatility
+
+  

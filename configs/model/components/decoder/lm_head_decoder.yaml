@@ -1,4 +1,0 @@
-_target_:  src.models.components.decoder.LmHeadDecoder
-vocab_size: ${data.vocab_size}
-embedding_dim: 120
-

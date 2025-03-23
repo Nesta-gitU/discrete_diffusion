@@ -1,12 +1,6 @@
 _target_: src.models.language_diff_module.DiffusionModule
 
-diffusion:  #define the diffusion seperately in the experiment config
-  _target_: src.models.diffusions.NeuralDiffusion
-  pred: debug
-  affine: debug
-  vol: debug
-  encoder: debug
-  decoder: debug
+diffusion:  debug
 
 compute_diffusion_loss: true
 compute_prior_loss: false
