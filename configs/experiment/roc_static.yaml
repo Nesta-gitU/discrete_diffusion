@@ -46,13 +46,7 @@ model:
   reconstruction_loss_type: collapse
   enable_matmul_tf32: true
   enable_cudnn_tf32: true
-  diffusion:
-    encoder:
-      embedding_dim: 16
-    pred:
-      model:
-        small_input_size: 16 #hopefully this is right. 
-        hidden_size: 768
+  total_steps: ${trainer.max_steps}
 
 logger:
   wandb:

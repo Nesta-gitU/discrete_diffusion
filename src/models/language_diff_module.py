@@ -5,6 +5,7 @@ from lightning import LightningModule
 from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy
 import inspect
+from torch.optim.lr_scheduler import LambdaLR
 
 from src.models.diffusions import NeuralDiffusion
 import copy
@@ -49,6 +50,7 @@ class DiffusionModule(LightningModule):
     def __init__(
         self,
         diffusion: NeuralDiffusion,
+        total_steps: int,
         optimizer: torch.optim.Optimizer,
         compile: bool,
         scheduler: torch.optim.lr_scheduler = None,
@@ -265,19 +267,15 @@ class DiffusionModule(LightningModule):
         """
 
         optimizer = self.hparams.optimizer(self.model.parameters())
-        if self.hparams.scheduler is not None:
-            scheduler = self.hparams.scheduler(optimizer=optimizer)
-            return {
-                "optimizer": optimizer,
-                "lr_scheduler": {
-                    "scheduler": scheduler,
-                    "monitor": "val/loss",
-                    "interval": "epoch",
-                    "frequency": 1,
-                },
-            }
-        return {"optimizer": optimizer}
+
+        def linear_anneal_lambda(step, total_steps):
+            return 1 - (step / total_steps)
+
+        total_steps = self.max_steps  # Replace with your total annealing steps
+        scheduler = LambdaLR(optimizer, lr_lambda=lambda step: linear_anneal_lambda(step, total_steps))
+
+        return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
 
 if __name__ == "__main__":
-    _ = MNISTLitModule(None, None, None, None)
+    _ = DiffusionModule(None, None, None, None)
