@@ -149,6 +149,7 @@ dmypy.json
 # Lightning-Hydra-Template
 configs/local/default.yaml
 /data/e2e
+!data/roc/
 /logs/
 .env
 
