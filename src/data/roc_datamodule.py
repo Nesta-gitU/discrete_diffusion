@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class E2EDataModule(LightningDataModule):
+class ROCdatamodule(LightningDataModule):
     def __init__(
         self,
         batch_size: int = 64,
@@ -57,7 +57,7 @@ class E2EDataModule(LightningDataModule):
         """
         # Create a simple config object for the dataset.
         data_args = SimpleNamespace(
-            e2e_train=os.path.join(self.hparams.root_dir, "data", "e2e"),  # This folder should contain src1_train.txt, etc.
+            roc_train=os.path.join(self.hparams.root_dir, "data", "roc"),  # This folder should contain src1_train.txt, etc.
             debug_path=os.path.join(self.hparams.root_dir, "debug.txt"),
         )
 

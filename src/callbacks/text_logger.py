@@ -9,7 +9,8 @@ from lightning import Trainer, Callback
 from lightning.pytorch.loggers.wandb import WandbLogger
 from lightning.pytorch.utilities import rank_zero_only
 from pathlib import Path
-from src.utils.differential_equations import sde_drift, solve_de
+from sampling.sampling import sample_from_diffusion, idx_to_words
+
 
 
 
@@ -34,58 +35,22 @@ class TextLogger(Callback):
         batch_size: int = 25,
         log_train_every_n_steps: Optional[int] = None,
         sample_seed: Optional[int] = 42,
-        get_sde: Optional[bool] = True,
-        get_ode: Optional[bool] = True,
+        modes: Optional[Sequence[str]] = ["star", "marginal"],
         vizualize: Optional[bool] = False,
         no_epoch_logging: Optional[bool] = False,
     ):
+        super().__init__()
         self._odeint_params = odeint_params
         self._n_steps = n_steps
         self.batch_size = batch_size
         self.log_train_every_n_steps = log_train_every_n_steps # to not log train set this to none
         self._sample_seed = sample_seed
         
-        self.text_table = wandb.Table(columns=["epoch", "global_step", "text_ode", "text_sde"])
+        self.text_table = wandb.Table(columns=["epoch", "global_step", modes[0], modes[1]])
         self.root_dir = root_dir
 
-        self.get_sde = get_sde
-        self.get_ode = get_ode
+        self.modes = modes
         self.no_epoch_logging = no_epoch_logging
-
-    def idx_to_words(self, index, tokenizer):
-        decoded_texts = []
-        for sequence in index:
-            decoded_texts.append(tokenizer.decode(sequence.tolist()))
-        return decoded_texts
-        
-    def sample_from_diffusion(self, module, batch_size):
-        # sample batch size random z's, these must have the shape equal to our datapoints so that is [batch_size, block_size, n_embed]
-        # I should be able to get the from the input_size and block_size of the transformer model
-        block_size = module.ema.pred.model.block_size
-        if module.ema.pred.model.small_input_size is not None:
-            hidden_size = module.ema.pred.model.small_input_size
-        else:
-            hidden_size = module.ema.pred.model.hidden_size
-
-        #z = torch.randn(torch.Size(batch_size, block_size, hidden_size))
-        z = torch.randn(batch_size, block_size, hidden_size)
-        z = z.to(module.device)
-
-        sde_indices = None
-        ode_indices = None
-
-        if self.get_sde:
-            sde_solved, path = solve_de(z, 1, 0, self._n_steps, module, 'sde')
-            #decode the sde solve back into words 
-            sde_logits = module.ema.decoder(sde_solved, module.ema.encoder.embedding.weight)
-            sde_indices = sde_logits.argmax(dim=-1).squeeze(-1)
-        if self.get_ode:
-            ode_solved, path = solve_de(z, 1, 0, self._n_steps, module, 'ode')
-            #decode the ode solve back into words
-            ode_logits = module.ema.decoder(ode_solved, module.ema.encoder.embedding.weight)
-            #print(ode_logits.shape, "ode_logits") # [batch_size, block_size, vocab_size]
-            ode_indices = ode_logits.argmax(dim=-1).squeeze(-1) # [batch_size, block_size] argmax the vocab dimension
-        return sde_indices, ode_indices
 
         
 
@@ -127,19 +92,19 @@ class TextLogger(Callback):
         self.sample_code(trainer, pl_module, logger)
 
     def sample_code(self, trainer, pl_module, logger):
-        words_sde, words_ode = self.sample_from_diffusion(pl_module, self.batch_size)
+        block_size = trainer.datamodule.dataset.block_size
+        hidden_size = pl_module.ema.pred.model.in_channels
+
+        model = pl_module.ema
         tokenizer = trainer.datamodule.tokenizer
+        
+        w_list = []
 
-        print(words_sde.shape, "words_sde")
+        for mode in self.modes:
+            latent, words, path = sample_from_diffusion(model, self.batch_size, block_size, hidden_size, _n_steps=100, clamping=False, do_top_k=False, k=10, do_top_p=False, p=0.9, temperature=1.0, sampling_mode=mode)
 
-        if words_sde is None:
-            w_sde = None
-        else:
-            w_sde = self.idx_to_words(words_sde, tokenizer)
-        if words_ode is None:
-            w_ode = None
-        else:
-            w_ode = self.idx_to_words(words_ode, tokenizer)
+            words = idx_to_words(words, tokenizer)
+            w_list.append(words)
 
         epoch = trainer.current_epoch
         global_step = trainer.global_step
@@ -147,8 +112,8 @@ class TextLogger(Callback):
         self.text_table = wandb.Table(
             columns=self.text_table.columns, data=self.text_table.data
         )
-
-        self.text_table.add_data(str(epoch), str(global_step), str(w_ode), str(w_sde))
+        
+        self.text_table.add_data(str(epoch), str(global_step), str(w_list[0]), str(w_list[1]))
 
         logger.experiment.log({"generated_samples": self.text_table})
     
