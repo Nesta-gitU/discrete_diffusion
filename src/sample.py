@@ -73,7 +73,8 @@ def generate_samples_mine(args, model, datamodule, batch_size, out_dir):
     model_base_name = args.model_base_name 
     #tokenizer = load_tokenizer(training_args['modality'], training_args['experiment'], os.path.split(tgt)[0])
     tokenizer = datamodule.tokenizer
-    block_size = model.pred.model.
+    block_size = datamodule.data_train.block_size
+    hidden_size = model.pred.model.in_channels
     #block_size = training_args['image_size'] ** 2
     #hidden_size = training_args['in_channel']
     #args2 = create_argparser().parse_args()
@@ -201,7 +202,7 @@ def main(args, model, modality):
             }
         
         perplexity_mean, perplexity_std = main_ppl(custom_args)
-        mean_mauve, std_mauve = print_mauve(out_path2, modality, args.std_split, args.setting, training_args)
+        mean_mauve, std_mauve = print_mauve(out_path2, modality, args.std_split, args.setting)
 
         #store a json file in the output directory with the results of entropy and perplexity
         results = {

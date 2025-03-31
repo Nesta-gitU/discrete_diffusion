@@ -1,6 +1,9 @@
 import torch
 from tqdm import tqdm
+from improved_diffusion.nfdm.nfdm import t_dir
+from improved_diffusion.test_util import denoised_fn_round
 import torch
+from torchdiffeq import odeint
 from torch import nn
 from types import SimpleNamespace
 from torch import Tensor
@@ -88,22 +91,28 @@ def discrete_sampling(
 ):
     bs = z.shape[0]
 
-    t_steps = torch.linspace(ts, tf, n_steps + 1).to(z.device)#[:-1]
+    if mode == 'marginal':
+        t_steps =  torch.linspace(ts, tf, n_steps + 1).to(z.device)[:-1]
+    if mode == 'star':
+        t_steps = torch.linspace(ts, tf, n_steps + 1).to(z.device)[1:]
     dt = (tf - ts) / n_steps
     dt_2 = abs(dt) ** 0.5
 
     if clamping:
         denoised_fn = clamp
     else:
+        print("no clamping ---------------------------------------")
         denoised_fn = None
 
     path = [z]
     pbar = tqdm
-    for t in pbar(t_steps[:-1]):
+    for t in pbar(t_steps):
         t = t.expand(bs, 1, 1)
-
+        
         #I understand I am doing 2x-1 the number of needed forward pass through gamma now, Ill fix that before putting it into the actual code.
-        if mode == 'marginal':        
+        if mode == 'marginal': 
+            if all(t == 0):
+                continue       
             z = get_next_marginal(prev_sample=z, t=t, s=t+dt, model=model, denoised_fn=denoised_fn)
         elif mode == 'star':
             z = get_next_star(x=z, t=t, model=model, denoised_fn=denoised_fn)
@@ -128,7 +137,9 @@ def get_next_star(x, t, model, denoised_fn=None):
             return x.clamp(-1, 1)
         return x
 
-    x_ = model.pred(x, t)    
+    #print(x, "x")
+    x_ = model.pred(x, t) 
+    #print(x_, "x_")   
     x_start = process_xstart(x_)
 
     if hasattr(model, "gamma"):
@@ -158,9 +169,12 @@ def get_next_star(x, t, model, denoised_fn=None):
   
     noise = th.randn_like(x)
 
+    #t.squeeze(-1).squeeze(-1)
+
     nonzero_mask = (
         (t != 0).float().view(-1, *([1] * (len(x.shape) - 1)))
     )  # no noise when t == 0
+    
     sample = mean + nonzero_mask * th.exp(0.5 * log_variance) * noise #Maybe this is key!!!!!
     return sample
 
@@ -194,7 +208,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
         sigma2 = sigma ** 2
         alpha2 = alpha ** 2
         eps = (prev_sample - f_m) / sigma
-
+        m_ = x_start
 
     #step 3 get epsilon s|t
     #we need stepsize for this?
@@ -218,7 +232,9 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
     snr_t = (alpha2/sigma2)
     snr_s = (alpha2_s/sigma2_s)
 
-    sigma2_tilde_s_t = sigma2_s -  (snr_t / snr_s) * sigma2_s
+    sigma2_tilde_s_t = 1 -  (snr_t / snr_s) 
+    print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
+    #sigma2_tilde_s_t = torch.ones_like(sigma2_tilde_s_t)
     epsilon_tilde_s_t = torch.sqrt(1 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t ** 0.5) * noise
 
     #print("snr_t", snr_t[0])
@@ -226,10 +242,18 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
     #print("sigma", sigma2_tilde_s_t) #this should be positive always but isnt so im doing something wrong. 
 
     #step 4 get z_s
-    #sample = alpha_s * m_s + sigma_s * epsilon_tilde_s_t
+        
+    #if (s == 0).all():
+    #    print("last step ")
+    #    sample = alpha_s * m_s + sigma_s * torch.sqrt(1 - sigma2_tilde_s_t) * eps 
+    #else:
+    if all(s == 0):
+        sample = alpha_s * m_s
+    else:
+        sample = alpha_s * m_s + sigma_s * epsilon_tilde_s_t
     
     #if we want to match appendix 1 of ndm paper I think it should instead be
-    sample = alpha_s * m_s +  torch.sqrt(sigma2 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t ** 0.5) * noise
+    #sample = alpha_s * m_s +  torch.sqrt(sigma2 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t ** 0.5) * noise
 
     return sample
 

@@ -11,9 +11,6 @@ from lightning.pytorch.utilities import rank_zero_only
 from pathlib import Path
 from sampling.sampling import sample_from_diffusion, idx_to_words
 
-
-
-
 def get_wandb_logger(trainer: Trainer) -> Optional[WandbLogger]:
     wandb_logger = None
     for logger in trainer.loggers:

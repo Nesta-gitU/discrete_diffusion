@@ -6,9 +6,10 @@ import numpy as np
 from .differential_equations import sample_loop
 from .methods import top_k, top_p, argmax_sample
 import json
-from src.models.nfdm.components.forward_process import Sqrt
+from improved_diffusion.rounding import rounding_func, load_models, load_tokenizer
+from improved_diffusion.nfdm.components.forward_process import Sqrt
 
-from src.metrics.entropy import get_per_token_entropy
+from improved_diffusion.metrics.entropy import get_per_token_entropy
 
 import os
 
@@ -148,6 +149,7 @@ def visualize_embedding_matrix(model):
     plt.xlabel('Columns')
     plt.ylabel('Rows')
     plt.savefig("embedding_matrix.png")
+    plt.close()
 
 
 def visualize_latent(pl_module, words, tokenizer):
@@ -197,7 +199,7 @@ def visualize_path(model, path, tokenizer, mode):
             print(decoded.shape, "decoded")
             decoded = decoded.argmax(dim=-1).squeeze(-1)
             try:
-                tokens = tokenizer.decode(decoded)
+                tokens = " ".join([tokenizer[x.item()] for x in decoded])
             except:
                 tokens = "error"
 
@@ -225,7 +227,7 @@ def idx_to_words(index, tokenizer) -> list:
     decoded_texts = []
     for sequence in index:
         try:
-            tokens = tokenizer.decode(sequence)
+            tokens = " ".join([tokenizer[x.item()] for x in sequence])
         except Exception as e:
             print(f"Error decoding tokens: {e}")
             tokens = "error"
@@ -258,7 +260,7 @@ def plot_gamma(model, out_dir, model_base_name):
 
         #also get alpha and sigma from the sqrt function and plot them in the same graph as the other alpha and sigma, so make three plots
         sqrt = Sqrt()
-        alpha_sqrt, sigma_sqrt, _ = sqrt(torch.tensor(1.), t)
+        _, sigma_sqrt, alpha_sqrt = sqrt(torch.tensor(1.), t)
         alpha_sqrt = alpha_sqrt.squeeze(-1)
         sigma_sqrt = sigma_sqrt.squeeze(-1)
 
