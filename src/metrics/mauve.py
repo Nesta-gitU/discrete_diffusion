@@ -1,8 +1,6 @@
 import mauve 
 import json
 import numpy as np
-from improved_diffusion.text_datasets import load_data_text
-from improved_diffusion.rounding import load_models
 
 class DotDict(dict):
     """Dictionary with dot notation access to attributes."""

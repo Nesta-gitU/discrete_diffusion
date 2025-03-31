@@ -6,10 +6,12 @@ import numpy as np
 from .differential_equations import sample_loop
 from .methods import top_k, top_p, argmax_sample
 import json
-from improved_diffusion.rounding import rounding_func, load_models, load_tokenizer
-from improved_diffusion.nfdm.components.forward_process import Sqrt
 
-from improved_diffusion.metrics.entropy import get_per_token_entropy
+from src.metrics.entropy import get_per_token_entropy
+
+from src.metrics.entropy import get_per_token_entropy
+from src.models.nfdm.components.forward_process import Sqrt
+
 
 import os
 

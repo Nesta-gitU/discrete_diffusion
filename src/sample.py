@@ -37,35 +37,24 @@ from src.utils import (
 )
 
 from src.models.language_diff_module import DiffusionModule
-from src.model.train import find_latest_checkpoint
+from src.utils.checkpoint_loading import find_latest_checkpoint
 
 log = RankedLogger(__name__, rank_zero_only=True)
 
-from src.utils.checkpoint_loading import find_latest_checkpoint
 from types import SimpleNamespace
 
 import os, sys, glob
 import json
-from improved_diffusion.sampling.sampling import sample_code
-from improved_diffusion import dist_util
-from improved_diffusion.script_util import (
-    NUM_CLASSES,
-    model_and_diffusion_defaults,
-    create_model_and_diffusion,
-    add_dict_to_argparser,
-    args_to_dict,
-)
-from improved_diffusion.rounding import rounding_func, load_models, load_tokenizer
-from scripts.text_sample import create_argparser
-from scripts.text_sample import main as main_text_sample
-from scripts.ppl_under_ar import main as main_ppl
+from src.sampling.sampling import sample_code#improved_diffusion.sampling.sampling import sample_code
+
+from scr.metrics.ppl_under_ar import main as main_ppl
 # full_lst = glob.glob('diff_models_synth128*')
 # full_lst = glob.glob('diff_models_synth32*')
 # full_lst = glob.glob('diff_models_synth32_3_rand16*')
 # full_lst = glob.glob('diff_models_synth_rand_16_trans_lr_1e-5_long_Lsimple')
 #create an args parser instead of using sys.argv
 import argparse
-from improved_diffusion.metrics.mauve import print_mauve, get_preprocessed_data
+from src.metrics.mauve import print_mauve, get_preprocessed_data
 import numpy as np
 
 
