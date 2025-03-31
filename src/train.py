@@ -40,6 +40,9 @@ from src.utils import (
 
 log = RankedLogger(__name__, rank_zero_only=True)
 
+from lightning.pytorch.callbacks import ModelCheckpoint
+from src.utils.checkpoint_loading import get_checkpoint_path
+from src.utils.checkpoint_loading import find_latest_checkpoint
 
 @task_wrapper
 def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
@@ -52,6 +55,8 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     :param cfg: A DictConfig configuration composed by Hydra.
     :return: A tuple with metrics and dict with all instantiated objects.
     """
+    cfg.ckpt_path, checkpoint_dir = get_checkpoint_path(cfg)
+
     # set seed for random number generators in pytorch, numpy and python.random
     if cfg.get("seed"):
         L.seed_everything(cfg.seed, workers=True)
@@ -64,6 +69,18 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     log.info("Instantiating callbacks...")
     callbacks: List[Callback] = instantiate_callbacks(cfg.get("callbacks"))
+    
+    # Override ModelCheckpoint callback if it exists
+    for i, cb in enumerate(callbacks):
+        if isinstance(cb, ModelCheckpoint):
+            callbacks[i] = ModelCheckpoint(
+                dirpath=checkpoint_dir,  # Override checkpoint directory
+                filename="checkpoint_{epoch:02d}-{step:06d}",
+                save_top_k=cfg.get("save_top_k", 1),  # Keep only top k checkpoints
+                monitor=cfg.get("monitor", "val_loss"),  # Monitor validation loss by default
+                mode=cfg.get("mode", "min")  # "min" for loss, "max" for accuracy
+            )
+            break  # Only need to override one instance
 
     log.info("Instantiating loggers...")
     logger: List[Logger] = instantiate_loggers(cfg.get("logger"))
@@ -107,7 +124,7 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     if cfg.get("train"):
         log.info("Starting training!")
-        trainer.fit(model=model, datamodule=datamodule, ckpt_path=cfg.get("ckpt_path"))
+        trainer.fit(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
 
     train_metrics = trainer.callback_metrics
 
