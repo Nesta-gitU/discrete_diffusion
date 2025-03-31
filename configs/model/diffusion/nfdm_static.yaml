@@ -1,4 +1,4 @@
-__target__: src.models.nfdm.NeuralDiffusion
+_target_: src.models.nfdm.nfdm.NeuralDiffusion
 
 affine: 
   _target_: src.models.nfdm.components.forward_process.Sqrt

@@ -1,4 +1,4 @@
-_target_: src.data.e2e_datamodule.E2EDataModule
+_target_: src.data.roc_datamodule.ROCdatamodule
 root_dir: ${paths.root_dir}
 block_size: 64
 vocab_size: 10767 # use in other spots. 

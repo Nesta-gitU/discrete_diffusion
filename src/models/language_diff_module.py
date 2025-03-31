@@ -7,11 +7,10 @@ from torchmetrics.classification.accuracy import Accuracy
 import inspect
 from torch.optim.lr_scheduler import LambdaLR
 
-from src.models.diffusions import NeuralDiffusion
 import copy
 from collections import OrderedDict
 
-from src.likelihoods.compute_nll import get_likelihood_fn
+#from src.likelihoods.compute_nll import get_likelihood_fn
 
 
 class DiffusionModule(LightningModule):
@@ -49,7 +48,7 @@ class DiffusionModule(LightningModule):
 
     def __init__(
         self,
-        diffusion: NeuralDiffusion,
+        diffusion,
         total_steps: int,
         optimizer: torch.optim.Optimizer,
         compile: bool,
@@ -74,6 +73,7 @@ class DiffusionModule(LightningModule):
         self.save_hyperparameters(logger=False)
 
         self.model = diffusion
+        print(self.model)
         self.ema = copy.deepcopy(self.model)
         for p in self.ema.parameters():
             p.requires_grad = False
@@ -205,18 +205,6 @@ class DiffusionModule(LightningModule):
         :param batch_idx: The index of the current batch.
         """
         #this is because I did runs without this attribute and thus it would not checkpoint load correctly otherwise...
-        if batch_idx == 0:
-            print("batch_idx == 0")
-            self.loglikelihood = MeanMetric()
-            self.likelihood_fn = get_likelihood_fn(self.ema)
-
-        bpd, z, nfe = self.likelihood_fn(batch)
-        print(bpd.shape, "bpd shape")
-        bpd = bpd.mean()  
-        bpc = bpd * self.model.encoder.embedding.weight.shape[1]
-        print(self.model.encoder.embedding.weight.shape[1])
-    
-        self.loglikelihood.update(bpc.to(self.loglikelihood.device))
 
         diffusion_loss, reconstruction_loss, prior_loss  = self.forward(batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,

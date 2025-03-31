@@ -42,4 +42,3 @@ def argmax_sample(logits):
     :param logits: tensor of shape [batch_size, block_size, vocab_size]
     """
     return logits.argmax(dim=-1).squeeze(-1) # shape [batch_size, block_size]
-
