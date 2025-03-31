@@ -48,7 +48,7 @@ class TokenizerFromDict:
     def decode(self, indices: torch.Tensor | list[int]) -> str:
         if isinstance(indices, torch.Tensor):
             indices = indices.tolist()
-        return ''.join([self.index_to_string[i] for i in indices])
+        return ' '.join([self.index_to_string[i] for i in indices])
     
     @classmethod
     def load(cls, path: str):

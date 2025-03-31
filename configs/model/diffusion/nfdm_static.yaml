@@ -6,4 +6,8 @@ affine:
 vol:
   _target_: src.models.nfdm.components.volatility.SqrtVolatility
 
+pred:
+  _target_: src.models.nfdm.components.predictor.Predictor
+  model: debug
+
   

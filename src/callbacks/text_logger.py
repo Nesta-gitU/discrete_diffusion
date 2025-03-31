@@ -92,7 +92,7 @@ class TextLogger(Callback):
         self.sample_code(trainer, pl_module, logger)
 
     def sample_code(self, trainer, pl_module, logger):
-        block_size = trainer.datamodule.dataset.block_size
+        block_size = trainer.datamodule.data_train.block_size
         hidden_size = pl_module.ema.pred.model.in_channels
 
         model = pl_module.ema

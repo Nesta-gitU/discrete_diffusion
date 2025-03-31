@@ -64,6 +64,8 @@ class ROCdataset(TorchDataset):
         # Retrieve the sample's token IDs (a list of ints)
         sample_ids = self.data[index]
         sample_tensor = torch.tensor(sample_ids, dtype=torch.long)
+        #print(sample_tensor)
+        #print(self.sentence_lst[index])
 
         return sample_tensor
 
@@ -113,7 +115,7 @@ class ROCdataset(TorchDataset):
         for input_ids in sentence_lst:
             counter.update(input_ids)
         
-        vocab_dict = {'PAD': 0, 'EOS': 1, 'UNK': 2}
+        vocab_dict = {'START': 0, 'PAD': 3, 'END': 1, 'UNK': 2}
         for k, v in counter.items():
             if v > 10:
                 vocab_dict[k] = len(vocab_dict)
@@ -128,7 +130,7 @@ class ROCdataset(TorchDataset):
             input_ids = [0] + [vocab_dict.get(x, vocab_dict['UNK']) for x in sentence] + [1]
             encoded_ids.append(input_ids)
 
-        encoded_ids = self._collate_batch_helper(encoded_ids, 0, self.block_size)
+        encoded_ids = self._collate_batch_helper(encoded_ids, 3, self.block_size)
 
         self.data = encoded_ids
 

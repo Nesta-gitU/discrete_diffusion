@@ -1,4 +1,4 @@
-_target_: src.models.backbones.transformer_model2.TransformerNetModel2
+_target_: src.models.backbones.modern_bert.ModernBert
 
 in_channels: 128
 model_channels: 128
@@ -12,7 +12,7 @@ use_checkpoint: false
 num_heads: 4
 num_heads_upsample: -1
 use_scale_shift_norm: true
-config_name:  bert-base-uncased
+config_name: answerdotai/ModernBERT-base
 training_mode: e2e
 vocab_size: ${data.vocab_size}
 experiment_mode: lm

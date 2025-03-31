@@ -8,6 +8,7 @@ class Predictor(nn.Module):
         super().__init__()
         
         self.model = model
+        print("the predictor model is", model)
         
     def forward(self, z, t, **model_kwargs):
         #z_t = torch.cat([z, t], dim=1)

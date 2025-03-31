@@ -197,7 +197,7 @@ def visualize_path(model, path, tokenizer, mode):
             print(decoded.shape, "decoded")
             decoded = decoded.argmax(dim=-1).squeeze(-1)
             try:
-                tokens = " ".join([tokenizer[x.item()] for x in decoded])
+                tokens = tokenizer.decode(decoded)
             except:
                 tokens = "error"
 
@@ -225,7 +225,7 @@ def idx_to_words(index, tokenizer) -> list:
     decoded_texts = []
     for sequence in index:
         try:
-            tokens = " ".join([tokenizer[x.item()] for x in sequence])
+            tokens = tokenizer.decode(sequence)
         except Exception as e:
             print(f"Error decoding tokens: {e}")
             tokens = "error"

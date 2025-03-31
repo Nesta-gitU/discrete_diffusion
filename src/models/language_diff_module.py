@@ -9,6 +9,7 @@ from torch.optim.lr_scheduler import LambdaLR
 
 import copy
 from collections import OrderedDict
+from their_utils.nn import mean_flat
 
 #from src.likelihoods.compute_nll import get_likelihood_fn
 
@@ -73,7 +74,9 @@ class DiffusionModule(LightningModule):
         self.save_hyperparameters(logger=False)
 
         self.model = diffusion
+        self.max_steps = total_steps
         print(self.model)
+        print(self.model.pred)
         self.ema = copy.deepcopy(self.model)
         for p in self.ema.parameters():
             p.requires_grad = False
@@ -116,7 +119,11 @@ class DiffusionModule(LightningModule):
                                                                                 compute_prior_loss, 
                                                                                 compute_reconstruction_loss, 
                                                                                 reconstruction_loss_type,
-                                                                                compute_their_loss=False)
+                                                                                compute_their_loss=False)   
+        #reduce correctly 
+        diffusion_loss = mean_flat(diffusion_loss)
+        prior_loss = mean_flat(prior_loss)
+
         return diffusion_loss, reconstruction_loss, prior_loss
 
     def on_train_start(self) -> None:
@@ -136,23 +143,25 @@ class DiffusionModule(LightningModule):
         :param batch_idx: The index of the current batch.
         :return: A tensor of losses between model predictions and targets.
         """
+
         #with torch.no_grad():
         diffusion_loss, reconstruction_loss, prior_loss = self.forward(batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,
                                             compute_prior_loss=self.hparams.compute_prior_loss,
                                             compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
                                             reconstruction_loss_type = self.hparams.reconstruction_loss_type)
+        elbo = diffusion_loss + reconstruction_loss + prior_loss 
 
         diffusion_loss = diffusion_loss.mean()
-        #print(reconstruction_loss, "----------------------reconstruction_loss")
         reconstruction_loss = reconstruction_loss.mean()
         prior_loss = prior_loss.mean()
+        elbo = elbo.mean()
         #print(diffusion_loss, "----------------------diffusion_loss")
 
         #print(f"diffusion_loss: {self.hparams.compute_diffusion_loss}, reconstruction_loss: {self.hparams.compute_reconstruction_loss}, prior_loss: {self.hparams.compute_prior_loss}")
 
         #note elbo may or may not be valid depending on what we actualy calculatte in the forward pass
-        elbo = diffusion_loss + reconstruction_loss + prior_loss 
+        
 
         # update and log metrics
         self.log("train/diffusion_loss", diffusion_loss, on_step=True, prog_bar=True)

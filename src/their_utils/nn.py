@@ -113,11 +113,11 @@ def timestep_embedding(timesteps, dim, nfdm, max_period=10000):
     """
     if nfdm: #if we sample with their sampling method input is already correct to this function and it is just using the model, so we can turn it off
         timesteps = timesteps * 2000 * (1000/2000) #* 2000 #* 1/2 #multiplied by 2000 one time to many 
-        print("this should be an nfdm model -------------------------------------------------------------------------------------")
+        
         #if we input all zeros *2000 will be all zeros too so this covers all bases , no it doesnt what if its all ones?
         #now decoding theirs wont work anymore, There is no way to describe the difference with just dim and timestep we need an extra param. 
     
-    print(timesteps)
+
     
     half = dim // 2
     freqs = th.exp(

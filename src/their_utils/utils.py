@@ -1,6 +1,6 @@
 import torch as th
 
-def token_discrete_loss(self, x_t, get_logits, input_ids):
+def token_discrete_loss(x_t, get_logits, input_ids):
     
     reshaped_x_t = x_t
     logits = get_logits(reshaped_x_t)  # bsz, seqlen, vocab

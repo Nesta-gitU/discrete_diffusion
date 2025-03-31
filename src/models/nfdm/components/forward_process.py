@@ -20,7 +20,7 @@ class NFDM_gaussian(nn.Module):
         self.net = model
         
     def forward(self, x, t):
-        print("using NFDM-Gaussian")
+        #print("using NFDM-Gaussian")
         # Conditional optimal transport (FM-OT)
         # return (1 - t) * x, t + (1 - t) * 0.01
 
@@ -52,7 +52,7 @@ class FM_OT(nn.Module):
         super().__init__()
     
     def forward(self, x, t):
-        print("using FM-OT")
+        #print("using FM-OT")
         # Conditional optimal transport (FM-OT)
 
         # a seperate output for the diffusion loss scaling term
@@ -77,7 +77,7 @@ class Sqrt(nn.Module):
 
         output0 = output3 * x
         output1 = torch.sqrt(torch.sqrt(t + s))
-        print("1is it using this code=------------------------------------------------------------")
+        #print("1is it using this code=------------------------------------------------------------")
 
         #a seperate output for the diffusion loss scaling term
         
