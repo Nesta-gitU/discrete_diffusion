@@ -10,6 +10,8 @@ from torch.optim.lr_scheduler import LambdaLR
 import copy
 from collections import OrderedDict
 from their_utils.nn import mean_flat
+from torch.optim.swa_utils import AveragedModel
+
 
 #from src.likelihoods.compute_nll import get_likelihood_fn
 
@@ -79,13 +81,14 @@ class DiffusionModule(LightningModule):
         self.mask_padding = mask_padding
         print(self.model)
         print(self.model.pred)
-        self.ema = copy.deepcopy(self.model)
-        self.ema.to("cpu")
-        for p in self.ema.parameters():
-            p.requires_grad = False
+        #self.ema = copy.deepcopy(self.model)
+        #self.ema.to("cpu")
+        #for p in self.ema.parameters():
+        #    p.requires_grad = False
 
-        self.update_ema(self.ema, self.model, decay=0) 
-        self.ema.eval()
+        #self.update_ema(self.ema, self.model, decay=0) 
+        #self.ema.eval()
+        self.ema = AveragedModel(self.model, avg_fn=lambda avg, new, _: 0.9999 * avg + (1 - 0.9999) * new)
 
     @torch.no_grad()
     def update_ema(self, ema_model, model, decay=0.9999):
@@ -194,7 +197,7 @@ class DiffusionModule(LightningModule):
         return elbo
     
     def on_after_backward(self) -> None:
-        self.update_ema(self.ema, self.model, decay=0.999)
+        self.ema.update_parameters(self.model)
 
         # Compute gradient norm
         grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
