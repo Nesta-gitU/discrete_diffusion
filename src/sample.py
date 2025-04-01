@@ -37,7 +37,7 @@ from src.utils import (
 )
 
 from src.models.language_diff_module import DiffusionModule
-from src.utils.checkpoint_loading import find_latest_checkpoint
+from src.utils.checkpoint_loading import get_latest_checkpoint, get_latest_run_folder
 
 log = RankedLogger(__name__, rank_zero_only=True)
 
@@ -47,7 +47,7 @@ import os, sys, glob
 import json
 from src.sampling.sampling import sample_code#improved_diffusion.sampling.sampling import sample_code
 
-from scr.metrics.ppl_under_ar import main as main_ppl
+from src.metrics.ppl_under_ar import main as main_ppl
 # full_lst = glob.glob('diff_models_synth128*')
 # full_lst = glob.glob('diff_models_synth32*')
 # full_lst = glob.glob('diff_models_synth32_3_rand16*')
@@ -56,6 +56,7 @@ from scr.metrics.ppl_under_ar import main as main_ppl
 import argparse
 from src.metrics.mauve import print_mauve, get_preprocessed_data
 import numpy as np
+
 
 
 def generate_samples_mine(args, model, datamodule, batch_size, out_dir):
@@ -129,8 +130,8 @@ class DotDict(dict):
 
 
 
-def generate_samples_test_set(args, out_dir, modality, training_args):
-    decoded_texts = get_preprocessed_data(split='test', num_samples=args.num_samples)
+def generate_samples_test_set(args, datamodule, tokenizer, num_samples, out_dir):
+    decoded_texts = get_preprocessed_data('test', datamodule, tokenizer, num_samples)
     
     outpath = os.path.join(out_dir, f"test_samples.json")
 
@@ -143,7 +144,7 @@ def generate_samples_test_set(args, out_dir, modality, training_args):
 
 
 
-def main(args, model, modality):
+def sample_here(args, model, modality, datamodule):
     out_dir = 'generation_outputs'   
 
     model_base_name = args.model_base_name 
@@ -154,12 +155,12 @@ def main(args, model, modality):
     if args.setting == 'reference_mode':
         print("generating in reference mode")
         entropy = None #entorpy is a function of model uncertainty 
-        outpath = generate_samples_test_set(args, out_dir, modality)
+        outpath = generate_samples_test_set(args, datamodule, datamodule.tokenizer, args.num_samples, out_dir)
         out_path_list = [outpath]
         entropy_list = [entropy]
     else:
         print("generating with nfdm")
-        entropy_list, out_path_list = generate_samples_mine(args, model, args.batch_size, out_dir)
+        entropy_list, out_path_list = generate_samples_mine(args, model, datamodule, args.batch_size, out_dir)
     
     #get the perplexity of the generated samples
     if modality == 'e2e': 
@@ -190,8 +191,11 @@ def main(args, model, modality):
                 # the idea is that we generate 5k samples and then split them into 5 splits of 1k samples each and report the std of the 5 splits
             }
         
+        custom_args = DotDict(custom_args)
+        
         perplexity_mean, perplexity_std = main_ppl(custom_args)
-        mean_mauve, std_mauve = print_mauve(out_path2, modality, args.std_split, args.setting)
+        # datamodule, tokenizer, std_split, setting
+        mean_mauve, std_mauve = print_mauve(out_path2, datamodule, datamodule.tokenizer, args.std_split, args.setting)
 
         #store a json file in the output directory with the results of entropy and perplexity
         results = {
@@ -204,7 +208,10 @@ def main(args, model, modality):
             "split": args.std_split
         }
 
+        
+
         with open(os.path.join(out_dir, f"{model_base_name}.sample_results_{name}.json"), 'w') as f:
+            print("writing results to ", os.path.join(out_dir, f"{model_base_name}.sample_results_{name}.json"))
             json.dump(results, f)
     
 
@@ -221,7 +228,10 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """
     if not cfg.ckpt_path:
         log.info("Finding latest checkpoint...")
-        cfg.ckpt_path = find_latest_checkpoint(cfg.model_name)  # Use model_name from config
+
+        run_folder = get_latest_run_folder(cfg.model_name)
+        print(run_folder)
+        cfg.ckpt_path = get_latest_checkpoint(run_folder)  # Use model_name from config
 
     assert cfg.ckpt_path, "Checkpoint path must be specified or found automatically!"
 
@@ -230,6 +240,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model = DiffusionModule.load_from_checkpoint(cfg.ckpt_path)
+    model = model.ema #EMA model is the one we want to sample from
     #model: LightningModule = hydra.utils.instantiate(cfg.model)
     model.eval()
 
@@ -272,8 +283,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     args.top_p = cfg.get("top_p", -1)
     args.temperature = cfg.get("temperature", 1.0)
     args.pattern_ = cfg.get("pattern_", "ema")
-    args.decode_theirs = cfg.get("decode_theirs", False)
-    args.get_mauve = cfg.get("get_mauve", False)
+    args.get_mauve = cfg.get("get_mauve", True)
     args.num_samples = cfg.get("num_samples", 128)
     args.batch_size = cfg.get("batch_size", 41)
     args.compute_ani = cfg.get("compute_ani", False)
@@ -301,7 +311,9 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         #but this on will be used later to generate by sampling from the dataset instead of the model
         args.decode_theirs = False
 
-    main(args, model, args.modality, datamodule)
+    
+
+    sample_here(args, model, args.modality, datamodule)
 
     #then here function call to the method I have in the other code base! that should be sampling done so tmr test it on the one I have working now,
     #also tmr make model name a command line argument on snellius so I can easily test different models without multiple scripts. 
@@ -317,6 +329,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     print("done sampling!")
     #it crashes at the end for some reason I have no idea why?
+    return None, None
 
     
 

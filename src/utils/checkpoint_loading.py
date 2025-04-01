@@ -17,8 +17,14 @@ def get_latest_run_folder(model_name):
 def get_latest_checkpoint(run_folder):
     """Finds the most recent checkpoint in the given run folder."""
     if not run_folder:
+        print("No run folder found!")
         return None
-    checkpoints = sorted(glob.glob(f"{run_folder}/checkpoint_*.ckpt"))
+    checkpoints = sorted(glob.glob(f"{run_folder}/*.ckpt"))
+    if not checkpoints:
+        print("No checkpoints found!")
+    else:
+        print(f"the latests checkpoint is {checkpoints[-1]}")
+
     return checkpoints[-1] if checkpoints else None
 
 def get_checkpoint_path(cfg):

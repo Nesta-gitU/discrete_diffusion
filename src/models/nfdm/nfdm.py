@@ -26,12 +26,13 @@ def t_dir(f, t):
     return jvp(f, t, torch.ones_like(t))
 
 class NeuralDiffusion(nn.Module):
-    def __init__(self, affine, pred, vol):
+    def __init__(self, affine, pred, vol, diff_loss_type="elbo"):
         super().__init__()
         
         self.affine = affine
         self.pred = pred
         self.vol = vol
+        self.diff_loss_type = diff_loss_type
 
         #self.encoder = encoder # instead of the encoder it should be like model.get_embedding() or something like that. #TODO
         #self.decoder = decoder #same goes for the decoder here. #TODO
@@ -85,6 +86,7 @@ class NeuralDiffusion(nn.Module):
         #self.affine(embeddings,t)
         if compute_diffusion_loss:
             g2 = self.vol(t) ** 2
+            #print(self.affine(embeddings, t), "affine")
             (f_m, f_s, alpha), (f_dm, f_ds, alpha_prime) = t_dir(f(embeddings), t) #(function output), (jvp) == (mean, sigma), (mean derivative, sigma derivative)
             #print(f_dm, f_ds, "f_dm, f_ds")
         else:
@@ -178,8 +180,13 @@ class NeuralDiffusion(nn.Module):
         #print(snr_prime, "snr_primenew")
         snr_prime = (-1/2) * ((0.9999*t + 0.000099) ** (-3/2)) * 0.9999
 
+        if self.diff_loss_type == "elbo":
+            loss = 0.5 * (f_drift - r_drift) ** 2 / g2
         
-        loss = (1/(-0.5 * snr_prime)) * 0.5 * (f_drift - r_drift) ** 2 / g2
+        elif self.diff_loss_type == "x_0_prediction":
+            loss = (1/(-0.5 * snr_prime)) * 0.5 * (f_drift - r_drift) ** 2 / g2
+        else:
+            raise ValueError("Invalid diffusion loss type")
 
     
         # mask out special tokens

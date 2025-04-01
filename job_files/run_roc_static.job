@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#SBATCH --partition=gpu
+#SBATCH --partition=gpu_a100
 #SBATCH --gpus=1
 #SBATCH --job-name=basic_diff
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=9
-#SBATCH --time=10:00:00
+#SBATCH --time=96:00:00
 #SBATCH --output=$HOME/discrete_diffusion/slurm_outputs/slurm_output_%A.out
 
 module purge
@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/train.py experiment=latent_basic_diffusion
+srun python src/train.py experiment=roc_static

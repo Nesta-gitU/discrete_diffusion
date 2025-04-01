@@ -5,10 +5,11 @@
 
 defaults:
     #choose which components to use for the diffusion model
-  - /model/diffusion@model.diffusion: nfdm_static.yaml
+  - /model/diffusion@model.diffusion: nfdm.yaml
 
   #choose which backbone to use for the predictor and forward process
   - /model/backbone@model.diffusion.pred.model: bert.yaml
+  - /model/backbone@model.diffusion.affine.model: bert_no_emb.yaml
   
   - override /data: roc
   - override /model: language_diff_module
@@ -23,16 +24,17 @@ tags: ["e2e", "dit", "basic_diffusion"]
 seed: 12345
 #commment
 data:
-  batch_size: 64
+  batch_size: 16
   block_size: 64
   overfit_one_batch: true #should be false normally
 
 callbacks:
   word_sampler:
-    log_train_every_n_steps: 1000
+    log_train_every_n_steps: 500
     no_epoch_logging: true
+    modes: ["sde", "ode"]
   model_checkpoint:
-    every_n_train_steps: 1000 #save every 1000 steps
+    every_n_train_steps: 10000 #save every 1000 steps
 
 #one epoch has 12556 batches
 #one val epoch has 1396 batches on batch size 256
@@ -49,7 +51,9 @@ model:
   enable_matmul_tf32: true
   enable_cudnn_tf32: true
   total_steps: ${trainer.max_steps}
-  mask_padding: false
+  mask_padding: true
+  diffusion:
+    diff_loss_type: "elbo" #options are elbo, half_elbo, x_0_prediction
 
 logger:
   wandb:

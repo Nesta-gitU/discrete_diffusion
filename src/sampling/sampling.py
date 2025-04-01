@@ -99,7 +99,7 @@ def sample_code(model,
             else:
                 w.extend(idx_to_words(words, tokenizer))
             
-            out_path = os.path.join(out_dir, f"{model_base_name}.samples_{p}_{sampling_mode}.json")
+            out_path = os.path.join(out_dir, f"{model_base_name}.samples_{sampling_mode}.json")
         
         print(f"Per-token entropy of the generated samples for", sampling_mode ,":", total_entropy/batches_needed ,"---------------------------------------------------------")
         
@@ -201,7 +201,7 @@ def visualize_path(model, path, tokenizer, mode):
             print(decoded.shape, "decoded")
             decoded = decoded.argmax(dim=-1).squeeze(-1)
             try:
-                tokens = " ".join([tokenizer[x.item()] for x in decoded])
+                tokens = tokenizer.decode(decoded)
             except:
                 tokens = "error"
 
@@ -209,7 +209,7 @@ def visualize_path(model, path, tokenizer, mode):
     
 def get_entropy(logits, words, tokenizer, name=None):
     padding_token = 'PAD'
-    padding_index = next((index for index, token in tokenizer.items() if token == padding_token), None)
+    padding_index = tokenizer.vocab_dict.get(padding_token, None)
 
     if padding_index is None:
         print("Padding token 'PAD' not found in the tokenizer vocabulary. Setting padding mask to None.")
@@ -229,7 +229,7 @@ def idx_to_words(index, tokenizer) -> list:
     decoded_texts = []
     for sequence in index:
         try:
-            tokens = " ".join([tokenizer[x.item()] for x in sequence])
+            tokens = tokenizer.decode(sequence)
         except Exception as e:
             print(f"Error decoding tokens: {e}")
             tokens = "error"

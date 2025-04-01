@@ -58,6 +58,7 @@ class DiffusionModule(LightningModule):
         compute_prior_loss: bool = False,
         compute_reconstruction_loss: bool = True,
         reconstruction_loss_type: str = "diff_anchor",
+        mask_padding: bool = False,
         enable_matmul_tf32: bool = False,
         enable_cudnn_tf32: bool = False
     ) -> None:
@@ -75,6 +76,7 @@ class DiffusionModule(LightningModule):
 
         self.model = diffusion
         self.max_steps = total_steps
+        self.mask_padding = mask_padding
         print(self.model)
         print(self.model.pred)
         self.ema = copy.deepcopy(self.model)
@@ -150,6 +152,14 @@ class DiffusionModule(LightningModule):
                                             compute_prior_loss=self.hparams.compute_prior_loss,
                                             compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
                                             reconstruction_loss_type = self.hparams.reconstruction_loss_type)
+
+        if self.mask_padding:
+            pad_mask = batch == 3 #shape [B, Seqlen]
+            diffusion_loss = diffusion_loss.masked_fill(pad_mask.unsqueeze(-1), 0) # shape [B, Seqlen, Embed]
+            N_over_S = diffusion_loss.shape[1] / (~pad_mask).sum(dim=-1).float()
+            diffusion_loss = diffusion_loss.mean(dim=(1,2)) * N_over_S
+            diffusion_loss = diffusion_loss.mean()
+
         elbo = diffusion_loss + reconstruction_loss + prior_loss 
 
         diffusion_loss = diffusion_loss.mean()
@@ -174,6 +184,10 @@ class DiffusionModule(LightningModule):
     
     def on_after_backward(self) -> None:
         self.update_ema(self.ema, self.model, decay=0.999)
+
+        # Compute gradient norm
+        grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
+        self.log("grad_norm", grad_norm, on_step=True, on_epoch=False, prog_bar=True, logger=True)
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         """Perform a single validation step on a batch of data from the validation set.

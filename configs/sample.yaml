@@ -4,30 +4,25 @@ defaults:
   - _self_
   - data: e2e # choose datamodule with `test_dataloader()` for evaluation
   - model: language_diff_module
+  - callbacks: default
   - logger: wandb
   - trainer: default
   - paths: default
   - extras: default
   - hydra: default
 
-task_name: "sample"
+  - experiment: null
 
+
+model_name: roc_static
+ckpt_path: null
+
+# task name, determines output directory path
+task_name: "train"
+
+# tags to help you identify your experiments
+# you can overwrite this in experiment configs
+# overwrite from command line with `python train.py tags="[first_tag, second_tag]"`
 tags: ["dev"]
 
-get_sde: true
-get_ode: true
-n_steps: 1000
-batch_size: 10
-
-debug: false
-clamping: true
-top_k: false
-k: 5
-top_p: false
-p: 0.9
-temperature: 1.0
-
-compute_ani: false
-
-# passing checkpoint path is necessary for evaluation
-ckpt_path: /teamspace/studios/this_studio/discrete_diffusion/logs/epoch_039.ckpt
+seed: 42

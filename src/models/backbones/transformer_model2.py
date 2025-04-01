@@ -91,7 +91,8 @@ class TransformerNetModel2(nn.Module):
         experiment_mode='lm',
         logits_mode=1,
         embedding_model=True,
-        nfdm=True
+        nfdm=True,
+        attn_implementation="sdpa",
     ):
         super().__init__()
 
@@ -102,7 +103,7 @@ class TransformerNetModel2(nn.Module):
             num_heads_upsample = num_heads
 
         if config is None:
-            config = AutoConfig.from_pretrained(config_name)
+            config = AutoConfig.from_pretrained(config_name, attn_implementation=attn_implementation)
             config.hidden_dropout_prob = dropout
 
         self.in_channels = in_channels  # in_channels is just the hidden dimension size

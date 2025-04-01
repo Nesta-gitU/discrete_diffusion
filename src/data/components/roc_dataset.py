@@ -69,7 +69,7 @@ class ROCdataset(TorchDataset):
 
         return sample_tensor
 
-    def prepare(self, data_args, tokenizer=None) -> Tokenizer:
+    def prepare(self, data_args, tokenizer=None, nlp_tokenizer=None) -> Tokenizer:
         """
         Prepares the dataset by:
           1. Loading sentences from the appropriate file based on the chosen split.
@@ -89,7 +89,13 @@ class ROCdataset(TorchDataset):
 
         print('loading dataset from ROCStory')
         nlp = English()
-        tokenizer = nlp.tokenizer
+        if tokenizer is None:
+            tokenizer = nlp.tokenizer
+            nlp_tokenizer = tokenizer
+            save_tokenizer=None
+        else:
+            save_tokenizer = tokenizer
+            tokenizer = nlp_tokenizer
         sentence_lst = []
         print(f'loading from {data_args.roc_train}')
         if self.split == 'train':
@@ -111,19 +117,23 @@ class ROCdataset(TorchDataset):
         self.sentence_lst = sentence_lst
         #print vocab size
         #get a vocab dict
-        counter = Counter()
-        for input_ids in sentence_lst:
-            counter.update(input_ids)
-        
-        vocab_dict = {'START': 0, 'PAD': 3, 'END': 1, 'UNK': 2}
-        for k, v in counter.items():
-            if v > 10:
-                vocab_dict[k] = len(vocab_dict)
-        
-        tokenizer = TokenizerFromDict(vocab_dict)
-        self.tokenizer = tokenizer
+        if isinstance(save_tokenizer, TokenizerFromDict):
+            print("we should be in val made or something")
+            vocab_dict = save_tokenizer.vocab_dict
+        else:
+            counter = Counter()
+            for input_ids in sentence_lst:
+                counter.update(input_ids)
+            
+            vocab_dict = {'START': 0, 'PAD': 3, 'END': 1, 'UNK': 2}
+            for k, v in counter.items():
+                if v > 10:
+                    vocab_dict[k] = len(vocab_dict)
+            
+            tokenizer = TokenizerFromDict(vocab_dict)
+            self.tokenizer = tokenizer
 
-        print(f"Vocab size: {len(vocab_dict)}")
+            print(f"Vocab size: {len(vocab_dict)}")
 
         encoded_ids = []
         for sentence in sentence_lst:
@@ -134,7 +144,7 @@ class ROCdataset(TorchDataset):
 
         self.data = encoded_ids
 
-        return tokenizer
+        return tokenizer, nlp_tokenizer
     
     def _collate_batch_helper(self, examples, pad_token_id, max_length, return_mask=False):
         result = torch.full([len(examples), max_length], pad_token_id, dtype=torch.int64).tolist()

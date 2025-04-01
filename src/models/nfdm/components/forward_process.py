@@ -40,7 +40,7 @@ class NFDM_gaussian(nn.Module):
             m = x
             ls = (1 - t) * np.log(0.01)
         
-        return m, torch.exp(ls), None
+        return m, torch.exp(ls), torch.tensor(0.0).to(x.device)
 
 
 class FM_OT(nn.Module):

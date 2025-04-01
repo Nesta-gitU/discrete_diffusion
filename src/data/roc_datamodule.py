@@ -69,7 +69,7 @@ class ROCdatamodule(LightningDataModule):
             epoch_length=self.hparams.epoch_length,
             overfit_one_batch=self.hparams.overfit_one_batch,
         )
-        tokenizer = self.data_train.prepare(data_args)
+        tokenizer, nlp_tokenizer = self.data_train.prepare(data_args)
         self.tokenizer = tokenizer
 
         # Prepare the validation dataset.
@@ -80,7 +80,7 @@ class ROCdatamodule(LightningDataModule):
             epoch_length=self.hparams.epoch_length,
             overfit_one_batch=self.hparams.overfit_one_batch,
         )
-        self.data_val.prepare(data_args, tokenizer=tokenizer)
+        self.data_val.prepare(data_args, tokenizer=tokenizer, nlp_tokenizer=nlp_tokenizer)
 
         # Prepare the test dataset.
         self.data_test = ROCdataset(
@@ -89,8 +89,9 @@ class ROCdatamodule(LightningDataModule):
             block_size=self.hparams.block_size,
             epoch_length=self.hparams.epoch_length,
             overfit_one_batch=self.hparams.overfit_one_batch,
+            
         )
-        self.data_test.prepare(data_args, tokenizer)
+        self.data_test.prepare(data_args, tokenizer=tokenizer, nlp_tokenizer=nlp_tokenizer)
 
     def train_dataloader(self) -> DataLoader[Any]:
         return DataLoader(

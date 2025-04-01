@@ -34,11 +34,14 @@ def get_preprocessed_data(split, datamodule, tokenizer, num_samples):
 
     decoded_texts = []
     for batch in data:
-        ids = batch[-1]['input_ids']
+        ids = batch
+        #print("ids", ids)
         
         for sequence in ids:
             tokens = tokenizer.decode(sequence)
+            #print("decoded tokens", tokens)
             decoded_texts.append(tokens)
+        
         if len(decoded_texts) > num_samples:
             break
 
@@ -63,24 +66,24 @@ def print_mauve(text_path, datamodule, tokenizer, std_split, setting):
     # Remove trailing pad tokens from each generated sample.
     # Assumes pad tokens are represented as "<pad>"
     def remove_pad_tokens(sample, pad_token='PAD'):
-        print("input to pad token removal", sample)
+        #print("input to pad token removal", sample)
         if isinstance(sample, list):
             # If sample is a list of tokens, remove trailing pad tokens
             while sample and sample[-1] == pad_token:
                 sample.pop()
-            print("removed pad tokens", sample)
+            #print("removed pad tokens", sample)
             return " ".join(sample)
         
         elif isinstance(sample, str):
             # If sample is a string, split it into tokens (by whitespace)
             tokens = sample.split()
-            print("split tokens",tokens)
+            #print("split tokens",tokens)
             while tokens and tokens[-1] == pad_token:
                 tokens.pop()
             return " ".join(tokens)
         
         else:
-            print("nothing was done somehow", sample)
+            #print("nothing was done somehow", sample)
             return sample
 
     # Apply pad removal to each generated sample
@@ -104,9 +107,9 @@ def print_mauve(text_path, datamodule, tokenizer, std_split, setting):
     mauve_list = []
     for i in range(std_split):
         text_samples_split = text_samples[int(i*split_length):int((i+1)*split_length)]
-        print(text_samples_split)
+        #print(text_samples_split)
         val_samples_split = val_samples[int(i*split_length):int((i+1)*split_length)]
-        print(val_samples_split)
+        #print(val_samples_split)
 
         out = mauve.compute_mauve(p_text=text_samples_split, q_text=val_samples_split, max_text_length=64)
         mauve_score = out.mauve
