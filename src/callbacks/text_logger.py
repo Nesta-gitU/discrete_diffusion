@@ -90,9 +90,9 @@ class TextLogger(Callback):
 
     def sample_code(self, trainer, pl_module, logger):
         block_size = trainer.datamodule.data_train.block_size
-        hidden_size = pl_module.ema.pred.model.in_channels
+        hidden_size = pl_module.ema.module.pred.model.in_channels
 
-        model = pl_module.ema
+        model = pl_module.ema.module
         tokenizer = trainer.datamodule.tokenizer
         
         w_list = []
