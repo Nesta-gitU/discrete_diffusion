@@ -35,12 +35,13 @@ callbacks:
     modes: ["sde", "ode"]
     n_steps: 2000
   model_checkpoint:
-    every_n_train_steps: 10000 #save every 1000 steps
+    every_n_train_steps: 1000 #save every 1000 steps
 
 #one epoch has 12556 batches
 #one val epoch has 1396 batches on batch size 256
 trainer:
   max_steps: 800000
+  max_epochs: null
   check_val_every_n_epoch: null
   val_check_interval: 50000
   accumulate_grad_batches: 2

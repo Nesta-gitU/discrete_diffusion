@@ -262,7 +262,6 @@ class DiffusionModule(LightningModule):
         self.log("test/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=True)
         self.log("test/prior_loss", prior_loss, on_step=True, prog_bar=True)
         self.log("test/elbo", elbo, on_step=True, prog_bar=True)
-        self.log("test/likelihood", self.loglikelihood.compute(), on_step=True, prog_bar=True)
         self.log("test/nfe", nfe, on_step=True, prog_bar=True)
 
     def setup(self, stage: str) -> None:
