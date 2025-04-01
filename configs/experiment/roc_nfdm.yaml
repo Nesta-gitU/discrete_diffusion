@@ -19,20 +19,21 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-tags: ["e2e", "dit", "basic_diffusion"]
+tags: ["bert-base", "roc", "nfdm"]
 
 seed: 12345
 #commment
 data:
-  batch_size: 16
+  batch_size: 512
   block_size: 64
-  overfit_one_batch: true #should be false normally
+  overfit_one_batch: false #should be false normally
 
 callbacks:
   word_sampler:
-    log_train_every_n_steps: 500
+    log_train_every_n_steps: 5000
     no_epoch_logging: true
     modes: ["sde", "ode"]
+    n_steps: 2000
   model_checkpoint:
     every_n_train_steps: 10000 #save every 1000 steps
 

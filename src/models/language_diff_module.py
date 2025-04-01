@@ -123,7 +123,17 @@ class DiffusionModule(LightningModule):
                                                                                 reconstruction_loss_type,
                                                                                 compute_their_loss=False)   
         #reduce correctly 
-        diffusion_loss = mean_flat(diffusion_loss)
+        if self.mask_padding:
+            #print("masking padding")
+            pad_mask = x == 3 #shape [B, Seqlen]
+            diffusion_loss = diffusion_loss.masked_fill(pad_mask.unsqueeze(-1), 0) # shape [B, Seqlen, Embed]
+            N_over_S = diffusion_loss.shape[1] / (~pad_mask).sum(dim=-1).float()
+            diffusion_loss = mean_flat(diffusion_loss)* N_over_S
+        else:
+            diffusion_loss = mean_flat(diffusion_loss)        
+        
+
+        
         prior_loss = mean_flat(prior_loss)
 
         return diffusion_loss, reconstruction_loss, prior_loss
@@ -153,12 +163,6 @@ class DiffusionModule(LightningModule):
                                             compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
                                             reconstruction_loss_type = self.hparams.reconstruction_loss_type)
 
-        if self.mask_padding:
-            pad_mask = batch == 3 #shape [B, Seqlen]
-            diffusion_loss = diffusion_loss.masked_fill(pad_mask.unsqueeze(-1), 0) # shape [B, Seqlen, Embed]
-            N_over_S = diffusion_loss.shape[1] / (~pad_mask).sum(dim=-1).float()
-            diffusion_loss = diffusion_loss.mean(dim=(1,2)) * N_over_S
-            diffusion_loss = diffusion_loss.mean()
 
         elbo = diffusion_loss + reconstruction_loss + prior_loss 
 

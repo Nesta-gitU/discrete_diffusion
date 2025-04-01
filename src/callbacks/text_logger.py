@@ -98,7 +98,7 @@ class TextLogger(Callback):
         w_list = []
 
         for mode in self.modes:
-            latent, words, path = sample_from_diffusion(model, self.batch_size, block_size, hidden_size, _n_steps=100, clamping=False, do_top_k=False, k=10, do_top_p=False, p=0.9, temperature=1.0, sampling_mode=mode)
+            latent, words, path = sample_from_diffusion(model, self.batch_size, block_size, hidden_size, _n_steps=self._n_steps, clamping=False, do_top_k=False, k=10, do_top_p=False, p=0.9, temperature=1.0, sampling_mode=mode)
 
             words = idx_to_words(words, tokenizer)
             w_list.append(words)
