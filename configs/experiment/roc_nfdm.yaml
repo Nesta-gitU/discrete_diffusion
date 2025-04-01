@@ -68,6 +68,6 @@ logger:
   aim:
     experiment: "text8test"
 
-model_name: "roc_static"
+model_name: "roc_nfdm"
 restart_from_checkpoint: false
 
