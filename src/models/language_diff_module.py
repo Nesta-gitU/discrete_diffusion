@@ -80,6 +80,7 @@ class DiffusionModule(LightningModule):
         print(self.model)
         print(self.model.pred)
         self.ema = copy.deepcopy(self.model)
+        self.ema.to("cpu")
         for p in self.ema.parameters():
             p.requires_grad = False
 
@@ -91,12 +92,18 @@ class DiffusionModule(LightningModule):
         """
         Step the EMA model towards the current model.
         """
+        device = next(model.parameters()).device
+        model.to("cpu")
         ema_params = OrderedDict(ema_model.named_parameters())
         model_params = OrderedDict(model.named_parameters())
-
+        
+        
         for name, param in model_params.items():
             # TODO: Consider applying only to params that require_grad to avoid small numerical changes of pos_embed
             ema_params[name].mul_(decay).add_(param.data, alpha=1 - decay)
+
+        model.to("device")
+        
 
     def forward(self, x: torch.Tensor, compute_diffusion_loss, compute_reconstruction_loss, compute_prior_loss, reconstruction_loss_type) -> torch.Tensor:
         """Perform a forward pass through the model `self.net`.
