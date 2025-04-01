@@ -102,7 +102,7 @@ class DiffusionModule(LightningModule):
             # TODO: Consider applying only to params that require_grad to avoid small numerical changes of pos_embed
             ema_params[name].mul_(decay).add_(param.data, alpha=1 - decay)
 
-        model.to("device")
+        model.to(device)
         
 
     def forward(self, x: torch.Tensor, compute_diffusion_loss, compute_reconstruction_loss, compute_prior_loss, reconstruction_loss_type) -> torch.Tensor:
