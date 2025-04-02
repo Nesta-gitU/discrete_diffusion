@@ -10,7 +10,7 @@ class ContSampler(nn.Module):
         
 
     def forward(self, bs, device):
-        return self.sample(bs).to(device)
+        return self.sample(bs,device)
 
     def sample(self, batch_size, device):
         t = torch.rand(batch_size, 1).to(device)
