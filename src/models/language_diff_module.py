@@ -221,11 +221,11 @@ class DiffusionModule(LightningModule):
         grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
         self.log("grad_norm", grad_norm, on_step=True, on_epoch=False, prog_bar=True, logger=True)
         #print the gradients with relation to gamma in the model
-        for name, param in self.model.gamma.named_parameters():
+        #for name, param in self.model.gamma.named_parameters():
             #print(f"gradient vector for gamma: {name}, {param.grad}")
             #also print norm
             #print(f"gradient norm for gamma: {name}, {torch.norm(param.grad)}")
-            pass
+        #    pass
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         """Perform a single validation step on a batch of data from the validation set.
