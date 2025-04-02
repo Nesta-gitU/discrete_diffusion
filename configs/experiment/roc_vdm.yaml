@@ -1,0 +1,72 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=example
+
+defaults:
+    #choose which components to use for the diffusion model
+  - /model/diffusion@model.diffusion: vdm.yaml
+
+  #choose which backbone to use for the predictor and forward process
+  - /model/backbone@model.diffusion.pred.model: bert.yaml
+  
+  - override /data: roc
+  - override /model: language_diff_module
+  - override /callbacks: default
+  - override /trainer: gpu
+  
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+tags: ["e2e", "dit", "basic_diffusion"]
+
+seed: 12345
+#commment
+data:
+  batch_size: 16
+  block_size: 64
+  overfit_one_batch: false #should be false normally
+
+callbacks:
+  word_sampler:
+    log_train_every_n_steps: 1000
+    no_epoch_logging: true
+    modes: ["star", "marginal"]
+    n_steps: 2000
+  model_checkpoint:
+    every_n_train_steps: 1000 #save every 1000 steps
+
+#one epoch has 12556 batches
+#one val epoch has 1396 batches on batch size 256
+trainer:
+  max_steps: 800000
+  check_val_every_n_epoch: null
+  val_check_interval: 50000
+  max_epochs: null
+
+model:      
+  compute_diffusion_loss: x_0
+  compute_prior_loss: true
+  compute_reconstruction_loss: true
+  reconstruction_loss_type: collapse
+  enable_matmul_tf32: true
+  enable_cudnn_tf32: true
+  total_steps: ${trainer.max_steps}
+  mask_padding: true
+  diffusion:
+    diff_loss_type: "half_elbo"
+    gamma_init: False
+  time_sampler:
+    _target_: src.models.time_samplers.time_samplers.UniformBucketSampler #src.models.time_samplers.time_samplers.ContSampler #the other option is src.models.time_samplers.time_samplers.UniformBucketSampler
+
+logger:
+  wandb:
+    tags: ${tags}
+    group: "roc"
+    project: "roc my code" #if just testing garbage use test
+    #mode: "disabled" if you dont want ot log a debug run 
+  aim:
+    experiment: "text8test"
+
+model_name: "roc_vdm_half_elbo_no_pad_no_is"
+restart_from_checkpoint: false

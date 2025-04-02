@@ -16,7 +16,11 @@ trainer:
     _target_: pytorch_lightning.profilers.PyTorchProfiler
     with_stack: false                     # Include stack traces
     profile_memory: true                  # Use memory profiler
+    on_trace_ready: "${...save_trace}"  # Ensures saving
 
+save_trace:
+  _target_: torch.profiler.trace_handler
+  dir_name: "./lightning_trace"  # Now it saves the trace here
   
 
 get_memory_profile: true 

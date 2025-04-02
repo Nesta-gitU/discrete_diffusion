@@ -11,7 +11,7 @@ import torch.distributions as D
 import matplotlib.pyplot as plt
 from tqdm import tqdm, trange
 
-from improved_diffusion.nfdm.nfdm import t_dir
+from src.models.nfdm.nfdm import t_dir
 
 
 class Gamma(nn.Module, ABC):

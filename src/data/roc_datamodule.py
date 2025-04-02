@@ -22,6 +22,7 @@ class ROCdatamodule(LightningDataModule):
         num_workers: int = 0,
         overfit_one_batch: bool = False,
         epoch_length: int = 8000,
+        pin_memory: bool = True,
     ) -> None:
         """
         LightningDataModule for the E2E dataset.
@@ -99,6 +100,7 @@ class ROCdatamodule(LightningDataModule):
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
             shuffle=True,  # Typically, you want to shuffle training data.
+            pin_memory=self.hparams.pin_memory
         )
 
     def val_dataloader(self) -> DataLoader[Any]:
@@ -107,6 +109,7 @@ class ROCdatamodule(LightningDataModule):
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
             shuffle=False,
+            pin_memory=self.hparams.pin_memory
         )
 
     def test_dataloader(self) -> DataLoader[Any]:
@@ -115,4 +118,5 @@ class ROCdatamodule(LightningDataModule):
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
             shuffle=False,
+            pin_memory=self.hparams.pin_memory
         )

@@ -1,0 +1,14 @@
+_target_: src.models.ndm.ndm.NeuralDiffusion
+
+transform: 
+  _target_: src.models.ndm.components.transform.AffineTransformID
+
+gamma:
+  _target_: src.models.ndm.components.gamma.GammaVDM
+
+vol_eta:
+  _target_: src.models.ndm.components.vol_eta.VolatilityEtaOne
+
+pred:
+  _target_: src.models.ndm.components.predictor.Predictor
+  model: debug

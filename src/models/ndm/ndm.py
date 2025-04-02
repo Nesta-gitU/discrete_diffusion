@@ -11,23 +11,29 @@ import torch.distributions as D
 import matplotlib.pyplot as plt
 from tqdm import tqdm, trange
 
-from improved_diffusion.ndm.components.gamma import Gamma
-from improved_diffusion.ndm.components.transform import AffineTransform
-from improved_diffusion.ndm.components.vol_eta import VolatilityEta
-from improved_diffusion.ndm.components.predictor import Predictor
+from src.models.ndm.components.gamma import Gamma
+from src.models.ndm.components.transform import AffineTransform
+from src.models.ndm.components.vol_eta import VolatilityEta
+from src.models.ndm.components.predictor import Predictor
+
+from their_utils.utils import token_discrete_loss
  
 
 
 class NeuralDiffusion(nn.Module):
-    def __init__(self, transform: AffineTransform, gamma: Gamma, vol_eta: VolatilityEta, pred: Predictor, mask_padding = False):
+    def __init__(self, transform: AffineTransform, gamma: Gamma, vol_eta: VolatilityEta, pred: Predictor, diff_loss_type = "elbo", gamma_init=False):
         super().__init__()
 
         self.transform = transform
         self.gamma = gamma
+        if gamma_init:
+            gamma.load_state_dict(
+                        th.load("/src/model/ndm/gamma_checkpoints/vdm_checkpoint.pth", map_location="cpu"))
+
         self.vol_eta = vol_eta
         self.pred = pred
 
-        self.mask_padding = mask_padding
+        self.diff_loss_type = diff_loss_type
 
         self.alpha_0 = None
         self.sigma_0 = None
@@ -38,7 +44,6 @@ class NeuralDiffusion(nn.Module):
         return self.pred(x, t, **model_kwargs)
 
     def get_losses(self, x: Tensor, t: Tensor,
-                token_discrete_loss,
                 compute_diffusion_loss=True,
                 compute_prior_loss=False,
                 compute_reconstruction_loss=True,
@@ -84,11 +89,7 @@ class NeuralDiffusion(nn.Module):
 
         (m_, _), (d_m_, _) = self.transform(x_, t)
 
-        # ELBO weighting
-        lmbd_elb = 0.5 * torch.exp(-gamma) * d_gamma / eta
-
-        # L_x weighting
-        lmbd_x = 4 / (1 + eta) ** 2 #so I would like to weight like x prediction so I should use this weighting instead
+        #so I would like to weight like x prediction so I should use this weighting instead
         #the l_x weighting above still includes the 1/2g(t) term but in my other formulation it actually doesnt, since g(t) >1? is that true, that could make the loss a bit lower
         #okay I take that back
 
@@ -99,9 +100,24 @@ class NeuralDiffusion(nn.Module):
         #loss_x = (1 + eta) ** 2 / 4 * (x - x_) ** 2
         #loss = 0.5 * loss + 0.5 * loss_x
 
-        coef = (lmbd_x.detach()/lmbd_elb.detach())
+        if self.diff_loss_type == "elbo":
+            # ELBO weighting
+            lmbd_elb = 0.5 * torch.exp(-gamma) * d_gamma / eta
+            loss = lmbd_elb * loss
+        
+        elif self.diff_loss_type == "x_0_prediction":
+            # L_x weighting
+            lmbd_x = 4 / (1 + eta) ** 2 
+            loss = lmbd_x * loss 
+            
+        elif self.diff_loss_type == "half_elbo":
+            lmbd_elb = 0.5 * torch.exp(-gamma) * d_gamma / eta
+            lmbd_x = 4 / (1 + eta) ** 2 
 
-        loss = coef * (lmbd_elb * loss)
+            coef = (lmbd_x.detach()/lmbd_elb.detach())
+
+            loss = coef * (lmbd_elb * loss) 
+
         # mask out the seq len dim (which is dim 1) where pad tokens are
         #loss = loss.masked_fill(pad_mask.unsqueeze(-1), 0)
 

@@ -11,7 +11,7 @@ import torch.distributions as D
 import matplotlib.pyplot as plt
 from tqdm import tqdm, trange
 
-from improved_diffusion.ndm.nets.mlp import Net
+from src.models.ndm.nets.mlp import Net
 
 class VolatilityEta(nn.Module, ABC):
     @abstractmethod

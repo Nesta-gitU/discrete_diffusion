@@ -153,6 +153,7 @@ configs/local/default.yaml
 !data/roc/
 /logs/
 .env
+lightning_trace/
 
 # Aim logging
 .aim

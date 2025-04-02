@@ -11,6 +11,7 @@ import copy
 from collections import OrderedDict
 from their_utils.nn import mean_flat
 from torch.optim.swa_utils import AveragedModel
+from src.models.time_samplers.time_samplers import TimeSampler, UniformBucketSampler, ContSampler
 
 
 #from src.likelihoods.compute_nll import get_likelihood_fn
@@ -55,6 +56,7 @@ class DiffusionModule(LightningModule):
         total_steps: int,
         optimizer: torch.optim.Optimizer,
         compile: bool,
+        time_sampler,
         scheduler: torch.optim.lr_scheduler = None,
         compute_diffusion_loss: bool = True,
         compute_prior_loss: bool = False,
@@ -75,6 +77,8 @@ class DiffusionModule(LightningModule):
         # this line allows to access init params with 'self.hparams' attribute
         # also ensures init params will be stored in ckpt
         self.save_hyperparameters(logger=False)
+
+        self.time_sampler = time_sampler
 
         self.model = diffusion
         self.max_steps = total_steps
@@ -108,13 +112,13 @@ class DiffusionModule(LightningModule):
         model.to(device)
         
 
-    def forward(self, x: torch.Tensor, compute_diffusion_loss, compute_reconstruction_loss, compute_prior_loss, reconstruction_loss_type) -> torch.Tensor:
+    def forward(self, t, x: torch.Tensor, compute_diffusion_loss, compute_reconstruction_loss, compute_prior_loss, reconstruction_loss_type) -> torch.Tensor:
         """Perform a forward pass through the model `self.net`.
 
         :param x: A tensor of images.
         :return: A tensor of logits.
         """
-        t = torch.rand(x.size(0), 1).unsqueeze(2).to(x.device) #sample a random time for each example in the batch
+        #t = torch.rand(x.size(0), 1).unsqueeze(2).to(x.device) #sample a random time for each example in the batch
         #fix t to 0.5 for debug
         #t = torch.ones(x.size(0), 1).unsqueeze(2).to(x.device)/100
         t.requires_grad = True
@@ -165,17 +169,32 @@ class DiffusionModule(LightningModule):
         :param batch_idx: The index of the current batch.
         :return: A tensor of losses between model predictions and targets.
         """
+        t, p = self.time_sampler(bs=batch.size(0), device=batch.device)
+        t = t.unsqueeze(-1)
+        if p is not None:
+            p = p.unsqueeze(-1).unsqueeze(-1)
+            p = p.detach()
+            print(p.shape)
+        print(t.shape)
+        
+        
+        t = t.detach()
 
         #with torch.no_grad():
-        diffusion_loss, reconstruction_loss, prior_loss = self.forward(batch,
+        diffusion_loss, reconstruction_loss, prior_loss = self.forward(t, batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,
                                             compute_prior_loss=self.hparams.compute_prior_loss,
                                             compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
                                             reconstruction_loss_type = self.hparams.reconstruction_loss_type)
 
 
-        elbo = diffusion_loss + reconstruction_loss + prior_loss 
+        if isinstance(self.time_sampler, TimeSampler):
+            diffusion_loss = diffusion_loss / p + self.time_sampler.loss(diffusion_loss.detach(), t)
+            self.log("train/is_loss", diffusion_loss.mean(), on_step=True, prog_bar=True, logger=True)
+        else:
+            pass
 
+        elbo = diffusion_loss + reconstruction_loss + prior_loss 
         diffusion_loss = diffusion_loss.mean()
         reconstruction_loss = reconstruction_loss.mean()
         prior_loss = prior_loss.mean()
@@ -188,10 +207,10 @@ class DiffusionModule(LightningModule):
         
 
         # update and log metrics
-        self.log("train/diffusion_loss", diffusion_loss, on_step=True, prog_bar=True)
-        self.log("train/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=True)
-        self.log("train/prior_loss", prior_loss, on_step=True, prog_bar=False)
-        self.log("train/elbo", elbo, on_step=True, prog_bar=False)
+        self.log("train/diffusion_loss", diffusion_loss, on_step=True, prog_bar=True, logger=True)
+        self.log("train/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=True,logger=True)
+        self.log("train/prior_loss", prior_loss, on_step=True, prog_bar=True,logger=True)
+        self.log("train/elbo", elbo, on_step=True, prog_bar=False,logger=True)
 
         # return loss or backpropagation will fail
         return elbo
@@ -210,7 +229,8 @@ class DiffusionModule(LightningModule):
             labels.
         :param batch_idx: The index of the current batch.
         """
-        diffusion_loss, reconstruction_loss, prior_loss = self.forward(batch,
+        t = torch.rand(batch.size(0), 1).unsqueeze(2).to(batch.device) 
+        diffusion_loss, reconstruction_loss, prior_loss = self.forward(t, batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,
                                             compute_prior_loss=self.hparams.compute_prior_loss,
                                             compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
@@ -242,8 +262,9 @@ class DiffusionModule(LightningModule):
         :param batch_idx: The index of the current batch.
         """
         #this is because I did runs without this attribute and thus it would not checkpoint load correctly otherwise...
+        t = torch.rand(batch.size(0), 1).unsqueeze(2).to(batch.device) 
 
-        diffusion_loss, reconstruction_loss, prior_loss  = self.forward(batch,
+        diffusion_loss, reconstruction_loss, prior_loss  = self.forward(t,batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,
                                             compute_prior_loss=self.hparams.compute_prior_loss,
                                             compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
@@ -273,6 +294,7 @@ class DiffusionModule(LightningModule):
 
         :param stage: Either `"fit"`, `"validate"`, `"test"`, or `"predict"`.
         """
+
         if self.hparams.enable_matmul_tf32:
             torch.backends.cuda.matmul.allow_tf32 = True
         if self.hparams.enable_cudnn_tf32:
@@ -289,8 +311,11 @@ class DiffusionModule(LightningModule):
 
         :return: A dict containing the configured optimizers and learning-rate schedulers to be used for training.
         """
-
-        optimizer = self.hparams.optimizer(self.model.parameters())
+        #torch.optim.Adam([*model.parameters(), *time_sampler.parameters()], lr=1e-4)
+        if isinstance(self.time_sampler, TimeSampler):
+            optimizer = self.hparams.optimizer([*self.model.parameters(), *self.time_sampler.parameters()])
+        else:
+            optimizer = self.hparams.optimizer(self.model.parameters())
 
         def linear_anneal_lambda(step, total_steps):
             return 1 - (step / total_steps)

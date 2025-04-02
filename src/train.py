@@ -55,6 +55,11 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     :param cfg: A DictConfig configuration composed by Hydra.
     :return: A tuple with metrics and dict with all instantiated objects.
     """
+    float32_type = cfg.get("float32_type")
+    if float32_type:
+        print("setting float32_type", float32_type)
+        torch.set_float32_matmul_precision(float32_type)
+
     cfg.ckpt_path, checkpoint_dir = get_checkpoint_path(cfg)
     print("checkpoint_dir", checkpoint_dir)
     print("cfg.ckpt_path", cfg.ckpt_path)
