@@ -19,7 +19,11 @@ def get_latest_checkpoint(run_folder):
     if not run_folder:
         print("No run folder found!")
         return None
-    checkpoints = sorted(glob.glob(f"{run_folder}/*.ckpt"))
+    #checkpoints = sorted(glob.glob(f"{run_folder}/*.ckpt"))
+    #this breaks if we save last, since it will go last, last-v1 etc so last will always be first in sorted (letter before numbers)
+    #checkpoints = sorted(glob.glob(f"{run_folder}/*.ckpt"), key=os.path.getmtime)
+    checkpoints = sorted(glob.glob(f"{run_folder}/*.ckpt"), key=os.path.getmtime, reverse=True)
+
     if not checkpoints:
         print("No checkpoints found!")
     else:
