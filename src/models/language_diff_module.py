@@ -174,8 +174,8 @@ class DiffusionModule(LightningModule):
         if p is not None:
             p = p.unsqueeze(-1).unsqueeze(-1)
             p = p.detach()
-        
-        
+            new_t = torch.arange(0, 1, 0.1).unsqueeze(-1).to(t.device)
+            #print("probability dist over t", self.time_sampler.prob(new_t))        
         
         t = t.detach()
 
@@ -188,12 +188,12 @@ class DiffusionModule(LightningModule):
 
 
         if isinstance(self.time_sampler, TimeSampler):
-            diffusion_loss = diffusion_loss / p + self.time_sampler.loss(diffusion_loss.detach(), t)
-            self.log("train/is_loss", diffusion_loss.mean(), on_step=True, prog_bar=True, logger=True)
+            is_loss = diffusion_loss / p + self.time_sampler.loss(diffusion_loss.detach(), t)
+            self.log("train/is_loss", is_loss.mean(), on_step=True, prog_bar=True, logger=True)
+            elbo = is_loss + reconstruction_loss + prior_loss 
         else:
-            pass
-
-        elbo = diffusion_loss + reconstruction_loss + prior_loss 
+            elbo = diffusion_loss + reconstruction_loss + prior_loss
+        
         diffusion_loss = diffusion_loss.mean()
         reconstruction_loss = reconstruction_loss.mean()
         prior_loss = prior_loss.mean()
@@ -220,6 +220,12 @@ class DiffusionModule(LightningModule):
         # Compute gradient norm
         grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
         self.log("grad_norm", grad_norm, on_step=True, on_epoch=False, prog_bar=True, logger=True)
+        #print the gradients with relation to gamma in the model
+        for name, param in self.model.gamma.named_parameters():
+            #print(f"gradient vector for gamma: {name}, {param.grad}")
+            #also print norm
+            #print(f"gradient norm for gamma: {name}, {torch.norm(param.grad)}")
+            pass
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         """Perform a single validation step on a batch of data from the validation set.

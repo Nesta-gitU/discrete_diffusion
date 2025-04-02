@@ -28,7 +28,7 @@ class NeuralDiffusion(nn.Module):
         self.gamma = gamma
         if gamma_init:
             gamma.load_state_dict(
-                        th.load("/src/model/ndm/gamma_checkpoints/vdm_checkpoint.pth", map_location="cpu"))
+                        torch.load("src/models/ndm/gamma_checkpoints/vdm_checkpoint.pth", map_location="cpu"))
 
         self.vol_eta = vol_eta
         self.pred = pred

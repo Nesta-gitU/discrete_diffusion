@@ -11,7 +11,7 @@ from src.metrics.entropy import get_per_token_entropy
 
 from src.metrics.entropy import get_per_token_entropy
 from src.models.nfdm.components.forward_process import Sqrt
-
+from src.models.ndm.components.gamma import GammaVDM
 
 import os
 
@@ -245,6 +245,9 @@ def plot_gamma(model, out_dir, model_base_name):
     outpath = os.path.join(out_dir, f"{model_base_name}_gammaplots.json")
     os.makedirs(outpath, exist_ok=True)
 
+    #also init a new gamma from scratch and plot that too see what it was originally
+    gamma_og = GammaVDM()
+
     with torch.no_grad():
         model.to("cpu")
         t = torch.linspace(0, 1, 300)[:, None].to(model.pred.model.word_embedding.weight.device)
@@ -266,19 +269,33 @@ def plot_gamma(model, out_dir, model_base_name):
         alpha_sqrt = alpha_sqrt.squeeze(-1)
         sigma_sqrt = sigma_sqrt.squeeze(-1)
 
+        #also get alpha and sigma and gmm for the original gamma
+        gmm_og, _ = gamma_og(t)
+        alpha_2_og = gamma_og.alpha_2(gmm_og)
+        sigma_2_og = gamma_og.sigma_2(gmm_og)
+        alpha_og = alpha_2_og ** 0.5
+        sigma_og = sigma_2_og ** 0.5
+
+        gmm_og = gmm_og.squeeze(-1)
+        alpha_og = alpha_og.squeeze(-1)
+        sigma_og = sigma_og.squeeze(-1)
+
         plt.plot(alpha)
         plt.plot(alpha_sqrt)
-        plt.legend(["alpha", "alpha_sqrt"])
+        plt.plot(alpha_og)
+        plt.legend(["alpha", "alpha_sqrt", "alpha_og"])
         plt.savefig(f"{outpath}/alpha_plot.png")
         plt.close()
 
         plt.plot(sigma)
         plt.plot(sigma_sqrt)
-        plt.legend(["sigma", "sigma_sqrt"])
+        plt.plot(sigma_og)
+        plt.legend(["sigma", "sigma_sqrt", "sigma_og"])
         plt.savefig(f"{outpath}/sigma_plot.png")
         plt.close()
 
         plt.plot(gmm)
-        plt.legend(["gamma"])
+        plt.plot(gmm_og)
+        plt.legend(["gamma", "gamma_og"])
         plt.savefig(f"{outpath}/gamma_plot.png")
         plt.close()

@@ -18,23 +18,23 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-tags: ["e2e", "dit", "basic_diffusion"]
+tags: ["roc", "bert_base", "vdm"]
 
 seed: 12345
 #commment
 data:
-  batch_size: 16
+  batch_size: 512
   block_size: 64
   overfit_one_batch: false #should be false normally
 
 callbacks:
   word_sampler:
-    log_train_every_n_steps: 1000
+    log_train_every_n_steps: 5000
     no_epoch_logging: true
     modes: ["star", "marginal"]
-    n_steps: 2000
+    n_steps: 300
   model_checkpoint:
-    every_n_train_steps: 1000 #save every 1000 steps
+    every_n_train_steps: 3000 #save every 1000 steps
 
 #one epoch has 12556 batches
 #one val epoch has 1396 batches on batch size 256
@@ -54,8 +54,8 @@ model:
   total_steps: ${trainer.max_steps}
   mask_padding: true
   diffusion:
-    diff_loss_type: "half_elbo"
-    gamma_init: False
+    diff_loss_type: "elbo"
+    gamma_init: true
   time_sampler:
     _target_: src.models.time_samplers.time_samplers.UniformBucketSampler #src.models.time_samplers.time_samplers.ContSampler #the other option is src.models.time_samplers.time_samplers.UniformBucketSampler
 
@@ -70,3 +70,4 @@ logger:
 
 model_name: "roc_vdm_half_elbo_no_pad_no_is"
 restart_from_checkpoint: false
+float32_type: high

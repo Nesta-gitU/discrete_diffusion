@@ -63,3 +63,5 @@ logger:
 model_name: "roc_static"
 restart_from_checkpoint: false
 
+float32_type: high
+

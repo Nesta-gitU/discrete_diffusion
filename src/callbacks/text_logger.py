@@ -9,7 +9,8 @@ from lightning import Trainer, Callback
 from lightning.pytorch.loggers.wandb import WandbLogger
 from lightning.pytorch.utilities import rank_zero_only
 from pathlib import Path
-from sampling.sampling import sample_from_diffusion, idx_to_words
+from sampling.sampling import sample_from_diffusion, idx_to_words, plot_gamma
+import time
 
 def get_wandb_logger(trainer: Trainer) -> Optional[WandbLogger]:
     wandb_logger = None
@@ -94,6 +95,9 @@ class TextLogger(Callback):
 
         model = pl_module.ema.module
         model.eval()
+
+        if hasattr(model, 'gamma'):
+            plot_gamma(model,out_dir="output",model_base_name=f"vdm_{model.gamma.__class__.__name__}_{model.transform.__class__.__name__}_{int(time.time())}")
         
         tokenizer = trainer.datamodule.tokenizer
         
