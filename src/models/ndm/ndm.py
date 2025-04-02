@@ -39,6 +39,7 @@ class NeuralDiffusion(nn.Module):
         self.sigma_0 = None
         self.alpha_1 = None
         
+        print("----------------the used diff loss type is: ", diff_loss_type, "----------------")
 
     def forward(self, x: Tensor, t: Tensor, **model_kwargs):
         return self.pred(x, t, **model_kwargs)
