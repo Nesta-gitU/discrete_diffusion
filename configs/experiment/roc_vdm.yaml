@@ -70,5 +70,5 @@ logger:
     experiment: "text8test"
 
 model_name: "roc_vdm_half_elbo_no_pad_no_is"
-restart_from_checkpoint: false
+restart_from_checkpoint: true
 float32_type: high

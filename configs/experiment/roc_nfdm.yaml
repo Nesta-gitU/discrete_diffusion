@@ -69,5 +69,5 @@ logger:
     experiment: "text8test"
 
 model_name: "roc_nfdm"
-restart_from_checkpoint: false
+restart_from_checkpoint: true
 
