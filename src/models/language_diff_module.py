@@ -174,8 +174,7 @@ class DiffusionModule(LightningModule):
         if p is not None:
             p = p.unsqueeze(-1).unsqueeze(-1)
             p = p.detach()
-            print(p.shape)
-        print(t.shape)
+        
         
         
         t = t.detach()
