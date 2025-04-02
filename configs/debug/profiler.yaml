@@ -19,7 +19,7 @@ trainer:
     on_trace_ready: "${...save_trace}"  # Ensures saving
 
 save_trace:
-  _target_: torch.profiler.trace_handler
+  _target_: torch.profiler.tensorboard_trace_handler
   dir_name: "./lightning_trace"  # Now it saves the trace here
   
 
