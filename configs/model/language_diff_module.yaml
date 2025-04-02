@@ -6,6 +6,8 @@ compute_diffusion_loss: true
 compute_prior_loss: false
 compute_reconstruction_loss: true
 reconstruction_loss_type: diff_anchor
+time_sampler:
+  _target_: src.models.time_samplers.time_samplers.ContSampler
 
 optimizer:
   _partial_: true
