@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/train.py experiment=roc_vdm ++diffusion.model.diff_loss_type=half_elbo
+srun python src/train.py experiment=roc_vdm model.diffusion.diff_loss_type=half_elbo
