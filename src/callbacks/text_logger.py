@@ -93,6 +93,8 @@ class TextLogger(Callback):
         hidden_size = pl_module.ema.module.pred.model.in_channels
 
         model = pl_module.ema.module
+        model.eval()
+        
         tokenizer = trainer.datamodule.tokenizer
         
         w_list = []
