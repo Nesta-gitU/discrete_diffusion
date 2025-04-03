@@ -325,10 +325,10 @@ class DiffusionModule(LightningModule):
         else:
             # make parameter groups one for the rest of the model and one for the gamma
             param_groups = [
-                {'params': model.gamma.parameters(), 'lr': 0.1},
-                {'params': model.transform.parameters(), 'lr': 1e-4},
-                {'params': model.vol_eta.parameters(), 'lr': 1e-4},
-                {'params': model.pred.parameters(), 'lr': 1e-4}
+                {'params': self.model.gamma.parameters(), 'lr': 0.1},
+                {'params': self.model.transform.parameters(), 'lr': 1e-4},
+                {'params': self.model.vol_eta.parameters(), 'lr': 1e-4},
+                {'params': self.model.pred.parameters(), 'lr': 1e-4}
             ]
 
             # Remove empty parameter groups
