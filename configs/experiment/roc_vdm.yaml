@@ -56,7 +56,7 @@ model:
   mask_padding: true
   diffusion:
     diff_loss_type: "elbo"
-    gamma_init: false
+    gamma_init: true
   time_sampler:
     _target_: src.models.time_samplers.time_samplers.ContSampler #src.models.time_samplers.time_samplers.ContSampler #the other option is src.models.time_samplers.time_samplers.UniformBucketSampler
 
