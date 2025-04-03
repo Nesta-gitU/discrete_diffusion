@@ -326,8 +326,6 @@ class DiffusionModule(LightningModule):
             #def linear_anneal_lambda(step, total_steps):
             #    return 1 - (step / total_steps)
 
-        optimizer = torch.optim.AdamW(param_groups)
-
         total_steps = self.max_steps  # Replace with your total annealing steps
         #scheduler = LambdaLR(optimizer, lr_lambda=lambda step: linear_anneal_lambda(step, total_steps))
 
