@@ -317,30 +317,16 @@ class DiffusionModule(LightningModule):
         :return: A dict containing the configured optimizers and learning-rate schedulers to be used for training.
         """
         #torch.optim.Adam([*model.parameters(), *time_sampler.parameters()], lr=1e-4)
-        if not hasattr(self.model, "gamma"):
-            if isinstance(self.time_sampler, TimeSampler):
-                optimizer = self.hparams.optimizer([*self.model.parameters(), *self.time_sampler.parameters()])
-            else:
-                optimizer = self.hparams.optimizer(self.model.parameters())
+
+        if isinstance(self.time_sampler, TimeSampler):
+            optimizer = self.hparams.optimizer([*self.model.parameters(), *self.time_sampler.parameters()])
+        else:
+            optimizer = self.hparams.optimizer(self.model.parameters())
 
             #def linear_anneal_lambda(step, total_steps):
             #    return 1 - (step / total_steps)
-        else:
-            # make parameter groups one for the rest of the model and one for the gamma
-            param_groups = [
-                {'params': self.model.gamma.parameters(), 'lr': 1e-4},
-                {'params': self.model.transform.parameters(), 'lr': 1e-4},
-                {'params': self.model.vol_eta.parameters(), 'lr': 1e-4},
-                {'params': self.model.pred.parameters(), 'lr': 1e-4}
-            ]
 
-            # Remove empty parameter groups
-            param_groups = [group for group in param_groups if len(list(group['params'])) > 0]
-
-            optimizer = torch.optim.AdamW(param_groups)
-
-
-        
+        optimizer = torch.optim.AdamW(param_groups)
 
         total_steps = self.max_steps  # Replace with your total annealing steps
         #scheduler = LambdaLR(optimizer, lr_lambda=lambda step: linear_anneal_lambda(step, total_steps))
