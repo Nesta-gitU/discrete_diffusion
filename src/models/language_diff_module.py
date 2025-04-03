@@ -322,10 +322,13 @@ class DiffusionModule(LightningModule):
                 optimizer = self.hparams.optimizer([*self.model.parameters(), *self.time_sampler.parameters()])
             else:
                 optimizer = self.hparams.optimizer(self.model.parameters())
+
+            #def linear_anneal_lambda(step, total_steps):
+            #    return 1 - (step / total_steps)
         else:
             # make parameter groups one for the rest of the model and one for the gamma
             param_groups = [
-                {'params': self.model.gamma.parameters(), 'lr': 0.1},
+                {'params': self.model.gamma.parameters(), 'lr': 1e-4},
                 {'params': self.model.transform.parameters(), 'lr': 1e-4},
                 {'params': self.model.vol_eta.parameters(), 'lr': 1e-4},
                 {'params': self.model.pred.parameters(), 'lr': 1e-4}
@@ -336,13 +339,13 @@ class DiffusionModule(LightningModule):
 
             optimizer = torch.optim.AdamW(param_groups)
 
-        def linear_anneal_lambda(step, total_steps):
-            return 1 - (step / total_steps)
+
+        
 
         total_steps = self.max_steps  # Replace with your total annealing steps
-        scheduler = LambdaLR(optimizer, lr_lambda=lambda step: linear_anneal_lambda(step, total_steps))
+        #scheduler = LambdaLR(optimizer, lr_lambda=lambda step: linear_anneal_lambda(step, total_steps))
 
-        return {"optimizer": optimizer, "lr_scheduler": scheduler}
+        return {"optimizer": optimizer}#, "lr_scheduler": scheduler}
 
 
 if __name__ == "__main__":
