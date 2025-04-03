@@ -317,10 +317,24 @@ class DiffusionModule(LightningModule):
         :return: A dict containing the configured optimizers and learning-rate schedulers to be used for training.
         """
         #torch.optim.Adam([*model.parameters(), *time_sampler.parameters()], lr=1e-4)
-        if isinstance(self.time_sampler, TimeSampler):
-            optimizer = self.hparams.optimizer([*self.model.parameters(), *self.time_sampler.parameters()])
+        if not hasattr(self.model, "gamma"):
+            if isinstance(self.time_sampler, TimeSampler):
+                optimizer = self.hparams.optimizer([*self.model.parameters(), *self.time_sampler.parameters()])
+            else:
+                optimizer = self.hparams.optimizer(self.model.parameters())
         else:
-            optimizer = self.hparams.optimizer(self.model.parameters())
+            # make parameter groups one for the rest of the model and one for the gamma
+            param_groups = [
+                {'params': model.gamma.parameters(), 'lr': 0.1},
+                {'params': model.transform.parameters(), 'lr': 1e-4},
+                {'params': model.vol_eta.parameters(), 'lr': 1e-4},
+                {'params': model.pred.parameters(), 'lr': 1e-4}
+            ]
+
+            # Remove empty parameter groups
+            param_groups = [group for group in param_groups if len(list(group['params'])) > 0]
+
+            optimizer = torch.optim.AdamW(param_groups)
 
         def linear_anneal_lambda(step, total_steps):
             return 1 - (step / total_steps)
