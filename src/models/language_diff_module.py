@@ -342,8 +342,8 @@ class DiffusionModule(LightningModule):
         else:
             optimizer = self.hparams.optimizer(self.model.parameters())
 
-            #def linear_anneal_lambda(step, total_steps):
-            #    return 1 - (step / total_steps)
+        def linear_anneal_lambda(step, total_steps):
+            return 1 - (step / total_steps)
 
         total_steps = self.max_steps  # Replace with your total annealing steps
         if self.hparams.use_scheduler:
