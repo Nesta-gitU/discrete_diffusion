@@ -9,6 +9,7 @@ class Predictor(nn.Module):
         super().__init__()
         
         self.model = model
+        self.stabilize = stabilize  
         
     def forward(self, z, t, **model_kwargs):       
         x = self.model(z, t.squeeze(-1).squeeze(-1), **model_kwargs) 
