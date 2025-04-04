@@ -60,9 +60,9 @@ model:
     gamma_init: true
     add_pure_x_pred: false
     pred:
-      stabilize: false
+      stabilize: true
   time_sampler:
-    _target_: src.models.time_samplers.time_samplers.ContSampler #src.models.time_samplers.time_samplers.ContSampler #the other option is src.models.time_samplers.time_samplers.UniformBucketSampler
+    _target_: src.models.time_samplers.time_samplers.UniformBucketSampler #src.models.time_samplers.time_samplers.ContSampler #the other option is src.models.time_samplers.time_samplers.UniformBucketSampler
 
 logger:
   wandb:
