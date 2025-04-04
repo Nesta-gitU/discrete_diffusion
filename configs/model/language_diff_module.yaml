@@ -15,7 +15,6 @@ optimizer:
   lr: 1e-4
   weight_decay: 0
 
-scheduler: null
 total_steps: 800000
 
 # compile model for faster training with pytorch 2.0

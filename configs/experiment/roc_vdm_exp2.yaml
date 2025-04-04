@@ -56,7 +56,7 @@ model:
   mask_padding: true
   grad_clipping_type: "dynamic"
   diffusion:
-    diff_loss_type: "half_elbo"
+    diff_loss_type: "elbo"
     gamma_init: true
     add_pure_x_pred: true
     pred:
@@ -74,6 +74,6 @@ logger:
   aim:
     experiment: "text8test"
 
-model_name: "roc_vdm_gamma_init"
+model_name: "roc_vdm_exp2"
 restart_from_checkpoint: false
 float32_type: high
