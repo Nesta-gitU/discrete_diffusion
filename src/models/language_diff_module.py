@@ -87,6 +87,7 @@ class DiffusionModule(LightningModule):
         self.mask_padding = mask_padding
         print(self.model)
         print(self.model.pred)
+        self.current_grad_norm = 16
         #self.ema = copy.deepcopy(self.model)
         #self.ema.to("cpu")
         #for p in self.ema.parameters():
