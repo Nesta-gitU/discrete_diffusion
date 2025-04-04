@@ -58,7 +58,7 @@ model:
   diffusion:
     diff_loss_type: "elbo"
     gamma_init: true
-    add_pure_x_pred: true
+    add_pure_x_pred: false
     pred:
       stabilize: true
   time_sampler:
