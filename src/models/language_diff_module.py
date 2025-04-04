@@ -221,18 +221,20 @@ class DiffusionModule(LightningModule):
         self.ema.update_parameters(self.model)
 
         # Compute gradient norm
+
         if self.hparams.grad_clipping_type == "always":
-            grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.grad_clip)
+            new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.grad_clip)
         elif self.hparams.grad_clipping_type == "warmup":
             if self.global_step > 3000:
-                grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.grad_clip)
+                new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.grad_clip)
             else:
-                grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
+                new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
         elif self.hparams.grad_clipping_type == "dynamic":
             alpha = 0.75
 
             if self.global_step == 0:
                 self.current_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
+                new_grad_norm=self.current_grad_norm
             if self.global_step < 3000:
                 new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
                 self.current_grad_norm = alpha * self.current_grad_norm + (1 - alpha) * new_grad_norm
@@ -242,8 +244,8 @@ class DiffusionModule(LightningModule):
             
             self.log("current_clip", self.current_grad_norm*2, on_step=True, on_epoch=False, prog_bar=True, logger=True)
 
-
-        self.log("grad_norm", grad_norm, on_step=True, on_epoch=False, prog_bar=True, logger=True)
+    
+        self.log("grad_norm", new_grad_norm, on_step=True, on_epoch=False, prog_bar=True, logger=True)
         
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
