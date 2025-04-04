@@ -54,12 +54,13 @@ model:
   enable_cudnn_tf32: true
   total_steps: ${trainer.max_steps}
   mask_padding: true
+  grad_clipping_type: "dynamic"
   diffusion:
     diff_loss_type: "half_elbo"
-    gamma_init: false
-    add_pure_x_pred: false
+    gamma_init: true
+    add_pure_x_pred: true
     pred:
-      stabilize: false
+      stabilize: true
   time_sampler:
     _target_: src.models.time_samplers.time_samplers.ContSampler #src.models.time_samplers.time_samplers.ContSampler #the other option is src.models.time_samplers.time_samplers.UniformBucketSampler
   pred: 

@@ -21,11 +21,13 @@ from their_utils.utils import token_discrete_loss
 
 
 class NeuralDiffusion(nn.Module):
-    def __init__(self, transform: AffineTransform, gamma: Gamma, vol_eta: VolatilityEta, pred: Predictor, diff_loss_type = "elbo", gamma_init=False):
+    def __init__(self, transform: AffineTransform, gamma: Gamma, vol_eta: VolatilityEta, pred: Predictor, diff_loss_type = "elbo", gamma_init=False, 
+                 add_pure_x_pred=False):
         super().__init__()
 
         self.transform = transform
         self.gamma = gamma
+        self.add_pure_x_pred = add_pure_x_pred
         if gamma_init:
             gamma.load_state_dict(
                         torch.load("src/models/ndm/gamma_checkpoints/vdm_checkpoint.pth", map_location="cpu"))
@@ -98,8 +100,9 @@ class NeuralDiffusion(nn.Module):
         loss = loss ** 2
 
         # Stabilises training
-        #loss_x = (1 + eta) ** 2 / 4 * (x - x_) ** 2
-        #loss = 0.5 * loss + 0.5 * loss_x
+        if self.add_pure_x_pred:
+            loss_x = (1 + eta) ** 2 / 4 * (x - x_) ** 2
+            loss = 0.5 * loss + 0.5 * loss_x
 
         if self.diff_loss_type == "elbo":
             # ELBO weighting

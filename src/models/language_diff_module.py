@@ -58,6 +58,8 @@ class DiffusionModule(LightningModule):
         compile: bool,
         time_sampler,
         use_scheduler: bool = True,
+        grad_clip: float = float('inf'),
+        grad_clipping_type: str = "always", #options are always, warmup, dynamic
         compute_diffusion_loss: bool = True,
         compute_prior_loss: bool = False,
         compute_reconstruction_loss: bool = True,
@@ -93,6 +95,7 @@ class DiffusionModule(LightningModule):
         #self.update_ema(self.ema, self.model, decay=0) 
         #self.ema.eval()
         self.ema = AveragedModel(self.model, avg_fn=lambda avg, new, _: 0.9999 * avg + (1 - 0.9999) * new)
+        self.avg_grad_norm = MeanMetric()
 
     @torch.no_grad()
     def update_ema(self, ema_model, model, decay=0.9999):
@@ -218,14 +221,30 @@ class DiffusionModule(LightningModule):
         self.ema.update_parameters(self.model)
 
         # Compute gradient norm
-        grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
+        if self.hparams.grad_clipping_type == "always":
+            grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.grad_clip)
+        elif self.hparams.grad_clipping_type == "warmup":
+            if self.global_step > 3000:
+                grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.grad_clip)
+            else:
+                grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
+        elif self.hparams.grad_clipping_type == "dynamic":
+            alpha = 0.75
+
+            if self.global_step == 0:
+                self.current_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
+            if self.global_step < 3000:
+                new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
+                self.current_grad_norm = alpha * self.current_grad_norm + (1 - alpha) * new_grad_norm
+            else:
+                new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.current_grad_norm*2)
+                self.current_grad_norm = alpha * self.current_grad_norm + (1 - alpha) * new_grad_norm
+            
+            self.log("current_clip", self.current_grad_norm*2, on_step=True, on_epoch=False, prog_bar=True, logger=True)
+
+
         self.log("grad_norm", grad_norm, on_step=True, on_epoch=False, prog_bar=True, logger=True)
-        #print the gradients with relation to gamma in the model
-        #for name, param in self.model.gamma.named_parameters():
-            #print(f"gradient vector for gamma: {name}, {param.grad}")
-            #also print norm
-            #print(f"gradient norm for gamma: {name}, {torch.norm(param.grad)}")
-        #    pass
+        
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         """Perform a single validation step on a batch of data from the validation set.
