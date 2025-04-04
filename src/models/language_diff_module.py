@@ -57,7 +57,7 @@ class DiffusionModule(LightningModule):
         optimizer: torch.optim.Optimizer,
         compile: bool,
         time_sampler,
-        scheduler: torch.optim.lr_scheduler = None,
+        use_scheduler: bool = True,
         compute_diffusion_loss: bool = True,
         compute_prior_loss: bool = False,
         compute_reconstruction_loss: bool = True,
@@ -327,10 +327,13 @@ class DiffusionModule(LightningModule):
             #    return 1 - (step / total_steps)
 
         total_steps = self.max_steps  # Replace with your total annealing steps
-        #scheduler = LambdaLR(optimizer, lr_lambda=lambda step: linear_anneal_lambda(step, total_steps))
+        if self.hparams.use_scheduler:
+            scheduler = LambdaLR(optimizer, lr_lambda=lambda step: linear_anneal_lambda(step, total_steps))
+            return_dict = {"optimizer": optimizer, "lr_scheduler": scheduler}
+        else:
+            return_dict = {"optimizer": optimizer}
 
-        return {"optimizer": optimizer}#, "lr_scheduler": scheduler}
-
+        return return_dict
 
 if __name__ == "__main__":
     _ = DiffusionModule(None, None, None, None)

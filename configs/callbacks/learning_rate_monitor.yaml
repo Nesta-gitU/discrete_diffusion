@@ -1,0 +1,8 @@
+learning_rate_monitor:
+  _target_: lightning.pytorch.callbacks.LearningRateMonitor
+  logging_interval: "step" # interval to log the learning rate, can be "step" or "epoch"
+  log_momentum: False # whether to log momentum
+  log_lr_scheduler: False # whether to log the learning rate scheduler
+  log_optimizer: False # whether to log the optimizer
+  log_on_train_epoch_end: False # whether to log at the end of the training epoch
+  log_on_validation_epoch_end: False # whether to log at the end of the validation epoch
