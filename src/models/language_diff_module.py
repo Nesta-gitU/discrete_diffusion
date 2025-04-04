@@ -235,7 +235,7 @@ class DiffusionModule(LightningModule):
             if self.global_step == 0:
                 self.current_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
                 new_grad_norm=self.current_grad_norm
-            if self.global_step < 3000:
+            if self.global_step < 1000:
                 new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
                 self.current_grad_norm = alpha * self.current_grad_norm + (1 - alpha) * new_grad_norm
             else:
