@@ -56,7 +56,7 @@ model:
   mask_padding: true
   grad_clipping_type: "warmup"
   grad_clip: 30
-  use_full_elbo_in_is: true
+  use_full_elbo_in_is: false
   diffusion:
     diff_loss_type: "half_elbo"
     gamma_init: true
@@ -70,7 +70,7 @@ logger:
   wandb:
     tags: ${tags}
     group: "roc"
-    project: "roc my code" #if just testing garbage use test
+    project: "roc my code exp3" #if just testing garbage use test
     #mode: "disabled" if you dont want ot log a debug run 
   aim:
     experiment: "text8test"
