@@ -81,6 +81,8 @@ class DiffusionModule(LightningModule):
         # also ensures init params will be stored in ckpt
         self.save_hyperparameters(logger=False)
 
+        self.use_full_elbo_in_is = use_full_elbo_in_is
+
         if use_full_elbo_in_is and not isinstance(time_sampler, TimeSampler):
             self.use_full_elbo_in_is = False
             print("use_full_elbo_in_is is set to False because time_sampler is not a TimeSampler")
