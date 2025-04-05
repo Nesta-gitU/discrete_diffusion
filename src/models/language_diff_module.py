@@ -85,6 +85,7 @@ class DiffusionModule(LightningModule):
         self.model = diffusion
         self.max_steps = total_steps
         self.mask_padding = mask_padding
+        self.grad_clip = grad_clip
         print(self.model)
         print(self.model.pred)
         self.current_grad_norm = 16
