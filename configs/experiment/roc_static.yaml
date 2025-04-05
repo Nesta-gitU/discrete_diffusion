@@ -25,7 +25,7 @@ seed: 12345
 data:
   batch_size: 64
   block_size: 64
-  overfit_one_batch: true #should be false normally
+  overfit_one_batch: false #should be false normally
 
 callbacks:
   word_sampler:
