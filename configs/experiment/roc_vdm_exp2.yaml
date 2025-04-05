@@ -43,7 +43,7 @@ trainer:
   check_val_every_n_epoch: null
   val_check_interval: 50000
   max_epochs: null
-  log_every_n_steps: 50
+  log_every_n_steps: 1
 
 model:      
   compute_diffusion_loss: x_0
@@ -54,7 +54,8 @@ model:
   enable_cudnn_tf32: true
   total_steps: ${trainer.max_steps}
   mask_padding: true
-  grad_clipping_type: "dynamic"
+  grad_clipping_type: "warmup"
+  grad_clip: 30
   diffusion:
     diff_loss_type: "elbo"
     gamma_init: true
