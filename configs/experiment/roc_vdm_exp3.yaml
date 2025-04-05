@@ -56,6 +56,7 @@ model:
   mask_padding: true
   grad_clipping_type: "warmup"
   grad_clip: 30
+  use_full_elbo_loss_in_is: true
   diffusion:
     diff_loss_type: "half_elbo"
     gamma_init: true
@@ -74,6 +75,6 @@ logger:
   aim:
     experiment: "text8test"
 
-model_name: "roc_vdm_exp2"
+model_name: "roc_vdm_exp3"
 restart_from_checkpoint: false
 float32_type: high

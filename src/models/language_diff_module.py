@@ -60,6 +60,7 @@ class DiffusionModule(LightningModule):
         use_scheduler: bool = True,
         grad_clip: float = float('inf'),
         grad_clipping_type: str = "always", #options are always, warmup, dynamic
+        use_full_elbo_in_is: bool = True,
         compute_diffusion_loss: bool = True,
         compute_prior_loss: bool = False,
         compute_reconstruction_loss: bool = True,
@@ -80,8 +81,11 @@ class DiffusionModule(LightningModule):
         # also ensures init params will be stored in ckpt
         self.save_hyperparameters(logger=False)
 
-        self.time_sampler = time_sampler
+        if use_full_elbo_in_is and not isinstance(time_sampler, TimeSampler):
+            self.use_full_elbo_in_is = False
+            print("use_full_elbo_in_is is set to False because time_sampler is not a TimeSampler")
 
+        self.time_sampler = time_sampler
         self.model = diffusion
         self.max_steps = total_steps
         self.mask_padding = mask_padding
@@ -155,14 +159,19 @@ class DiffusionModule(LightningModule):
             diffusion_loss = diffusion_loss.masked_fill(pad_mask.unsqueeze(-1), 0) # shape [B, Seqlen, Embed]
             N_over_S = diffusion_loss.shape[1] / (~pad_mask).sum(dim=-1).float()
             diffusion_loss = mean_flat(diffusion_loss)* N_over_S
+
+            if diffusion_loss_full_elbo is not None:
+                diffusion_loss_full_elbo = diffusion_loss_full_elbo.masked_fill(pad_mask.unsqueeze(-1), 0)
+                N_over_S = diffusion_loss_full_elbo.shape[1] / (~pad_mask).sum(dim=-1).float()
+                diffusion_loss_full_elbo = mean_flat(diffusion_loss_full_elbo)* N_over_S
+
         else:
             diffusion_loss = mean_flat(diffusion_loss)        
         
 
-        
         prior_loss = mean_flat(prior_loss)
 
-        return diffusion_loss, reconstruction_loss, prior_loss
+        return diffusion_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss
 
     def on_train_start(self) -> None:
         """Lightning hook that is called when training begins."""
@@ -192,7 +201,7 @@ class DiffusionModule(LightningModule):
         t = t.detach()
 
         #with torch.no_grad():
-        diffusion_loss, reconstruction_loss, prior_loss = self.forward(t, batch,
+        diffusion_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.forward(t, batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,
                                             compute_prior_loss=self.hparams.compute_prior_loss,
                                             compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
@@ -200,7 +209,11 @@ class DiffusionModule(LightningModule):
 
 
         if isinstance(self.time_sampler, TimeSampler):
-            is_loss = diffusion_loss / p + self.time_sampler.loss(diffusion_loss.detach(), t)
+            if (diffusion_loss_full_elbo is not None) and self.use_full_elbo_in_is:
+                is_loss = diffusion_loss / p + self.time_sampler.loss(diffusion_loss_full_elbo.detach(), t)
+                #this is super suspicious I need to study the use of importance sampling in this way 
+            else:
+                is_loss = diffusion_loss / p + self.time_sampler.loss(diffusion_loss.detach(), t)
             self.log("train/is_loss", is_loss.mean(), on_step=True, prog_bar=True, logger=True)
             elbo = is_loss + reconstruction_loss + prior_loss 
         else:
@@ -277,7 +290,7 @@ class DiffusionModule(LightningModule):
         :param batch_idx: The index of the current batch.
         """
         t = torch.rand(batch.size(0), 1).unsqueeze(2).to(batch.device) 
-        diffusion_loss, reconstruction_loss, prior_loss = self.forward(t, batch,
+        diffusion_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.forward(t, batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,
                                             compute_prior_loss=self.hparams.compute_prior_loss,
                                             compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
@@ -311,7 +324,7 @@ class DiffusionModule(LightningModule):
         #this is because I did runs without this attribute and thus it would not checkpoint load correctly otherwise...
         t = torch.rand(batch.size(0), 1).unsqueeze(2).to(batch.device) 
 
-        diffusion_loss, reconstruction_loss, prior_loss  = self.forward(t,batch,
+        diffusion_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss  = self.forward(t,batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,
                                             compute_prior_loss=self.hparams.compute_prior_loss,
                                             compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
