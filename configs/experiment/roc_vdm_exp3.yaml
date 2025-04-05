@@ -56,7 +56,7 @@ model:
   mask_padding: true
   grad_clipping_type: "warmup"
   grad_clip: 30
-  use_full_elbo_in_is: false
+  use_full_elbo_in_is: true
   diffusion:
     diff_loss_type: "half_elbo"
     gamma_init: true
