@@ -75,5 +75,5 @@ logger:
     experiment: "text8test"
 
 model_name: "roc_vdm_exp2"
-restart_from_checkpoint: true
+restart_from_checkpoint: false
 float32_type: high

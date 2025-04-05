@@ -61,7 +61,10 @@ class NeuralDiffusion(nn.Module):
         diffusion_loss = self.get_diffusion_loss(embeddings, t, pad_mask)
 
         if compute_reconstruction_loss:
-            reconstruction_loss = self.reconstruction_loss(x, t, embeddings, token_discrete_loss)
+            if reconstruction_loss_type == "collapse":
+                reconstruction_loss = self.reconstruction_loss(x, t)
+            elif reconstruction_loss_type == "diff_anchor":
+                reconstruction_loss = self.reconstruction_loss(embeddings, t)
         else:
             reconstruction_loss = torch.zeros(bs, dtype=embeddings.dtype, device=x.device).mean()
 
@@ -129,7 +132,7 @@ class NeuralDiffusion(nn.Module):
 
         return loss
 
-    def reconstruction_loss(self, x, t, embeddings, token_discrete_loss):
+    def reconstruction_loss(self, x, t):
         eps = torch.randn_like(embeddings)
 
         if (self.alpha_0 is not None) and (self.alpha_0.size(0) == t.size(0)):
