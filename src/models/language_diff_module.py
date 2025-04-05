@@ -168,7 +168,8 @@ class DiffusionModule(LightningModule):
                 diffusion_loss_full_elbo = mean_flat(diffusion_loss_full_elbo)* N_over_S
 
         else:
-            diffusion_loss = mean_flat(diffusion_loss)        
+            diffusion_loss = mean_flat(diffusion_loss)   
+            diffusion_loss_full_elbo = mean_flat(diffusion_loss_full_elbo) if diffusion_loss_full_elbo is not None else None
         
 
         prior_loss = mean_flat(prior_loss)
@@ -212,6 +213,8 @@ class DiffusionModule(LightningModule):
 
         if isinstance(self.time_sampler, TimeSampler):
             if (diffusion_loss_full_elbo is not None) and self.use_full_elbo_in_is:
+                #print(diffusion_loss_full_elbo.shape)
+                #print(diffusion_loss.shape)
                 is_loss = diffusion_loss / p + self.time_sampler.loss(diffusion_loss_full_elbo.detach(), t)
                 #this is super suspicious I need to study the use of importance sampling in this way 
             else:
