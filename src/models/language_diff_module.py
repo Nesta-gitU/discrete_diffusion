@@ -236,17 +236,26 @@ class DiffusionModule(LightningModule):
             if self.global_step == 0:
                 self.current_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
                 new_grad_norm=self.current_grad_norm
+                self.log("current_clip", self.current_grad_norm*2, on_step=True, on_epoch=False, prog_bar=True, logger=True)
             if self.global_step < 50:
                 new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
+                self.log("current_clip", self.current_grad_norm*2, on_step=True, on_epoch=False, prog_bar=True, logger=True)
                 self.current_grad_norm = alpha * self.current_grad_norm + (1 - alpha) * new_grad_norm
             else:
-                new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.current_grad_norm*2)
+                new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.current_grad_norm*1.5)
+                self.log("current_clip", self.current_grad_norm*2, on_step=True, on_epoch=False, prog_bar=True, logger=True)
                 self.current_grad_norm = alpha * self.current_grad_norm + (1 - alpha) * new_grad_norm
             
-            self.log("current_clip", self.current_grad_norm*2, on_step=True, on_epoch=False, prog_bar=True, logger=True)
+            
 
     
         self.log("grad_norm", new_grad_norm, on_step=True, on_epoch=False, prog_bar=True, logger=True)
+
+        def on_save_checkpoint(self, checkpoint):
+            checkpoint['current_grad_norm'] = self.current_grad_norm
+
+        def on_load_checkpoint(self, checkpoint):
+            self.current_grad_norm = checkpoint.get('current_grad_norm', 10) #if its not there then its not used so None would also be fine
         
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
