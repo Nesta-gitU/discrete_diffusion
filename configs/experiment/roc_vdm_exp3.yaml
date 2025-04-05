@@ -5,7 +5,7 @@
 
 defaults:
     #choose which components to use for the diffusion model
-  - /model/diffusion@model.diffusion: nfdm_static.yaml
+  - /model/diffusion@model.diffusion: vdm.yaml
 
   #choose which backbone to use for the predictor and forward process
   - /model/backbone@model.diffusion.pred.model: bert.yaml
@@ -18,23 +18,23 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-tags: ["e2e", "dit", "basic_diffusion"]
+tags: ["roc", "bert_base", "vdm"]
 
 seed: 12345
 #commment
 data:
-  batch_size: 64
+  batch_size: 512
   block_size: 64
   overfit_one_batch: false #should be false normally
 
 callbacks:
   word_sampler:
-    log_train_every_n_steps: 10000
+    log_train_every_n_steps: 5000
     no_epoch_logging: true
     modes: ["star", "marginal"]
     n_steps: 2000
   model_checkpoint:
-    every_n_train_steps: 10000 #save every 1000 steps
+    every_n_train_steps: 5000 #save every 1000 steps
 
 #one epoch has 12556 batches
 #one val epoch has 1396 batches on batch size 256
@@ -53,9 +53,17 @@ model:
   enable_matmul_tf32: true
   enable_cudnn_tf32: true
   total_steps: ${trainer.max_steps}
-  mask_padding: false
+  mask_padding: true
+  grad_clipping_type: "warmup"
+  grad_clip: 30
   diffusion:
-    diff_loss_type: x_0_prediction
+    diff_loss_type: "half_elbo"
+    gamma_init: true
+    add_pure_x_pred: false
+    pred:
+      stabilize: true
+  time_sampler:
+    _target_: src.models.time_samplers.time_samplers.UniformBucketSampler #src.models.time_samplers.time_samplers.ContSampler #the other option is src.models.time_samplers.time_samplers.UniformBucketSampler
 
 logger:
   wandb:
@@ -66,8 +74,6 @@ logger:
   aim:
     experiment: "text8test"
 
-model_name: "roc_static"
-restart_from_checkpoint: true
-
+model_name: "roc_vdm_exp2"
+restart_from_checkpoint: false
 float32_type: high
-

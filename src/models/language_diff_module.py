@@ -88,7 +88,6 @@ class DiffusionModule(LightningModule):
         self.grad_clip = grad_clip
         print(self.model)
         print(self.model.pred)
-        self.current_grad_norm = 16
         #self.ema = copy.deepcopy(self.model)
         #self.ema.to("cpu")
         #for p in self.ema.parameters():
