@@ -58,7 +58,7 @@ class NeuralDiffusion(nn.Module):
         pad_mask = x == 3
         embeddings = self.pred.model.get_embeds(x)    
 
-        diffusion_loss, embeddings_ = self.get_diffusion_loss(embeddings, t, pad_mask)
+        diffusion_loss, diffusion_loss_full_elbo, embeddings_ = self.get_diffusion_loss(embeddings, t, pad_mask)
 
         if compute_reconstruction_loss:
             if reconstruction_loss_type == "collapse":
@@ -74,7 +74,7 @@ class NeuralDiffusion(nn.Module):
         else:
             prior_loss = torch.zeros(bs, dtype=embeddings.dtype, device=x.device)
         
-        return diffusion_loss, reconstruction_loss, prior_loss
+        return diffusion_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss
 
             
         
@@ -111,26 +111,29 @@ class NeuralDiffusion(nn.Module):
             # ELBO weighting
             lmbd_elb = 0.5 * torch.exp(-gamma) * d_gamma / eta
             loss = lmbd_elb * loss
+            diffusion_loss_full_elbo = None
         
         elif self.diff_loss_type == "x_0_prediction":
             # L_x weighting
             lmbd_x = 4 / (1 + eta) ** 2 
             loss = lmbd_x * loss 
+            diffusion_loss_full_elbo = None
             
         elif self.diff_loss_type == "half_elbo":
             lmbd_elb = 0.5 * torch.exp(-gamma) * d_gamma / eta
             lmbd_x = 4 / (1 + eta) ** 2 
 
             coef = (lmbd_x.detach()/lmbd_elb.detach())
+            diffusion_loss_full_elbo = lmbd_elb * loss
 
-            loss = coef * (lmbd_elb * loss) 
+            loss = coef * diffusion_loss_full_elbo
 
         # mask out the seq len dim (which is dim 1) where pad tokens are
         #loss = loss.masked_fill(pad_mask.unsqueeze(-1), 0)
 
         #loss = loss.sum(dim=1), dont reduce yet
 
-        return loss, x_
+        return loss, diffusion_loss_full_elbo, x_
 
     def reconstruction_loss(self, x, t, embeddings):
         eps = torch.randn_like(embeddings)

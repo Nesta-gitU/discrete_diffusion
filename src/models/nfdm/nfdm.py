@@ -145,7 +145,7 @@ class NeuralDiffusion(nn.Module):
         else:
             prior_loss = torch.zeros(bs, dtype=embeddings.dtype, device=x.device)
 
-        return diffusion_loss, reconstruction_loss, prior_loss
+        return diffusion_loss, None, reconstruction_loss, prior_loss
 
     def diffusion_loss(self, alpha, alpha_prime, f_s, f_dm, f_ds, eps, g2, x_, x, z, t, f):
         # compute the drift term of the forward process based on eps
@@ -178,12 +178,13 @@ class NeuralDiffusion(nn.Module):
         #snr_prime = 2 * f_m * (f_dm * f_s - f_m * f_ds) / (f_s ** 3)
         #snr_prime = 2 * alpha * (alpha_prime * f_s - alpha * f_ds) / (f_s ** 3)
         #print(snr_prime, "snr_primenew")
-        snr_prime = (-1/2) * ((0.9999*t + 0.000099) ** (-3/2)) * 0.9999
+        
 
         if self.diff_loss_type == "elbo":
             loss = 0.5 * (f_drift - r_drift) ** 2 / g2
         
         elif self.diff_loss_type == "x_0_prediction":
+            snr_prime = (-1/2) * ((0.9999*t + 0.000099) ** (-3/2)) * 0.9999
             loss = (1/(-0.5 * snr_prime)) * 0.5 * (f_drift - r_drift) ** 2 / g2
         else:
             raise ValueError("Invalid diffusion loss type")

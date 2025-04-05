@@ -135,7 +135,15 @@ class DiffusionModule(LightningModule):
         #    print(f"t: {t[i]}")
         # sample just t = 1 the most corupted noise level
         #t = torch.ones(x.size(0), 1).unsqueeze(2).to(x.device)
-        diffusion_loss, reconstruction_loss, prior_loss = self.model.get_losses(x, t, 
+
+        #add diffusion_loss_full_elbo here, also add masking of padding to it
+        #also find everywhere forward is being called and change the output signature there
+        #also add a None checker on diffusion_loss_full_elbo and if it is none 
+        #and the setting for use diffusion loss full elbo is was set, then throw an error for incompatible combination of settings
+        #also put correct ifstatements and stuff in train
+        #also finally if use diffusion_loss_full_elbo and IS not used automatically set use diff loss to False
+        
+        diffusion_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.model.get_losses(x, t, 
                                                                                 compute_diffusion_loss, 
                                                                                 compute_prior_loss, 
                                                                                 compute_reconstruction_loss, 
