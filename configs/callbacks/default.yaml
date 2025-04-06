@@ -4,6 +4,7 @@ defaults:
   - _self_
   - word_sampler
   - learning_rate_monitor
+  - is
 
 model_summary:
   max_depth: 2

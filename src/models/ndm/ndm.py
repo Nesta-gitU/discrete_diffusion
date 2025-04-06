@@ -98,8 +98,9 @@ class NeuralDiffusion(nn.Module):
         #so I would like to weight like x prediction so I should use this weighting instead
         #the l_x weighting above still includes the 1/2g(t) term but in my other formulation it actually doesnt, since g(t) >1? is that true, that could make the loss a bit lower
         #okay I take that back
+        one_over_dgamma = torch.clamp(1 / (d_gamma), max=10000) #so it doesnt go to inf 
 
-        loss = (1 + eta) / 2 * (m - m_) + 1 / d_gamma * (d_m - d_m_)
+        loss = (1 + eta) / 2 * (m - m_) + one_over_dgamma * (d_m - d_m_)
         loss = loss ** 2
 
         # Stabilises training

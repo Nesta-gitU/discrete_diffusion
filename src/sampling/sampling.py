@@ -242,9 +242,9 @@ def idx_to_words(index, tokenizer) -> list:
 
 def plot_gamma(model, out_dir, model_base_name):
     # Create the directory if it doesn't exist
-    outpath = os.path.join(out_dir, f"{model_base_name}_gammaplots.json")
+    outpath = os.path.join(out_dir, f"{model_base_name}")
     os.makedirs(outpath, exist_ok=True)
-
+    
     #also init a new gamma from scratch and plot that too see what it was originally
     gamma_og = GammaVDM()
 

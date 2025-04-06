@@ -96,8 +96,10 @@ class TextLogger(Callback):
         model = pl_module.ema.module
         model.eval()
 
+        run_name = logger.experiment.name
+
         if hasattr(model, 'gamma'):
-            plot_gamma(model,out_dir="output",model_base_name=f"vdm_{model.gamma.__class__.__name__}_{model.transform.__class__.__name__}_{int(time.time())}")
+            plot_gamma(model,out_dir="output",model_base_name=f"vdm_{model.gamma.__class__.__name__}_{model.transform.__class__.__name__}_{run_name}")
         
         tokenizer = trainer.datamodule.tokenizer
         
