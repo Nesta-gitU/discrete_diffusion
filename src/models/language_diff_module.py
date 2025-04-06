@@ -257,7 +257,7 @@ class DiffusionModule(LightningModule):
             else:
                 new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
         elif self.hparams.grad_clipping_type == "dynamic":
-            alpha = 0.95
+            alpha = 0.99
 
             if self.global_step == 0:
                 self.current_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
@@ -269,10 +269,10 @@ class DiffusionModule(LightningModule):
                 self.current_grad_norm = alpha * self.current_grad_norm + (1 - alpha) * new_grad_norm
             else:
                 new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.current_grad_norm*1.5)
-                if new_grad_norm > self.current_grad_norm*1.5:
+                if new_grad_norm > self.current_grad_norm*2:
                     print("we should have clipped")
-                    new_grad_norm = self.current_grad_norm*1.5 #add some downward bias to the gradient norm so it cannot blow up over the course of a couple steps 
-                self.log("current_clip", self.current_grad_norm*1.5, on_step=True, on_epoch=False, prog_bar=True, logger=True)
+                    new_grad_norm = self.current_grad_norm*2 #add some downward bias to the gradient norm so it cannot blow up over the course of a couple steps 
+                self.log("current_clip", self.current_grad_norm*2, on_step=True, on_epoch=False, prog_bar=True, logger=True)
                 self.current_grad_norm = alpha * self.current_grad_norm + (1 - alpha) * new_grad_norm
             
             
