@@ -1,0 +1,21 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu_a100
+#SBATCH --gpus=1
+#SBATCH --job-name=basic_diff
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=9
+#SBATCH --time=24:00:00
+#SBATCH --output=$HOME/discrete_diffusion/slurm_outputs/slurm_output_%A.out
+
+module purge
+module load 2023
+module load Anaconda3/2023.07-2
+
+# Your job starts in the directory where you call sbatch
+cd $HOME/discrete_diffusion
+# Activate your environment
+source activate fomo
+# Run your code
+srun python src/train.py experiment=roc_vdm_exp3 ++model.reconstruction_loss_type="collapse" ++model.mask_padding=False ++model.diffusion.gamma_init=False ++restart_from_checkpoint=False \
+    +model.diffusion.gamma.gamma_0=-5
