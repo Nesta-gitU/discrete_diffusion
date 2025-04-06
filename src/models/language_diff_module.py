@@ -280,11 +280,11 @@ class DiffusionModule(LightningModule):
     
         self.log("grad_norm", new_grad_norm, on_step=True, on_epoch=False, prog_bar=True, logger=True)
 
-        def on_save_checkpoint(self, checkpoint):
-            checkpoint['current_grad_norm'] = self.current_grad_norm
+    def on_save_checkpoint(self, checkpoint):
+        checkpoint['current_grad_norm'] = self.current_grad_norm
 
-        def on_load_checkpoint(self, checkpoint):
-            self.current_grad_norm = checkpoint.get('current_grad_norm', 10) #if its not there then its not used so None would also be fine
+    def on_load_checkpoint(self, checkpoint):
+        self.current_grad_norm = checkpoint.get('current_grad_norm', 0.22) #if its not there then its not used so None would also be fine
         
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
