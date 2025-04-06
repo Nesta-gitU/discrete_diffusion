@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/train.py experiment=roc_vdm_exp3 ++model.reconstruction_loss_type="collapse" ++model.mask_padding=False ++model.diffusion.gamma_init=False ++restart_from_checkpoint=True
+srun python src/train.py experiment=roc_vdm_exp3 ++model.reconstruction_loss_type="diff_anchor" ++model.mask_padding=False ++model.diffusion.gamma_init=False ++restart_from_checkpoint=True
