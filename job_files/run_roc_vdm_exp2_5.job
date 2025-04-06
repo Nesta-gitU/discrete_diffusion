@@ -17,5 +17,5 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/train.py experiment=roc_vdm_exp2 ++restart_from_checkpoint=False ++model.diffusion.gamma_init=False ++model_name=roc_vdm_exp2_4 ++model.mask_padding=False \
-    +model.diffusion.gamma.gamma_0=-5
+srun python src/train.py experiment=roc_vdm_exp2 ++restart_from_checkpoint=False ++model.diffusion.gamma_init=False ++model_name=roc_vdm_exp2_5 ++model.mask_padding=False \
+    +model.diffusion.gamma.gamma_0=-5 ++model.reconstruction_loss_type="diff_anchor"
