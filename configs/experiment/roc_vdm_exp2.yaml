@@ -55,7 +55,7 @@ model:
   total_steps: ${trainer.max_steps}
   mask_padding: true
   grad_clipping_type: "warmup"
-  grad_clip: 30
+  grad_clip: 2
   diffusion:
     diff_loss_type: "elbo"
     gamma_init: true
