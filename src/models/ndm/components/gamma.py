@@ -54,9 +54,11 @@ class PosLinear(nn.Linear):
 
 
 class GammaVDM(Gamma):
-    def __init__(self):
+    def __init__(self, gamma_0=-10, gamma_1=10):
         super().__init__()
 
+        self.gamma_0 = gamma_0
+        self.gamma_1 = gamma_1
         self.fc1 = PosLinear(1, 1)
         self.fc2 = PosLinear(1, 1024)
         self.fc3 = PosLinear(1024, 1)
@@ -73,8 +75,8 @@ class GammaVDM(Gamma):
     def get_gamma(self, t):
         x_0 = torch.zeros(1, 1,1).to(t.device)
         x_1 = torch.ones(1, 1,1).to(t.device)
-        y_0 = torch.ones(1, 1,1) * (-10)
-        y_1 = torch.ones(1, 1,1) * 10
+        y_0 = torch.ones(1, 1,1) * (self.gamma_0)
+        y_1 = torch.ones(1, 1,1) * self.gamma_1
         y_gap = y_1 - y_0
 
         y_0 = y_0.to(t.device)
