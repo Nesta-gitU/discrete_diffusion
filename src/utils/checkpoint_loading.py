@@ -47,6 +47,11 @@ def get_checkpoint_path(cfg):
     # Determine which folder to use
     if restart:
         run_folder = os.path.join(model_dir, specific_run) if specific_run else get_latest_run_folder(model_name)
+        if not run_folder:
+            timestamp = time.strftime("%Y%m%d_%H%M%S")
+            run_folder = os.path.join(model_dir, timestamp)
+            os.makedirs(run_folder, exist_ok=True)
+            print(f"Creating new run folder: {run_folder}")    
     else:
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         run_folder = os.path.join(model_dir, timestamp)

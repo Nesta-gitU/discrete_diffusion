@@ -63,6 +63,7 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     cfg.ckpt_path, checkpoint_dir = get_checkpoint_path(cfg)
     print("checkpoint_dir", checkpoint_dir)
     print("cfg.ckpt_path", cfg.ckpt_path)
+    
 
     # set seed for random number generators in pytorch, numpy and python.random
     if cfg.get("seed"):
