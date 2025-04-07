@@ -128,6 +128,14 @@ class NeuralDiffusion(nn.Module):
             diffusion_loss_full_elbo = lmbd_elb * loss
 
             loss = coef * diffusion_loss_full_elbo
+        elif self.diff_loss_type == "half_half_elbo":
+            lmbd_elb = 0.5 * torch.exp(-gamma) * d_gamma / eta
+            lmbd_x = 4 / (1 + eta) ** 2 
+
+            coef = (lmbd_x/lmbd_elb.detach())
+            diffusion_loss_full_elbo = lmbd_elb * loss
+
+            loss = coef * diffusion_loss_full_elbo
 
         # mask out the seq len dim (which is dim 1) where pad tokens are
         #loss = loss.masked_fill(pad_mask.unsqueeze(-1), 0)

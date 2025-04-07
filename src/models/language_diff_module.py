@@ -198,7 +198,7 @@ class DiffusionModule(LightningModule):
         if p is not None:
             p = p.unsqueeze(-1).unsqueeze(-1)
             p = p.detach()
-            new_t = torch.arange(0, 1, 0.1).unsqueeze(-1).to(t.device)
+            #dnew_t = torch.arange(0, 1, 0.1).unsqueeze(-1).to(t.device)
             #print("probability dist over t", self.time_sampler.prob(new_t))        
         
         t = t.detach()
