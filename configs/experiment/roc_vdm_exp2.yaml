@@ -34,7 +34,7 @@ callbacks:
     modes: ["star", "marginal"]
     n_steps: 2000
   model_checkpoint:
-    every_n_train_steps: 5000 #save every 1000 steps
+    every_n_train_steps: 20000 #save every 1000 steps
 
 #one epoch has 12556 batches
 #one val epoch has 1396 batches on batch size 256
@@ -55,7 +55,7 @@ model:
   total_steps: ${trainer.max_steps}
   mask_padding: true
   grad_clipping_type: "warmup"
-  grad_clip: 2
+  grad_clip: 20
   diffusion:
     diff_loss_type: "elbo"
     gamma_init: true
