@@ -40,6 +40,9 @@ class NeuralDiffusion(nn.Module):
         self.alpha_0 = None
         self.sigma_0 = None
         self.alpha_1 = None
+
+        if diff_loss_type == "elbo_noise_scaling":
+            self.scalar = nn.Parameter(torch.tensor([1.0]))
         
         print("----------------the used diff loss type is: ", diff_loss_type, "----------------")
 
@@ -118,7 +121,7 @@ class NeuralDiffusion(nn.Module):
             diffusion_loss_full_elbo = None
         
         elif self.diff_loss_type == "elbo_noise_scaling":
-            lmbd_elb = 0.5 * torch.exp(-gamma/2) * d_gamma / eta
+            lmbd_elb = 0.5 * torch.exp(-gamma*self.scalar) * d_gamma / eta
             loss = lmbd_elb * loss
             diffusion_loss_full_elbo = None
         
