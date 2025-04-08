@@ -19,6 +19,7 @@ ckpt_path: null
 
 # task name, determines output directory path
 task_name: "train"
+plot_time_and_loss: True
 
 # tags to help you identify your experiments
 # you can overwrite this in experiment configs

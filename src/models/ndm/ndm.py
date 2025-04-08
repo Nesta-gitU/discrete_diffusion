@@ -58,7 +58,7 @@ class NeuralDiffusion(nn.Module):
         pad_mask = x == 3
         embeddings = self.pred.model.get_embeds(x)    
 
-        diffusion_loss, diffusion_loss_full_elbo, embeddings_ = self.get_diffusion_loss(embeddings, t, pad_mask)
+        diffusion_loss, diffusion_loss_full_elbo, embeddings_, _, _, _ = self.get_diffusion_loss(embeddings, t, pad_mask)
 
         if compute_reconstruction_loss:
             if reconstruction_loss_type == "collapse":
@@ -100,8 +100,11 @@ class NeuralDiffusion(nn.Module):
         #okay I take that back
         one_over_dgamma = torch.clamp(1 / (d_gamma), max=10000) #so it doesnt go to inf 
 
-        loss = (1 + eta) / 2 * (m - m_) + one_over_dgamma * (d_m - d_m_)
-        loss = loss ** 2
+        loss_1 = (1 + eta) / 2 * (m - m_) + one_over_dgamma * (d_m - d_m_)
+        loss_1 = loss_1 ** 2
+        loss = loss_1
+
+
 
         # Stabilises training
         if self.add_pure_x_pred:
@@ -111,6 +114,11 @@ class NeuralDiffusion(nn.Module):
         if self.diff_loss_type == "elbo":
             # ELBO weighting
             lmbd_elb = 0.5 * torch.exp(-gamma) * d_gamma / eta
+            loss = lmbd_elb * loss
+            diffusion_loss_full_elbo = None
+        
+        elif self.diff_loss_type == "elbo_noise_scaling":
+            lmbd_elb = 0.5 * torch.exp(-gamma/2) * d_gamma / eta
             loss = lmbd_elb * loss
             diffusion_loss_full_elbo = None
         
@@ -142,7 +150,7 @@ class NeuralDiffusion(nn.Module):
 
         #loss = loss.sum(dim=1), dont reduce yet
 
-        return loss, diffusion_loss_full_elbo, x_
+        return loss, diffusion_loss_full_elbo, x_, torch.exp(-gamma/2), d_gamma, loss_1
 
     def reconstruction_loss(self, x, t, embeddings):
         eps = torch.randn_like(embeddings)

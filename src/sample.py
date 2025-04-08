@@ -9,8 +9,10 @@ from omegaconf import DictConfig
 
 
 
+
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.sampling.sampling import sample_code
+from src.callbacks.is_logger import plot_timedist, plot_lossdist
 # ------------------------------------------------------------------------------------ #
 # the setup_root above is equivalent to:
 # - adding project root dir to PYTHONPATH
@@ -231,6 +233,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
         run_folder = get_latest_run_folder(cfg.model_name)
         print(run_folder)
+        print(cfg.model_name)
         cfg.ckpt_path = get_latest_checkpoint(run_folder)  # Use model_name from config
 
     assert cfg.ckpt_path, "Checkpoint path must be specified or found automatically!"
@@ -239,8 +242,8 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.data)
 
     log.info(f"Instantiating model <{cfg.model._target_}>")
-    model = DiffusionModule.load_from_checkpoint(cfg.ckpt_path)
-    model = model.ema.module #EMA model is the one we want to sample from
+    model_lightning = DiffusionModule.load_from_checkpoint(cfg.ckpt_path)
+    model = model_lightning.ema.module #EMA model is the one we want to sample from
     #model: LightningModule = hydra.utils.instantiate(cfg.model)
     model.eval()
 
@@ -290,6 +293,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     args.rerun = cfg.get("rerun", True)
     args.setting = cfg.get("setting", "test_mode")
     args.modality = cfg.get("dataset", "roc")
+    args.plot_time_and_loss = cfg.get("plot_time_and_loss", False)
 
     #get model name by checkpoint so that it includes the epoch at which it was taken 
     args.model_base_name = os.path.basename(os.path.split(cfg.ckpt_path)[0]) + f'.{os.path.split(cfg.ckpt_path)[1]}' + '.' + args.modality + f'.{cfg.model_name}'
@@ -311,9 +315,29 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         #but this on will be used later to generate by sampling from the dataset instead of the model
         args.decode_theirs = False
 
-    
+    if args.plot_time_and_loss:
+        out_dir="output"
+        model_base_name = args.model_base_name
+        out_dir = os.path.join(out_dir, model_base_name)
+
+        time_sampler = model_lightning.time_sampler.to(model_lightning.device)
+        print(time_sampler.device)
+        print(model_lightning.device)
+        time_sampler.device = model_lightning.device
+
+        plot_timedist(time_sampler, out_dir, model_lightning.device)
+        
+
+        #then plot loss dist
+        batch = next(iter(datamodule.train_dataloader()))
+        print(batch.shape)
+        print(batch.device)
+        batch = batch.to(model_lightning.device)
+        plot_lossdist(model_lightning, batch, out_dir)
 
     sample_here(args, model, args.modality, datamodule)
+
+
 
     #then here function call to the method I have in the other code base! that should be sampling done so tmr test it on the one I have working now,
     #also tmr make model name a command line argument on snellius so I can easily test different models without multiple scripts. 

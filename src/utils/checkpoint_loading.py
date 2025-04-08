@@ -12,6 +12,7 @@ def get_latest_run_folder(model_name):
     """Finds the most recent timestamped folder for the given model."""
     model_dir = get_model_checkpoint_dir(model_name)
     run_folders = sorted(glob.glob(f"{model_dir}/*/"), key=os.path.getmtime)
+    print(run_folders)
     return run_folders[-1] if run_folders else None
 
 def get_latest_checkpoint(run_folder):
