@@ -124,6 +124,11 @@ class NeuralDiffusion(nn.Module):
             lmbd_elb = 0.5 * torch.exp(-gamma*self.scalar) * d_gamma / eta
             loss = lmbd_elb * loss
             diffusion_loss_full_elbo = None
+
+        elif self.diff_loss_type == "elbo_noise_scaling2":
+            lmbd_elb = 0.5 * torch.exp(-gamma*0.5) * d_gamma / eta
+            loss = lmbd_elb * loss
+            diffusion_loss_full_elbo = None
         
         elif self.diff_loss_type == "x_0_prediction":
             # L_x weighting

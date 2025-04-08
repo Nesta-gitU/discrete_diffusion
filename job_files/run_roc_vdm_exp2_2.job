@@ -17,5 +17,5 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/train.py experiment=roc_vdm_exp2 ++restart_from_checkpoint=False ++model.diffusion.gamma_init=False ++model_name=roc_vdm_exp2_77 ++model.mask_padding=False \
-    model.diffusion.diff_loss_type=elbo_noise_scaling
+srun python src/train.py experiment=roc_vdm_exp2 ++restart_from_checkpoint=True ++model.diffusion.gamma_init=False ++model_name=roc_vdm_exp2_2 ++model.mask_padding=False \
+    model.diffusion.diff_loss_type=elbo_noise_scaling2
