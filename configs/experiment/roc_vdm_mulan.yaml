@@ -63,7 +63,7 @@ model:
     pred:
       stabilize: true
     gamma:
-      _target_: src.models.diffusion.gamma.GammaMuLAN
+      _target_: src.models.ndm.components.gamma.GammaMuLAN
       gamma_shape: [64, 128]
   time_sampler:
     _target_: src.models.time_samplers.time_samplers.UniformBucketSampler #src.models.time_samplers.time_samplers.ContSampler #the other option is src.models.time_samplers.time_samplers.UniformBucketSampler

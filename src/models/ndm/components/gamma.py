@@ -95,6 +95,7 @@ class GammaVDM(Gamma):
 class GammaAR(Gamma):
     def __init__(self, gamma_shape: int, gamma_min: float = -10, gamma_max: float = 10, learn_delta: bool = False):
         super().__init__()
+        seq_len = gamma_shape[0]
         self.seq_len = gamma_shape[0]
         self.min_gamma = gamma_min
         self.max_minus_min_gamma = gamma_max - gamma_min
