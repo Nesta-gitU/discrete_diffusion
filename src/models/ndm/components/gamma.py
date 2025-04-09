@@ -140,7 +140,7 @@ class GammaMuLAN(Gamma):
         self.n_features = prod(gamma_shape)
         self.min_gamma = gamma_min
         self.max_minus_min_gamma = gamma_max - gamma_min
-        self.grad_min_epsilon = 0
+        self.grad_min_epsilon = 0.001
 
 
 
