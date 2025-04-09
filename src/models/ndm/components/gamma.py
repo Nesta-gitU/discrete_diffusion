@@ -113,6 +113,7 @@ class GammaAR(Gamma):
         t_shifted = (t - self.delta) / self.tau  # [bs, seq_len]
         sigma = torch.sigmoid(t_shifted)
         gamma = self.min_gamma + self.max_minus_min_gamma * sigma
+        gamma = gamma.view(-1, self.seq_len, 1)  # [bs, seq_len]
         return gamma
 
     def forward(self, t):
@@ -123,6 +124,8 @@ class GammaAR(Gamma):
 
         gamma = self.min_gamma + self.max_minus_min_gamma * sigma
         dgamma_dt = (self.max_minus_min_gamma / self.tau) * sigma * (1 - sigma)
+
+        gamma = gamma.view(-1, self.seq_len, 1)  # [bs, seq_len]
 
         return gamma, dgamma_dt  # [bs, seq_len]
 
