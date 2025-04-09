@@ -197,6 +197,7 @@ class GammaMuLAN(Gamma):
         return a, b, c
     
     def get_gamma(self, t):
+        x = torch.ones_like(t)
         a, b, c = self._compute_coefficients(t)
         gamma_flat = self._eval_polynomial(a, b, c, t)
         #shape should be bs=t.shape[0], gamma_shape
@@ -220,6 +221,16 @@ class GammaMuLANtDir(GammaMuLAN):
 
     def __init__(self, gamma_shape, gamma_min=-10, gamma_max=10):
         super().__init__(gamma_shape, gamma_min, gamma_max)
+
+    def get_gamma(self, t):
+        a, b, c = self._compute_coefficients(t)
+        gamma_flat = self._eval_polynomial(a, b, c, t)
+        #shape should be bs=t.shape[0], gamma_shape
+        #how do I append a value to the shape though?
+        
+        gamma = gamma_flat.view(-1, *self.gamma_shape)
+        #print(gamma.shape, "gamma shape")
+        return gamma
         
     def forward(self, t):
         gamma, dgamma = t_dir(self.get_gamma, t)
