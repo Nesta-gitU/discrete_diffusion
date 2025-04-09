@@ -77,17 +77,20 @@ def plot_lossdist(model, batch, out_dir):
         plt.close() 
 
         #also plot exp_gamma and d_gamma over time in seperate plots
-        plt.plot(t_points.detach().cpu().numpy(), exp_gammas.detach().cpu().numpy())
-        path = os.path.join(out_dir, "exp_gammas.png")
-        plt.title("exp_gamma over time")
-        plt.savefig(path)
-        plt.close()
+        try:
+            plt.plot(t_points.detach().cpu().numpy(), exp_gammas.detach().cpu().numpy())
+            path = os.path.join(out_dir, "exp_gammas.png")
+            plt.title("exp_gamma over time")
+            plt.savefig(path)
+            plt.close()
 
-        plt.plot(t_points.detach().cpu().numpy(), d_gammas.detach().cpu().numpy())
-        path = os.path.join(out_dir, "d_gammas.png")
-        plt.title("d_gamma over time")
-        plt.savefig(path)
-        plt.close()
+            plt.plot(t_points.detach().cpu().numpy(), d_gammas.detach().cpu().numpy())
+            path = os.path.join(out_dir, "d_gammas.png")
+            plt.title("d_gamma over time")
+            plt.savefig(path)
+            plt.close()
+        except Exception as e:
+            pass
 
         #also plot mean pred
         plt.plot(t_points.detach().cpu().numpy(), diffusion_loss_meanpreds.detach().cpu().numpy())

@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm, trange
 
 from src.models.nfdm.nfdm import t_dir
+from math import prod
 
 
 class Gamma(nn.Module, ABC):
@@ -89,3 +90,132 @@ class GammaVDM(Gamma):
         y = y_0 + (y_1 - y_0) * (yo - yo_0) / (yo_1 - yo_0)
 
         return y
+
+
+class GammaAR(Gamma):
+    def __init__(self, seq_len: int, gamma_min: float = -10, gamma_max: float = 10, learn_delta: bool = False):
+        super().__init__()
+        self.seq_len = seq_len
+        self.min_gamma = gamma_min
+        self.max_minus_min_gamma = gamma_max - gamma_min
+        
+        # Sharp sigmoid window: duration = 1 / seq_len
+        self.tau = 1 / (seq_len * 5)  # or 6, 8, etc.
+
+        # Reversed offsets: last token starts first
+        delta_vals = torch.linspace(1/seq_len, 1 - 1 / seq_len, seq_len)
+        self.delta = nn.Parameter(delta_vals.flip(0).view(1, seq_len), requires_grad=learn_delta)
+
+    def get_gamma(self, t):
+        t = t.view(-1, 1)
+        
+        t_shifted = (t - self.delta) / self.tau  # [bs, seq_len]
+        sigma = torch.sigmoid(t_shifted)
+        gamma = self.min_gamma + self.max_minus_min_gamma * sigma
+        return gamma
+
+    def forward(self, t):
+        t = t.view(-1, 1)  # [bs, 1]
+        
+        t_shifted = (t - self.delta) / self.tau  # [bs, seq_len]
+        sigma = torch.sigmoid(t_shifted)
+
+        gamma = self.min_gamma + self.max_minus_min_gamma * sigma
+        dgamma_dt = (self.max_minus_min_gamma / self.tau) * sigma * (1 - sigma)
+
+        return gamma, dgamma_dt  # [bs, seq_len]
+
+
+class GammaMuLAN(Gamma):
+    #implement get_gamma and forward methods
+
+    def __init__(self, gamma_shape, gamma_min=-10, gamma_max=10):
+        super().__init__()
+        self.gamma_shape = gamma_shape
+        self.n_features = prod(gamma_shape)
+        self.min_gamma = gamma_min
+        self.max_minus_min_gamma = gamma_max - gamma_min
+        self.grad_min_epsilon = 0
+
+
+
+        #self.l1 = nn.Linear(self.n_features, self.n_features)
+        #if I want the noise injection to not depend on the input, more like vdm, since input dependence will be injected through ndm function transformation, I can just make the input of
+        #l1 to be 1. which means the input is just the time t. That is not fully equal to MuLAN since there the a, b, d are dependent only on input not on t.
+        #that also mean I will still need to implement the get_gamma method, but not the forward method, we need tdir still. 
+        self.l1 = nn.Linear(1, self.n_features)
+        self.l2 = nn.Linear(self.n_features, self.n_features)
+        self.l3_a = nn.Linear(self.n_features, self.n_features)
+        self.l3_b = nn.Linear(self.n_features, self.n_features)
+        self.l3_c = nn.Linear(self.n_features, self.n_features)
+
+    def _eval_polynomial(self, a, b, c, t):
+        # Polynomial evaluation
+        polynomial = (
+            (a ** 2) * (t ** 5) / 5.0
+            + (b ** 2 + 2 * a * c) * (t ** 3) / 3.0
+            + a * b * (t ** 4) / 2.0
+            + b * c * (t ** 2)
+            + (c ** 2 + self.grad_min_epsilon) * t)
+        
+        scale = ((a ** 2) / 5.0
+                 + (b ** 2 + 2 * a * c) / 3.0
+                 + a * b / 2.0
+                 + b * c
+                 + (c ** 2 + self.grad_min_epsilon))
+
+        return self.min_gamma + self.max_minus_min_gamma * polynomial / scale
+    
+    def _grad_t(self, a, b, c, t):
+        # derivative = (at^2 + bt + c)^2
+        polynomial = (
+        (a ** 2) * (t ** 4)
+        + (b ** 2 + 2 * a * c) * (t ** 2)
+        + a * b * (t ** 3) * 2.0
+        + b * c * t * 2
+        + (c ** 2))
+        
+        scale = ((a ** 2) / 5.0
+                + (b ** 2 + 2 * a * c) / 3.0
+                + a * b / 2.0
+                + b * c
+                + (c ** 2))
+
+        return self.max_minus_min_gamma * polynomial / scale
+
+    def _compute_coefficients(self, t):
+        _h = torch.nn.functional.silu(self.l1(t))
+        _h = torch.nn.functional.silu(self.l2(_h))
+        a = self.l3_a(_h)
+        b = self.l3_b(_h)
+        c = 1e-3 + torch.nn.functional.softplus(self.l3_c(_h))
+        return a, b, c
+    
+    def get_gamma(self, t):
+        a, b, c = self._compute_coefficients(t)
+        gamma_flat = self._eval_polynomial(a, b, c, t)
+        #shape should be bs=t.shape[0], gamma_shape
+        #how do I append a value to the shape though?
+        
+        gamma = gamma_flat.view(-1, *self.gamma_shape)
+        #print(gamma.shape, "gamma shape")
+        return gamma
+    
+    def forward(self, t):
+        x = torch.ones_like(t)
+        a, b, c = self._compute_coefficients(x)
+        dg = self._grad_t(a, b, c, t)
+        dg = dg.clamp(min=self.grad_min_epsilon)
+        return self.get_gamma(t), dg
+
+
+class GammaMuLANtDir(GammaMuLAN):
+    #implement get_gamma and forward methods
+
+    def __init__(self, gamma_shape, gamma_min=-10, gamma_max=10):
+        super().__init__(gamma_shape, gamma_min, gamma_max)
+        
+    def forward(self, t):
+        gamma, dgamma = t_dir(self.get_gamma, t)
+        dgamma = torch.clamp(dgamma, min=self.grad_min_epsilon)
+        return gamma, dgamma
