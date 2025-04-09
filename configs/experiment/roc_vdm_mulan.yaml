@@ -53,7 +53,7 @@ model:
   enable_matmul_tf32: true
   enable_cudnn_tf32: true
   total_steps: ${trainer.max_steps}
-  mask_padding: true
+  mask_padding: false
   grad_clipping_type: "warmup"
   grad_clip: 20
   diffusion:
