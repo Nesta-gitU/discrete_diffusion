@@ -126,6 +126,7 @@ class GammaAR(Gamma):
         dgamma_dt = (self.max_minus_min_gamma / self.tau) * sigma * (1 - sigma)
 
         gamma = gamma.view(-1, self.seq_len, 1)  # [bs, seq_len]
+        dgamma_dt = dgamma_dt.view(-1, self.seq_len, 1)
 
         return gamma, dgamma_dt  # [bs, seq_len]
 
@@ -210,6 +211,7 @@ class GammaMuLAN(Gamma):
         a, b, c = self._compute_coefficients(x)
         dg = self._grad_t(a, b, c, t)
         dg = dg.clamp(min=self.grad_min_epsilon)
+        dg = dg.view(-1, *self.gamma_shape)
         return self.get_gamma(t), dg
 
 
