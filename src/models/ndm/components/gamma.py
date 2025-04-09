@@ -198,7 +198,7 @@ class GammaMuLAN(Gamma):
     
     def get_gamma(self, t):
         x = torch.ones_like(t)
-        a, b, c = self._compute_coefficients(t)
+        a, b, c = self._compute_coefficients(x)
         gamma_flat = self._eval_polynomial(a, b, c, t)
         #shape should be bs=t.shape[0], gamma_shape
         #how do I append a value to the shape though?
