@@ -1,3 +1,3 @@
 is:
   _target_: src.callbacks.is_logger.IsLogger
-  log_train_every_n_steps: 500
+  log_train_every_n_steps: 50000

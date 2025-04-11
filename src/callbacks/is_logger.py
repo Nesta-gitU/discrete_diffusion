@@ -42,6 +42,8 @@ def plot_timedist(sampler, out_dir, device, num_points=1000):
 
 
 def plot_lossdist(model, batch, out_dir):
+    if not hasattr(model.model, "gamma"):
+        return
     with torch.no_grad():
         #dont always use full batch, need only like a hundred points
         length = batch.shape[0] if batch.shape[0] < 100 else 100

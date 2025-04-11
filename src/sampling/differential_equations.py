@@ -7,6 +7,23 @@ from torch import nn
 from types import SimpleNamespace
 from torch import Tensor
 import torch as th
+
+from contextlib import contextmanager
+
+@contextmanager
+def double_precision():
+    # Save the current dtype
+    current_dtype = torch.get_default_dtype()
+    
+    # Set default dtype to float64 (double precision)
+    torch.set_default_dtype(torch.float64)
+    
+    try:
+        yield
+    finally:
+        # Revert to the original dtype after the block
+        torch.set_default_dtype(current_dtype)
+
 ###
 # Orchestrator
 ###
@@ -231,10 +248,12 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
     snr_t = (alpha2/sigma2)
     snr_s = (alpha2_s/sigma2_s)
 
-    sigma2_tilde_s_t = 1 -  (snr_t / snr_s) 
-    print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
+    #sigma2_tilde_s_t = 1 -  (snr_t / snr_s) 
+    #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
     #sigma2_tilde_s_t = torch.ones_like(sigma2_tilde_s_t)
-    epsilon_tilde_s_t = torch.sqrt(1 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t ** 0.5) * noise
+    sigma2_tilde_s_t = -torch.expm1(gmm_s - gmm)
+
+    epsilon_tilde_s_t = torch.sqrt(1 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t.sqrt()) * noise
 
     #print("snr_t", snr_t[0])
     #print("snr_s", snr_s[0])
@@ -247,7 +266,8 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
     #    sample = alpha_s * m_s + sigma_s * torch.sqrt(1 - sigma2_tilde_s_t) * eps 
     #else:
     if all(s == 0):
-        sample = alpha_s * m_s
+        #sample = alpha_s * m_s
+        sample = x_start
     else:
         sample = alpha_s * m_s + sigma_s * epsilon_tilde_s_t
     
