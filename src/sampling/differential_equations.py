@@ -244,14 +244,17 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
         alpha2_s = alpha_s ** 2
         m_s = x_start
 
-    #print(gmm_s)
-    snr_t = (alpha2/sigma2)
-    snr_s = (alpha2_s/sigma2_s)
+    #print(gmm_s) cast to higher precision
+    snr_t = (alpha2/sigma2).double()
+    snr_s = (alpha2_s/sigma2_s).double()
 
     #sigma2_tilde_s_t = 1 -  (snr_t / snr_s) 
     #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
     #sigma2_tilde_s_t = torch.ones_like(sigma2_tilde_s_t)
-    sigma2_tilde_s_t = -torch.expm1(gmm_s - gmm)
+    if hasattr(model, "gamma"):
+        sigma2_tilde_s_t = -torch.expm1(gmm_s - gmm)
+    else:
+        sigma2_tilde_s_t = (1 - (snr_t / snr_s)).float()
 
     epsilon_tilde_s_t = torch.sqrt(1 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t.sqrt()) * noise
 
