@@ -1,7 +1,4 @@
 import torch
-from evaluate import load
-from transformers import PreTrainedTokenizerBase
-from sentence_transformers import SentenceTransformer
 from nltk.util import ngrams
 from collections import defaultdict
 import spacy
@@ -9,7 +6,7 @@ import numpy as np
 import wandb
 
 
-def compute_diversity(all_texts_list):
+def compute_diversity(all_texts_list, human_references):
     ngram_range = [2,3,4]
 
     tokenizer = spacy.load("en_core_web_sm").tokenizer
@@ -30,7 +27,7 @@ def compute_diversity(all_texts_list):
     for val in metrics.values():
         diversity *= (1-val)
     metrics['diversity'] = diversity
-    return metrics
+    return metrics["diversity"]
 
 def compute_memorization(all_texts_list, human_references, n=4):
 

@@ -269,8 +269,8 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
     #    sample = alpha_s * m_s + sigma_s * torch.sqrt(1 - sigma2_tilde_s_t) * eps 
     #else:
     if all(s == 0):
-        #sample = alpha_s * m_s
-        sample = x_start
+        sample = alpha_s * m_s
+        #sample = x_start
     else:
         sample = alpha_s * m_s + sigma_s * epsilon_tilde_s_t
     

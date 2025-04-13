@@ -5,6 +5,7 @@ import rootutils
 from lightning import LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
+from sklearn.metrics import mean_tweedie_deviance
 
 
 
@@ -56,7 +57,11 @@ from src.metrics.ppl_under_ar import main as main_ppl
 # full_lst = glob.glob('diff_models_synth_rand_16_trans_lr_1e-5_long_Lsimple')
 #create an args parser instead of using sys.argv
 import argparse
-from src.metrics.mauve import print_mauve, get_preprocessed_data
+from src.metrics.mauve import print_mauve
+from src.metrics.utils import get_preprocessed_data, file_to_list, metric_to_std
+from src.metrics.diversity import compute_diversity, compute_memorization
+from src.metrics.hf_ppl_under_ar import compute_perplexity
+
 import numpy as np
 
 
@@ -181,7 +186,9 @@ def sample_here(args, model, modality, datamodule):
         name = args.sampling_mode[i]
         out_path2 = out_path_list[i]
         entropy = entropy_list[i]
-        print("obtaining perplexity!")
+        print("running eval loop!")
+
+        #old perplexity computation
         custom_args = {
                 "model":model,
                 "model_name_or_path": model_name_path,
@@ -196,8 +203,17 @@ def sample_here(args, model, modality, datamodule):
         custom_args = DotDict(custom_args)
         
         perplexity_mean, perplexity_std = main_ppl(custom_args)
-        # datamodule, tokenizer, std_split, setting
-        mean_mauve, std_mauve = print_mauve(out_path2, datamodule, datamodule.tokenizer, args.std_split, args.setting)
+
+
+        # new metric computation
+        # first get the generated samples to a list 
+        #file_to_list(text_path, datamodule, tokenizer, setting):
+        all_texts_list, human_references = file_to_list(out_path2, datamodule, datamodule.tokenizer, args.setting)
+        # compute metrics using metric_to_std
+        mean_mauve, std_mauve = metric_to_std(all_texts_list, human_references, print_mauve, args.std_split, args.num_samples)
+        mean_diversity, std_diversity = metric_to_std(all_texts_list, human_references, compute_diversity, args.std_split, args.num_samples)
+        mean_memorization, std_memorization = metric_to_std(all_texts_list, human_references, compute_memorization, args.std_split, args.num_samples)
+        mean_ppl, std_ppl = metric_to_std(all_texts_list, human_references, compute_perplexity, args.std_split, args.num_samples)
 
         #store a json file in the output directory with the results of entropy and perplexity
         results = {
@@ -206,6 +222,12 @@ def sample_here(args, model, modality, datamodule):
             "perplexity_std": perplexity_std,
             "mauve_mean": mean_mauve,
             "mauve_std": std_mauve,	
+            "diversity_mean": mean_diversity,
+            "diversity_std": std_diversity,
+            "memorization_mean": mean_memorization,
+            "memorization_std": std_memorization,
+            "new_ppl_mean": mean_ppl,
+            "new_ppl_std": std_ppl,
             "num_samples": args.num_samples,
             "split": args.std_split
         }
@@ -307,7 +329,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     elif args.setting == 'full_mode':
         args.std_split = 5
         args.num_samples = 5000
-        args.batch_size = 512
+        args.batch_size = 2500
     elif args.setting == 'reference_mode':
         args.std_split = 5
         args.num_samples = 5000
