@@ -280,24 +280,33 @@ def plot_gamma(model, out_dir, model_base_name):
         alpha_og = alpha_og.squeeze(-1)
         sigma_og = sigma_og.squeeze(-1)
 
+        #print the order of the sequence wise gamma. 
+        print("the order gamma is: ")
+        #shape of gmm in the case where an order is relevant is [300, 64, 1]
+        #now it is not data dependent so we can ignore batch dim and just look at the order at 0.5 I guess
+        gmm_for_order = gmm[150]
+        sorted_gmm = torch.argsort(gmm_for_order, descending=True) #high to low so we know what is being maksed out first 
+        print(sorted_gmm, "sorted gmm")
+        # [64, 1] I want the order where I print (ggm_dim, )
+
+
         try:
             plt.plot(alpha)
             plt.plot(alpha_sqrt)
-            plt.plot(alpha_og)
+            plt.plot(alpha_og, label="alpha_og")
             plt.legend(["alpha", "alpha_sqrt", "alpha_og"])
             plt.savefig(f"{outpath}/alpha_plot.png")
             plt.close()
 
             plt.plot(sigma)
             plt.plot(sigma_sqrt)
-            plt.plot(sigma_og)
+            plt.plot(sigma_og, label="sigma_og")
             plt.legend(["sigma", "sigma_sqrt", "sigma_og"])
             plt.savefig(f"{outpath}/sigma_plot.png")
             plt.close()
 
             plt.plot(gmm)
-            plt.plot(gmm_og)
-            plt.legend(["gamma", "gamma_og"])
+            plt.plot(gmm_og, label="gamma_og")
             plt.savefig(f"{outpath}/gamma_plot.png")
             plt.close()
         except Exception as e:
