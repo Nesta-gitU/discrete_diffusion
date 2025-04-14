@@ -42,6 +42,31 @@ class NFDM_gaussian(nn.Module):
         
         return m, torch.exp(ls), torch.tensor(0.0).to(x.device)
 
+class ndm(nn.Module):
+    """
+    Affine transformation module. It parametrizes the forward
+    process of the diffusion model with a Gaussian distribution.
+
+    F(x, t, eps) = \mu(x, t) + \sigma(x, t) * eps
+    """
+
+    def __init__(self,
+                 model: nn.Module):
+        super().__init__()
+        
+        #the net used to predict the mean and std_bar in the gaussian parameterization, with as input x and t, and as ouput mu and log(sigma)
+        self.net = model
+        
+    def forward(self, x, t):
+        s = (0.99-t) * 0.0001
+        alpha = torch.sqrt(1- torch.sqrt(t+s))
+        sigma = torch.sqrt(torch.sqrt(t + s))
+
+        transformation = self.net(x, t.squeeze(-1).squeeze(-1))
+
+        mean = alpha * transformation
+        return mean, sigma, alpha 
+
 
 class FM_OT(nn.Module):
     """
