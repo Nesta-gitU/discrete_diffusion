@@ -58,9 +58,9 @@ model:
   mask_padding: false
   grad_clipping_type: "warmup"
   grad_clip: 20
-  predictor:
-    stabilize: true
   diffusion:
+    predictor:
+      stabilize: true
     diff_loss_type: "x_0_prediction" #options are elbo, half_elbo, x_0_prediction
 
 logger:
