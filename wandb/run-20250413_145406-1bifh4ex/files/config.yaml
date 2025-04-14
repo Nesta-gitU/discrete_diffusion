@@ -1,0 +1,189 @@
+_wandb:
+    value:
+        cli_version: 0.19.8
+        m:
+            - "1": trainer/global_step
+              "6":
+                - 3
+              "7": []
+        python_version: 3.10.10
+        t:
+            "1":
+                - 1
+                - 5
+                - 11
+                - 33
+                - 41
+                - 49
+                - 50
+                - 51
+                - 53
+                - 55
+                - 100
+                - 106
+            "2":
+                - 1
+                - 5
+                - 11
+                - 33
+                - 41
+                - 49
+                - 50
+                - 51
+                - 53
+                - 55
+                - 100
+                - 106
+            "3":
+                - 2
+                - 7
+                - 15
+                - 23
+                - 55
+                - 66
+            "4": 3.10.10
+            "5": 0.19.8
+            "6": 4.50.0
+            "8":
+                - 5
+            "12": 0.19.8
+            "13": linux-x86_64
+callbacks:
+    value:
+        is:
+            _target_: src.callbacks.is_logger.IsLogger
+            log_train_every_n_steps: 50000
+        learning_rate_monitor:
+            _target_: lightning.pytorch.callbacks.LearningRateMonitor
+            logging_interval: step
+        model_checkpoint:
+            _target_: lightning.pytorch.callbacks.ModelCheckpoint
+            auto_insert_metric_name: false
+            dirpath: null
+            every_n_epochs: null
+            every_n_train_steps: 100000
+            filename: checkpoint-{step:06d}
+            save_last: true
+            save_on_train_epoch_end: false
+            save_top_k: -1
+            save_weights_only: false
+            verbose: true
+        model_summary:
+            _target_: lightning.pytorch.callbacks.RichModelSummary
+            max_depth: 2
+        word_sampler:
+            _target_: src.callbacks.text_logger.TextLogger
+            batch_size: 5
+            log_train_every_n_steps: 50000
+            modes:
+                - star
+                - marginal
+            n_steps: 2000
+            no_epoch_logging: true
+            odeint_params: none
+            root_dir: ${paths.root_dir}
+            sample_seed: 42
+ckpt_path:
+    value: logs/diffusion_logs/roc_mulan/foldernamesfaew/checkpoint_1618-280000.ckpt
+data:
+    value:
+        _target_: src.data.roc_datamodule.ROCdatamodule
+        batch_size: 512
+        block_size: 64
+        num_workers: 8
+        overfit_one_batch: false
+        root_dir: ${paths.root_dir}
+        vocab_size: 10767
+extras:
+    value:
+        enforce_tags: true
+        ignore_warnings: false
+        print_config: true
+model:
+    value:
+        _target_: src.models.language_diff_module.DiffusionModule
+        compile: false
+        compute_diffusion_loss: x_0
+        compute_prior_loss: true
+        compute_reconstruction_loss: true
+        diffusion:
+            _target_: src.models.ndm.ndm.NeuralDiffusion
+            add_pure_x_pred: false
+            diff_loss_type: elbo
+            gamma:
+                _target_: src.models.ndm.components.gamma.GammaMuLAN
+                gamma_shape:
+                    - 64
+                    - 1
+            gamma_init: false
+            pred:
+                _target_: src.models.ndm.components.predictor.Predictor
+                model:
+                    _target_: src.models.backbones.transformer_model2.TransformerNetModel2
+                    attention_resolutions: 0,1
+                    channel_mult: 1,2,2,2
+                    config_name: bert-base-uncased
+                    dropout: 0.1
+                    embedding_model: true
+                    experiment_mode: lm
+                    in_channels: 128
+                    logits_mode: 1
+                    model_channels: 128
+                    nfdm: true
+                    num_classes: null
+                    num_heads: 4
+                    num_heads_upsample: -1
+                    num_res_blocks: 40000
+                    out_channels: 128
+                    training_mode: e2e
+                    use_checkpoint: false
+                    use_scale_shift_norm: true
+                    vocab_size: ${data.vocab_size}
+                stabilize: true
+            transform:
+                _target_: src.models.ndm.components.transform.AffineTransformID
+            vol_eta:
+                _target_: src.models.ndm.components.vol_eta.VolatilityEtaOne
+        enable_cudnn_tf32: true
+        enable_matmul_tf32: true
+        grad_clip: 20
+        grad_clipping_type: warmup
+        mask_padding: false
+        optimizer:
+            _partial_: true
+            _target_: torch.optim.Adam
+            lr: 0.0001
+            weight_decay: 0
+        reconstruction_loss_type: collapse
+        time_sampler:
+            _target_: src.models.time_samplers.time_samplers.UniformBucketSampler
+        total_steps: ${trainer.max_steps}
+model/params/non_trainable:
+    value: 0
+model/params/total:
+    value: 88693647
+model/params/trainable:
+    value: 88693647
+seed:
+    value: 12345
+tags:
+    value:
+        - roc
+        - bert_base
+        - vdm
+task_name:
+    value: train
+trainer:
+    value:
+        _target_: lightning.pytorch.trainer.Trainer
+        accelerator: cpu
+        check_val_every_n_epoch: null
+        default_root_dir: ${paths.output_dir}
+        deterministic: false
+        devices: 1
+        inference_mode: false
+        log_every_n_steps: 50
+        max_epochs: null
+        max_steps: 800000
+        min_epochs: 1
+        val_check_interval: 50000

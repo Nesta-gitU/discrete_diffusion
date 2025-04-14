@@ -201,18 +201,18 @@ def sample_here(args, model, modality, datamodule):
             }
         
         custom_args = DotDict(custom_args)
-        
+        print("starting ppl")
         perplexity_mean, perplexity_std = main_ppl(custom_args)
-
+        print("ending old ppl with mean and std", perplexity_mean, perplexity_std)
 
         # new metric computation
         # first get the generated samples to a list 
         #file_to_list(text_path, datamodule, tokenizer, setting):
-        all_texts_list, human_references = file_to_list(out_path2, datamodule, datamodule.tokenizer, args.setting)
+        all_texts_list, human_references, human_references_train = file_to_list(out_path2, datamodule, datamodule.tokenizer, args.setting)
         # compute metrics using metric_to_std
         mean_mauve, std_mauve = metric_to_std(all_texts_list, human_references, print_mauve, args.std_split, args.num_samples)
-        mean_diversity, std_diversity = metric_to_std(all_texts_list, human_references, compute_diversity, args.std_split, args.num_samples)
-        mean_memorization, std_memorization = metric_to_std(all_texts_list, human_references, compute_memorization, args.std_split, args.num_samples)
+        mean_diversity, std_diversity = metric_to_std(all_texts_list, human_references_train, compute_diversity, args.std_split, args.num_samples)
+        mean_memorization, std_memorization = metric_to_std(all_texts_list, human_references_train, compute_memorization, args.std_split, args.num_samples)
         mean_ppl, std_ppl = metric_to_std(all_texts_list, human_references, compute_perplexity, args.std_split, args.num_samples)
 
         #store a json file in the output directory with the results of entropy and perplexity
@@ -312,7 +312,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     args.num_samples = cfg.get("num_samples", 128)
     args.batch_size = cfg.get("batch_size", 41)
     args.compute_ani = cfg.get("compute_ani", False)
-    args.rerun = cfg.get("rerun", True)
+    args.rerun = cfg.get("rerun", False)
     args.setting = cfg.get("setting", "test_mode")
     args.modality = cfg.get("dataset", "roc")
     args.plot_time_and_loss = cfg.get("plot_time_and_loss", False)
@@ -323,13 +323,13 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     #set the arguments for the different mode's
     if args.setting == 'test_mode':
-        args.std_split = 1
-        args.num_samples = 64
-        args.batch_size = 64
+        args.std_split = 2
+        args.num_samples = 128
+        args.batch_size = 128
     elif args.setting == 'full_mode':
         args.std_split = 5
         args.num_samples = 5000
-        args.batch_size = 1024
+        args.batch_size = 400
     elif args.setting == 'reference_mode':
         args.std_split = 5
         args.num_samples = 5000

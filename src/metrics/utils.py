@@ -67,6 +67,7 @@ def file_to_list(text_path, datamodule, tokenizer, setting):
     else:
         split = 'test'
     val_samples = get_preprocessed_data(split, datamodule, tokenizer, n_generated_samples)
+    train_samples = get_preprocessed_data('train', datamodule, tokenizer, n_generated_samples)
     
     print("computing mauve for {} samples".format(n_generated_samples))
     print("againts {} samples".format(len(val_samples)))
@@ -74,12 +75,13 @@ def file_to_list(text_path, datamodule, tokenizer, setting):
     # Compute Mauve score
     all_texts_list = [remove_pad_tokens(sample) for sample in text_samples] 
     human_references = [remove_pad_tokens(sample) for sample in val_samples]
+    human_references_train = [remove_pad_tokens(sample) for sample in train_samples]
 
     # print one human reference and one generated sample to see if pad toekns where removed
     print("human reference", human_references[0])
     print("generated sample", all_texts_list[0])
 
-    return all_texts_list, human_references
+    return all_texts_list, human_references, human_references_train
 
 def metric_to_std(all_texts_list, human_references, metric_function, std_split, num_gen_samples):
     # just make the input to all metric computer functions the same, but only use the needed inputs

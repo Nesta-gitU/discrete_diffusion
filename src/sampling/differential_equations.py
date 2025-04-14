@@ -70,7 +70,10 @@ def solve_de(z, ts, tf, n_steps, model, mode, clamping = False):
     dt = (tf - ts) / n_steps
     dt_2 = abs(dt) ** 0.5
     
-    path = [z]
+    if bs > 64:
+        path = None
+    else:
+        path = [z]
     for t in tqdm(tt):
         t = t.expand(bs,1,1)
         
@@ -88,12 +91,11 @@ def solve_de(z, ts, tf, n_steps, model, mode, clamping = False):
         w = torch.randn_like(z)
         z = z + f * dt + g * w * dt_2
 
-        path.append(z)
+        if path is not None:
+            path.append(z)
     
-    if bs > 128:
-        path = path[1:3]
-        
-    return z, torch.stack(path)
+    ret_path = torch.stack(path) if path is not None else None
+    return z, ret_path
 
 @torch.no_grad()
 def discrete_sampling(
@@ -120,7 +122,10 @@ def discrete_sampling(
         print("no clamping ---------------------------------------")
         denoised_fn = None
 
-    path = [z]
+    if bs > 64:
+        path = None
+    else:
+        path = [z]
     pbar = tqdm
     for t in pbar(t_steps):
         t = t.expand(bs, 1, 1)
@@ -133,13 +138,13 @@ def discrete_sampling(
         elif mode == 'star':
             z = get_next_star(x=z, t=t, model=model, denoised_fn=denoised_fn)
 
-        path.append(z)
+        if path is not None:
+            path.append(z)
 
-    if bs > 128:
-        path = path[1:3]
 
-    return z, torch.stack(path)
+    ret_path = torch.stack(path) if path is not None else None
 
+    return z, ret_path 
 ###
 # functions that run the inner loop
 ###

@@ -199,5 +199,14 @@ class NeuralDiffusion(nn.Module):
         mean = alpha * m     
 
         return mean ** 2
+
+    def get_elbo_prior_loss():
+        pass
+
+    def get_elbo_recon_loss():
+        pass
+
+    def get_elbo_diffusion_loss():
+        pass #-> the parts we drop when training need to be evaluated when you cmpute elbo 
         
 

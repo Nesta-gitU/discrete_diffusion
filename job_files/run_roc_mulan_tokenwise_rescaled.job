@@ -17,4 +17,5 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/train.py experiment=roc_static ++restart_from_checkpoint=True 
+srun python src/train.py experiment=roc_vdm_mulan ++restart_from_checkpoint=True "++model.diffusion.gamma.gamma_shape=[64, 1]" ++model.diffusion.diff_loss_type=half_elbo \
+    +model.use_full_elbo_in_is=True

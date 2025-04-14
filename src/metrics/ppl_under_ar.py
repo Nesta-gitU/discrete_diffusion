@@ -50,15 +50,19 @@ def main(args):
 
     #do the below process for n_splits of the n_samples
     n_samples = len(text_samples)
+    print(n_samples, args.std_split)
     print(f'Loaded {n_samples} samples from {input_file}')
     n_samples_per_split = n_samples / args.std_split
-
+    text_samples_og = text_samples.copy()
     mean_loss_list = []
     for i in range(args.std_split):
 
         start_idx = int(i * n_samples_per_split)
         end_idx = int((i + 1) * n_samples_per_split)
-        text_samples = text_samples[start_idx:end_idx]
+        print(start_idx, end_idx)
+        #print(n_samples_per_split)
+        text_samples = text_samples_og[start_idx:end_idx]
+        #print(text_samples)
 
         agg_loss = []
         for x in text_samples:
