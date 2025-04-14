@@ -141,6 +141,7 @@ dmypy.json
 
 # JetBrains
 .idea/
+wandb/
 
 # Data & Models
 *.h5

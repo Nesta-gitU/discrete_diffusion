@@ -18,4 +18,4 @@ cd $HOME/discrete_diffusion
 source activate fomo
 # Run your code
 srun python src/train.py experiment=roc_vdm_mulan ++restart_from_checkpoint=False "++model.diffusion.gamma.gamma_shape=[64, 1]" ++model.diffusion.diff_loss_type=half_elbo \
-    +model.use_full_elbo_in_is=True ++model_name=roc_mulan_rescaled
+    +model.use_full_elbo_in_is=True ++model_name=roc_mulan_rescaled ++model.grad_clip=1.5
