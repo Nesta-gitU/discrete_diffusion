@@ -9,7 +9,7 @@ defaults:
 
   #choose which backbone to use for the predictor and forward process
   - /model/backbone@model.diffusion.pred.model: bert.yaml
-  - /model/backbone@model.diffusion.affine.model: bert_no_emb.yaml
+  - /model/backbone@model.diffusion.affine.model: bert_no_emb_no_var.yaml
   
   - override /data: roc
   - override /model: language_diff_module
