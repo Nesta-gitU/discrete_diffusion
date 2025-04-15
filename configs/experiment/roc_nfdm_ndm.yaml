@@ -24,7 +24,7 @@ tags: ["bert-base", "roc", "nfdm"]
 seed: 12345
 #commment
 data:
-  batch_size: 256
+  batch_size: 128
   block_size: 64
   overfit_one_batch: false #should be false normally
 
@@ -44,7 +44,7 @@ trainer:
   max_epochs: null
   check_val_every_n_epoch: null
   val_check_interval: 50000
-  accumulate_grad_batches: 2
+  accumulate_grad_batches: 4
   log_every_n_steps: 50
 
 model:      
@@ -57,7 +57,7 @@ model:
   total_steps: ${trainer.max_steps}
   mask_padding: false
   grad_clipping_type: "warmup"
-  grad_clip: 20
+  grad_clip: 0.5
   diffusion:
     pred:
       stabilize: true
