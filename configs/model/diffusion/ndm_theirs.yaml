@@ -1,0 +1,13 @@
+_target_: src.models.nfdm.nfdm.NeuralDiffusion
+
+affine: 
+  _target_: src.models.nfdm.components.forward_process.ndm
+
+vol:
+  _target_: src.models.nfdm.components.volatility.SqrtVolatility
+
+pred:
+  _target_: src.models.nfdm.components.predictor.Predictor
+  model: debug
+
+  

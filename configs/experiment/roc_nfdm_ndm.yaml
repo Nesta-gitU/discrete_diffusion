@@ -5,7 +5,7 @@
 
 defaults:
     #choose which components to use for the diffusion model
-  - /model/diffusion@model.diffusion: nfdm.yaml
+  - /model/diffusion@model.diffusion: ndm_theirs.yaml
 
   #choose which backbone to use for the predictor and forward process
   - /model/backbone@model.diffusion.pred.model: bert.yaml
