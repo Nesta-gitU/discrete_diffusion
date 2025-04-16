@@ -1,3 +1,4 @@
+from math import nan
 import torch
 from tqdm import tqdm
 from src.models.nfdm.nfdm import t_dir
@@ -122,10 +123,12 @@ def discrete_sampling(
         print("no clamping ---------------------------------------")
         denoised_fn = None
 
+    print(bs, "bs")
     if bs > 64:
         path = None
     else:
         path = [z]
+    print("path", path)
     pbar = tqdm
     for t in pbar(t_steps):
         t = t.expand(bs, 1, 1)
@@ -200,88 +203,110 @@ def get_next_star(x, t, model, denoised_fn=None):
     return sample
 
 def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
-    def process_xstart(x):
-        if denoised_fn is not None:
-            # print(denoised_fn)
-            x = denoised_fn(model, x)
-        if False:# clip_denoised:
-            return x.clamp(-1, 1)
-        return x
-    
-    #step 1 do prediction 
-    x_ = model.pred(prev_sample, t) 
-    
-    x_start = process_xstart(x_)
-
-    #step 2 get epsilon
-    if hasattr(model, "gamma"):
-        gmm, _ = model.gamma(t)
-        alpha2 = model.gamma.alpha_2(gmm)
-        sigma2 =  model.gamma.sigma_2(gmm)
-        alpha = alpha2 ** 0.5
-        sigma = sigma2 ** 0.5
-
-        m_ , _ = model.transform.get_m_s(x_start, t)
-
-        eps = (prev_sample - alpha * m_) / sigma
-    else:
-        f_m, sigma, alpha = model.affine(x_start, t)
-        sigma2 = sigma ** 2
-        alpha2 = alpha ** 2
-        eps = (prev_sample - f_m) / sigma
-        m_ = x_start
-
-    #step 3 get epsilon s|t
-    #we need stepsize for this?
-    noise = torch.randn_like(prev_sample)
-
-    if hasattr(model, "gamma"):
-        gmm_s, _ = model.gamma(s)
-        alpha2_s = model.gamma.alpha_2(gmm_s)
-        sigma2_s =  model.gamma.sigma_2(gmm_s)
-        alpha_s = alpha2_s ** 0.5
-        sigma_s = sigma2_s ** 0.5
+    with double_precision():
+        def process_xstart(x):
+            if denoised_fn is not None:
+                # print(denoised_fn)
+                x = denoised_fn(model, x)
+            if False:# clip_denoised:
+                return x.clamp(-1, 1)
+            return x
         
-        m_s , _ = model.transform.get_m_s(x_start, s)
-    else:
-        f_m_s, sigma_s, alpha_s = model.affine(x_start, s)
-        sigma2_s = sigma_s ** 2
-        alpha2_s = alpha_s ** 2
-        m_s = x_start
-
-    #print(gmm_s) cast to higher precision
-    snr_t = (alpha2/sigma2).double()
-    snr_s = (alpha2_s/sigma2_s).double()
-
-    #sigma2_tilde_s_t = 1 -  (snr_t / snr_s) 
-    #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
-    #sigma2_tilde_s_t = torch.ones_like(sigma2_tilde_s_t)
-    if hasattr(model, "gamma"):
-        sigma2_tilde_s_t = -torch.expm1(gmm_s - gmm)
-    else:
-        sigma2_tilde_s_t = (1 - (snr_t / snr_s)).float()
-
-    epsilon_tilde_s_t = torch.sqrt(1 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t.sqrt()) * noise
-
-    #print("snr_t", snr_t[0])
-    #print("snr_s", snr_s[0])
-    #print("sigma", sigma2_tilde_s_t) #this should be positive always but isnt so im doing something wrong. 
-
-    #step 4 get z_s
+        #step 1 do prediction 
+        x_ = model.pred(prev_sample, t) 
         
-    #if (s == 0).all():
-    #    print("last step ")
-    #    sample = alpha_s * m_s + sigma_s * torch.sqrt(1 - sigma2_tilde_s_t) * eps 
-    #else:
-    if all(s == 0):
-        sample = alpha_s * m_s
-        #sample = x_start
-    else:
-        sample = alpha_s * m_s + sigma_s * epsilon_tilde_s_t
-    
-    #if we want to match appendix 1 of ndm paper I think it should instead be
-    #sample = alpha_s * m_s +  torch.sqrt(sigma2 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t ** 0.5) * noise
+        x_start = process_xstart(x_)
 
+        #step 2 get epsilon
+        if hasattr(model, "gamma"):
+            gmm, _ = model.gamma(t)
+            alpha2 = model.gamma.alpha_2(gmm)
+            sigma2 =  model.gamma.sigma_2(gmm)
+            alpha = alpha2 ** 0.5
+            sigma = sigma2 ** 0.5
+
+            m_ , _ = model.transform.get_m_s(x_start, t)
+
+            eps = (prev_sample - alpha * m_) / sigma
+        else:
+            f_m, sigma, alpha = model.affine(x_start, t)
+            sigma2 = sigma ** 2
+            alpha2 = alpha ** 2
+            eps = (prev_sample - f_m) / sigma
+            m_ = x_start
+
+        #step 3 get epsilon s|t
+        #we need stepsize for this?
+        noise = torch.randn_like(prev_sample)
+
+        if hasattr(model, "gamma"):
+            gmm_s, _ = model.gamma(s)
+            alpha2_s = model.gamma.alpha_2(gmm_s)
+            sigma2_s =  model.gamma.sigma_2(gmm_s)
+            alpha_s = alpha2_s ** 0.5
+            sigma_s = sigma2_s ** 0.5
+            
+            m_s , _ = model.transform.get_m_s(x_start, s)
+        else:
+            f_m_s, sigma_s, alpha_s = model.affine(x_start, s)
+            sigma2_s = sigma_s ** 2
+            alpha2_s = alpha_s ** 2
+            m_s = x_start
+
+        #print(gmm_s) cast to higher precision
+        snr_t = (alpha2/sigma2).double()
+        snr_s = (alpha2_s/sigma2_s).double()
+
+        #sigma2_tilde_s_t = 1 -  (snr_t / snr_s) 
+        #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
+        #sigma2_tilde_s_t = torch.ones_like(sigma2_tilde_s_t)
+        if hasattr(model, "gamma"):
+            if torch.any(gmm_s > gmm):
+                #print("why")
+                pass
+            #    print(t, s)
+            sigma2_tilde_s_t = -torch.expm1(gmm_s - gmm) #-(torch.exp(gmm_s - gmm)-1) = 1-torch.exp(gmm_s - gmm) => gmm > gmm_s so quantity should be positive
+            #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
+            sigma2_tilde_s_t = torch.clamp(sigma2_tilde_s_t, 0, 1)
+            if torch.any(sigma2_tilde_s_t > 1) or torch.any(sigma2_tilde_s_t < 0):
+                #print("sigma2_tilde_s_t out of bounds", sigma2_tilde_s_t[sigma2_tilde_s_t > 1], sigma2_tilde_s_t[sigma2_tilde_s_t < 0])
+                #print("snr_t", snr_t[0])
+                #print("snr_s", snr_s[0])
+
+                #print(gmm, "gmm")
+                #print(gmm_s, "gmm_s")
+                #print(sigma2_tilde_s_t)
+                #raise ValueError("sigma2_tilde_s_t out of bounds")
+                pass
+                
+            if torch.any(sigma2_tilde_s_t == nan):
+                print("sigma2_tilde_s_t is None", sigma2_tilde_s_t[sigma2_tilde_s_t == nan])
+                raise ValueError("sigma2_tilde_s_t is None")
+        else:
+            sigma2_tilde_s_t = (1 - (snr_t / snr_s)).float()
+            sigma2_tilde_s_t = torch.clamp(sigma2_tilde_s_t, 0, 1)
+
+        epsilon_tilde_s_t = torch.sqrt(1 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t.sqrt()) * noise
+
+        #print("snr_t", snr_t[0])
+        #print("snr_s", snr_s[0])
+        #print("sigma", sigma2_tilde_s_t) #this should be positive always but isnt so im doing something wrong. 
+
+        #step 4 get z_s
+            
+        #if (s == 0).all():
+        #    print("last step ")
+        #    sample = alpha_s * m_s + sigma_s * torch.sqrt(1 - sigma2_tilde_s_t) * eps 
+        #else:
+        if all(s == 0):
+            sample = alpha_s * m_s
+            #sample 
+        else:
+            sample = alpha_s * m_s + sigma_s * epsilon_tilde_s_t
+        
+        #if we want to match appendix 1 of ndm paper I think it should instead be
+        #sample = alpha_s * m_s +  torch.sqrt(sigma2 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t ** 0.5) * noise
+= x_start
     return sample
 
 ###

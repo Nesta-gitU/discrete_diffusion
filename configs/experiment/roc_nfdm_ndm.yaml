@@ -58,6 +58,8 @@ model:
   mask_padding: false
   grad_clipping_type: "warmup"
   grad_clip: 0.5
+  time_sampler:
+    _target_: src.models.time_samplers.time_samplers.UniformBucketSampler
   diffusion:
     pred:
       stabilize: true

@@ -314,6 +314,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     args.compute_ani = cfg.get("compute_ani", False)
     args.rerun = cfg.get("rerun", True)
     args.setting = cfg.get("setting", "test_mode")
+    print("setting is ", args.setting)
     args.modality = cfg.get("dataset", "roc")
     args.plot_time_and_loss = cfg.get("plot_time_and_loss", False)
 
@@ -323,9 +324,9 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     #set the arguments for the different mode's
     if args.setting == 'test_mode':
-        args.std_split = 2
-        args.num_samples = 128
-        args.batch_size = 128
+        args.std_split = 1
+        args.num_samples = 64
+        args.batch_size = 64
     elif args.setting == 'full_mode':
         args.std_split = 5
         args.num_samples = 5000
@@ -333,11 +334,12 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     elif args.setting == 'reference_mode':
         args.std_split = 5
         args.num_samples = 5000
-        args.batch_size = 1000
+        args.batch_size = 2500
         #but this on will be used later to generate by sampling from the dataset instead of the model
         args.decode_theirs = False
 
-    if args.plot_time_and_loss:
+    #if args.plot_time_and_loss:
+    if True:
         out_dir="output"
         model_base_name = args.model_base_name
         out_dir = os.path.join(out_dir, model_base_name)
