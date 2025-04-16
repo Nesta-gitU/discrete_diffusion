@@ -338,9 +338,6 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         #but this on will be used later to generate by sampling from the dataset instead of the model
         args.decode_theirs = False
 
-    import evaluate
-    evaluate.list_evaluation_modules(with_cache=False)  # This refreshes the list
-
     #if args.plot_time_and_loss:
     if False:
         out_dir="output"
