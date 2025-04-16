@@ -312,7 +312,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     args.num_samples = cfg.get("num_samples", 128)
     args.batch_size = cfg.get("batch_size", 41)
     args.compute_ani = cfg.get("compute_ani", False)
-    args.rerun = cfg.get("rerun", True)
+    args.rerun = cfg.get("rerun", False)
     args.setting = cfg.get("setting", "test_mode")
     print("setting is ", args.setting)
     args.modality = cfg.get("dataset", "roc")
