@@ -13,7 +13,7 @@ defaults:
   
   - override /data: roc
   - override /model: language_diff_module
-  - override /callbacks: default
+  - override /callbacks: default_nfdm
   - override /trainer: gpu
   
 # all parameters below will be merged with parameters from default configurations set above

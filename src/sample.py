@@ -339,7 +339,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         args.decode_theirs = False
 
     #if args.plot_time_and_loss:
-    if True:
+    if False:
         out_dir="output"
         model_base_name = args.model_base_name
         out_dir = os.path.join(out_dir, model_base_name)
