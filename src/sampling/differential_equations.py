@@ -306,7 +306,6 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
         
         #if we want to match appendix 1 of ndm paper I think it should instead be
         #sample = alpha_s * m_s +  torch.sqrt(sigma2 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t ** 0.5) * noise
-= x_start
     return sample
 
 ###
