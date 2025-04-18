@@ -9,7 +9,7 @@ from lightning import Trainer, Callback
 from lightning.pytorch.loggers.wandb import WandbLogger
 from lightning.pytorch.utilities import rank_zero_only
 from pathlib import Path
-from sampling.sampling import sample_from_diffusion, idx_to_words, plot_gamma
+from sampling.sampling import sample_from_diffusion, idx_to_words, plot_gamma, visualize_path
 import time
 
 def get_wandb_logger(trainer: Trainer) -> Optional[WandbLogger]:
@@ -107,9 +107,10 @@ class TextLogger(Callback):
 
         for mode in self.modes:
             latent, words, path = sample_from_diffusion(model, self.batch_size, block_size, hidden_size, _n_steps=self._n_steps, clamping=False, do_top_k=False, k=10, do_top_p=False, p=0.9, temperature=1.0, sampling_mode=mode)
-
+            visualize_path(model, path, tokenizer, mode=mode)
             words = idx_to_words(words, tokenizer)
             w_list.append(words)
+
 
         epoch = trainer.current_epoch
         global_step = trainer.global_step
