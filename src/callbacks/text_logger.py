@@ -111,7 +111,7 @@ class TextLogger(Callback):
             words = idx_to_words(words, tokenizer)
             w_list.append(words)
 
-
+        #try
         epoch = trainer.current_epoch
         global_step = trainer.global_step
 
