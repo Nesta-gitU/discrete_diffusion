@@ -251,7 +251,8 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
             f_m_s, sigma_s, alpha_s = model.affine(x_start, s)
             sigma2_s = sigma_s ** 2
             alpha2_s = alpha_s ** 2
-            m_s = x_start
+            m_s = f_m_s #should not be this in general nfdm case only works if static. 
+    
 
         #print(gmm_s) cast to higher precision
         snr_t = (alpha2/sigma2).double()
@@ -285,6 +286,8 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
         else:
             sigma2_tilde_s_t = (1 - (snr_t / snr_s)).float()
             sigma2_tilde_s_t = torch.clamp(sigma2_tilde_s_t, 0, 1)
+            #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
+            
 
         epsilon_tilde_s_t = torch.sqrt(1 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t.sqrt()) * noise
 
@@ -299,11 +302,17 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
         #    sample = alpha_s * m_s + sigma_s * torch.sqrt(1 - sigma2_tilde_s_t) * eps 
         #else:
         if all(s == 0):
-            sample = alpha_s * m_s
+            if hasattr(model, "gamma"):
+                sample = alpha_s * m_s
+            else:
+                sample = f_m_s
             #sample 
         else:
-            sample = alpha_s * m_s + sigma_s * epsilon_tilde_s_t
-        
+            if hasattr(model,"gamma"):
+                sample = alpha_s * m_s + sigma_s * epsilon_tilde_s_t
+            else:
+                sample = f_m_s + sigma_s * epsilon_tilde_s_t
+    
         #if we want to match appendix 1 of ndm paper I think it should instead be
         #sample = alpha_s * m_s +  torch.sqrt(sigma2 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t ** 0.5) * noise
     return sample
