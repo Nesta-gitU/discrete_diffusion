@@ -262,7 +262,6 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
         #sigma2_tilde_s_t = torch.ones_like(sigma2_tilde_s_t)
         if hasattr(model, "gamma"):
             if torch.any(gmm_s > gmm):
-                #print("why")
                 pass
             #    print(t, s)
             sigma2_tilde_s_t = -torch.expm1(gmm_s - gmm) #-(torch.exp(gmm_s - gmm)-1) = 1-torch.exp(gmm_s - gmm) => gmm > gmm_s so quantity should be positive

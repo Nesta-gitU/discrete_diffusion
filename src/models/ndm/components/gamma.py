@@ -134,15 +134,14 @@ class GammaAR(Gamma):
 class GammaMuLAN(Gamma):
     #implement get_gamma and forward methods
 
-    def __init__(self, gamma_shape, gamma_min=-10, gamma_max=10):
+    def __init__(self, gamma_shape, around_reference = False, gamma_min=-10, gamma_max=10):
         super().__init__()
         self.gamma_shape = gamma_shape
         self.n_features = prod(gamma_shape)
         self.min_gamma = gamma_min
         self.max_minus_min_gamma = gamma_max - gamma_min
         self.grad_min_epsilon = 0.001
-
-
+        self.around_reference = around_reference
 
         #self.l1 = nn.Linear(self.n_features, self.n_features)
         #if I want the noise injection to not depend on the input, more like vdm, since input dependence will be injected through ndm function transformation, I can just make the input of
@@ -195,19 +194,58 @@ class GammaMuLAN(Gamma):
         b = self.l3_b(_h)
         c = 1e-3 + torch.nn.functional.softplus(self.l3_c(_h))
         return a, b, c
+
+    def get_reference_gamma(self, t):
+        def safe_logit(x, eps=1e-6):
+            """
+            Stable log( x / (1 - x) ) for x in (0, 1).
+
+            Parameters
+            ----------
+            x   : torch.Tensor   -- input, any shape
+            eps : float          -- clamp width; keeps gradients finite
+            """
+            x = x.clamp(eps, 1.0 - eps)            # avoid exactly 0 or 1
+            return torch.log(x) - torch.log1p(-x)   # log(x) - log(1 - x)
+        s = (0.99-t) * 0.0001
+        sqrt = torch.sqrt(t+s)
+        gamma = safe_logit(sqrt)
+
+        #gamma = torch.log(1/(1-sqrt) - 1)
+        #gamma = -10 + 20 * t
+        return gamma
     
     def get_gamma(self, t):
         x = torch.ones_like(t)
         a, b, c = self._compute_coefficients(x)
-        gamma_flat = self._eval_polynomial(a, b, c, t)
+        gamma = self._eval_polynomial(a, b, c, t)
+        #print(gamma.shape, "before")
+
+        #print(self.around_reference)
+        if self.around_reference:
+            #print("hallooooooo")
+            reference_gamma = self.get_reference_gamma(t)
+            #gamma_i = gamma + gamma’_i - gamma’
+            #where gamma is the reference gamma, and
+            #gamma’ = log D - log sum exp(-gamma’_i)
+            gamma_mean = torch.log(torch.tensor(self.n_features)) - torch.logsumexp(-gamma, dim=-1)
+            #print(reference_gamma.shape, "ref")
+            #print(gamma_mean.shape, "mean")
+            gamma = reference_gamma + gamma - gamma_mean.unsqueeze(-1) #should broadcast
+            #print(gamma.shape, "after")
+
         #shape should be bs=t.shape[0], gamma_shape
         #how do I append a value to the shape though?
-        
-        gamma = gamma_flat.view(-1, *self.gamma_shape)
-        #print(gamma.shape, "gamma shape")
+        gamma = gamma.view(-1, *self.gamma_shape)
+
         return gamma
     
     def forward(self, t):
+        if self.around_reference:
+            gamma, dgamma = t_dir(self.get_gamma, t)
+            dgamma = torch.clamp(dgamma, min=self.grad_min_epsilon)
+            return gamma, dgamma
+
         x = torch.ones_like(t)
         a, b, c = self._compute_coefficients(x)
         dg = self._grad_t(a, b, c, t)
@@ -217,6 +255,7 @@ class GammaMuLAN(Gamma):
 
 
 class GammaMuLANtDir(GammaMuLAN):
+
     #implement get_gamma and forward methods
 
     def __init__(self, gamma_shape, gamma_min=-10, gamma_max=10):
