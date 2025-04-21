@@ -60,7 +60,7 @@ model:
   grad_clip: 20
   diffusion:
     clamp_max: inf
-    diff_loss_type: "x0_prediction"
+    diff_loss_type: "x_0_prediction"
     gamma_init: false
     add_pure_x_pred: true
     pred:
