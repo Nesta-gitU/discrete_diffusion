@@ -1,0 +1,15 @@
+_target_: src.models.ndm.ndm.NeuralDiffusion
+
+transform: 
+  _target_: src.models.ndm.components.transform.AffineTransformHalfNeural
+  model: debug
+
+gamma:
+  _target_: src.models.ndm.components.gamma.GammaTheirs
+
+vol_eta:
+  _target_: src.models.ndm.components.vol_eta.VolatilityEtaNeural
+
+pred:
+  _target_: src.models.ndm.components.predictor.Predictor
+  model: debug
