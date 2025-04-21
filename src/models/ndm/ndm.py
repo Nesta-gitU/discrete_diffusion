@@ -112,6 +112,8 @@ class NeuralDiffusion(nn.Module):
 
 
 
+
+
         # Stabilises training
         if self.add_pure_x_pred:
             loss_x = (1 + eta) ** 2 / 4 * (x - x_) ** 2
@@ -138,6 +140,23 @@ class NeuralDiffusion(nn.Module):
             lmbd_x = 4 / (1 + eta) ** 2 
             loss = lmbd_x * loss 
             diffusion_loss_full_elbo = None
+            if loss.isnan().any():
+                print("loss is nan")
+                print("lmbd_x: ", lmbd_x)
+                print("loss: ", loss)
+                print("x: ", x)
+                print("x_: ", x_)
+                print("m: ", m)
+                print("m_: ", m_)
+                print("d_m: ", d_m)
+                print("d_m_: ", d_m_)
+                print("gamma: ", gamma)
+                print("d_gamma: ", d_gamma)
+                print("eta: ", eta)
+                print("eps: ", eps)
+                print("z: ", z)
+                print("maybe this helps?")
+
             
         elif self.diff_loss_type == "half_elbo":
             lmbd_elb = 0.5 * torch.exp(-gamma) * d_gamma / eta
