@@ -24,7 +24,7 @@ tags: ["roc", "bert_base", "vdm"]
 seed: 12345
 #commment
 data:
-  batch_size: 512
+  batch_size: 256
   block_size: 64
   overfit_one_batch: false #should be false normally
 
@@ -45,6 +45,7 @@ trainer:
   val_check_interval: 50000
   max_epochs: null
   log_every_n_steps: 50
+  accumulate_grad_batches: 2
 
 model:      
   compute_diffusion_loss: x_0
