@@ -21,13 +21,16 @@ from their_utils.utils import token_discrete_loss
 
 
 class NeuralDiffusion(nn.Module):
-    def __init__(self, transform: AffineTransform, gamma: Gamma, vol_eta: VolatilityEta, pred: Predictor, diff_loss_type = "elbo", gamma_init=False, 
+    def __init__(self, transform: AffineTransform, gamma: Gamma, vol_eta: VolatilityEta, pred: Predictor, clamp_max=10000, diff_loss_type = "elbo", gamma_init=False, 
                  add_pure_x_pred=False):
         super().__init__()
 
         self.transform = transform
         self.gamma = gamma
         self.add_pure_x_pred = add_pure_x_pred
+        if clamp_max == "inf":
+            clamp_max = float("inf")
+        self.clamp_max = clamp_max
         if gamma_init:
             gamma.load_state_dict(
                         torch.load("src/models/ndm/gamma_checkpoints/vdm_checkpoint.pth", map_location="cpu"))
@@ -101,7 +104,7 @@ class NeuralDiffusion(nn.Module):
         #so I would like to weight like x prediction so I should use this weighting instead
         #the l_x weighting above still includes the 1/2g(t) term but in my other formulation it actually doesnt, since g(t) >1? is that true, that could make the loss a bit lower
         #okay I take that back
-        one_over_dgamma = torch.clamp(1 / (d_gamma), max=10000) #so it doesnt go to inf 
+        one_over_dgamma = torch.clamp(1 / (d_gamma), max=self.clamp_max) #so it doesnt go to inf 
 
         loss_1 = (1 + eta) / 2 * (m - m_) + one_over_dgamma * (d_m - d_m_)
         loss_1 = loss_1 ** 2
