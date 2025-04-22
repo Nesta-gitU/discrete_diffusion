@@ -47,7 +47,12 @@ trainer:
   log_every_n_steps: 50
   accumulate_grad_batches: 1
   devices: 2 #should be 2
-  strategy: fsdp #ddp is useless when the whole mem issue is the model not the data
+  strategy:
+    _target_: lightning.pytorch.strategies.FSDPStrategy
+    use_orig_params: true
+    fsdp_config:
+      ignore_unused_parameters: true
+    auto_wrap_policy: null #ddp is useless when the whole mem issue is the model not the data
   #precision: bf16-mixed #try to fit the bs in memory. 
 
 model:      
