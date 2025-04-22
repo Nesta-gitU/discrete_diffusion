@@ -167,7 +167,9 @@ class DiffusionModule(LightningModule):
         """Lightning hook that is called when training begins."""
         # by default lightning executes validation step sanity checks before training starts,
         # so it's worth to make sure validation metrics don't store results from these checks
+        print("haloooooooooooooooooooooooooooo")
         print(f"[RANK {self.global_rank}] on device {self.device}")
+        print(self.device, "device is a device is a device and stuff")
     
 
     def training_step(
