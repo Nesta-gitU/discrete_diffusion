@@ -236,10 +236,18 @@ class DiffusionModule(LightningModule):
         
 
         # update and log metrics
-        self.log("train/diffusion_loss", diffusion_loss, on_step=True, prog_bar=True, logger=True)
-        self.log("train/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=True,logger=True)
-        self.log("train/prior_loss", prior_loss, on_step=True, prog_bar=True,logger=True)
-        self.log("train/elbo", elbo, on_step=True, prog_bar=False,logger=True)
+        self.log("train/diffusion_loss", diffusion_loss, on_step=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log("train/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=True,logger=True, sync_dist=True)
+        self.log("train/prior_loss", prior_loss, on_step=True, prog_bar=True,logger=True, sync_dist=True)
+        self.log("train/elbo", elbo, on_step=True, prog_bar=False,logger=True, sync_dist=True)
+
+
+        missing = []
+        for name, param in self.named_parameters():
+            if param.requires_grad and param.grad is None:
+                missing.append(name)
+        if missing:
+            print(f"[!] No grad for {len(missing)} params:", missing)
 
         # return loss or backpropagation will fail
         return elbo

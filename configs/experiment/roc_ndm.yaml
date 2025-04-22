@@ -82,4 +82,4 @@ logger:
 
 model_name: "roc_mulan"
 restart_from_checkpoint: true
-float32_type: medium
+float32_type: medium #idk if this being high vs medium matters in any way 
