@@ -23,7 +23,7 @@ tags: ["roc", "bert_base", "vdm"]
 seed: 12345
 #commment
 data:
-  batch_size: 512
+  batch_size: 16
   block_size: 64
   overfit_one_batch: false #should be false normally
 

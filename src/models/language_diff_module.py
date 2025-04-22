@@ -103,6 +103,8 @@ class DiffusionModule(LightningModule):
         #self.ema.eval()
         self.ema = AveragedModel(self.model, avg_fn=lambda avg, new, _: 0.9999 * avg + (1 - 0.9999) * new)
         self.avg_grad_norm = MeanMetric()
+        for p in self.ema.parameters():
+            p.requires_grad = False
 
     @torch.no_grad()
     def update_ema(self, ema_model, model, decay=0.9999):
@@ -234,14 +236,13 @@ class DiffusionModule(LightningModule):
 
         #note elbo may or may not be valid depending on what we actualy calculatte in the forward pass
         
-
         # update and log metrics
         self.log("train/diffusion_loss", diffusion_loss, on_step=True, prog_bar=True, logger=True, sync_dist=True)
         self.log("train/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=True,logger=True, sync_dist=True)
         self.log("train/prior_loss", prior_loss, on_step=True, prog_bar=True,logger=True, sync_dist=True)
         self.log("train/elbo", elbo, on_step=True, prog_bar=False,logger=True, sync_dist=True)
 
-
+        '''
         missing = []
         for name, param in self.named_parameters():
             if param.requires_grad and param.grad is None:
@@ -249,6 +250,13 @@ class DiffusionModule(LightningModule):
         if missing:
             print(f"[!] No grad for {len(missing)} params:", missing)
 
+        still_have = []
+        for name, param in self.named_parameters():
+            if param.requires_grad and param.grad is not None:
+                still_have.append(name)
+        if still_have:
+            print(f"[!] Still have grad for {len(still_have)} params:", still_have)
+        '''
         # return loss or backpropagation will fail
         return elbo
     

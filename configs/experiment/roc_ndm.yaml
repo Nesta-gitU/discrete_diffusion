@@ -24,7 +24,7 @@ tags: ["roc", "bert_base", "vdm"]
 seed: 12345
 #commment
 data:
-  batch_size: 256
+  batch_size: 16 #should be 256
   block_size: 64
   overfit_one_batch: false #should be false normally
 
@@ -46,8 +46,8 @@ trainer:
   max_epochs: null
   log_every_n_steps: 50
   accumulate_grad_batches: 1
-  devices: 2
-  strategy: ddp
+  #devices: 1 #should be 2
+  #strategy: ddp
   #precision: bf16-mixed #try to fit the bs in memory. 
 
 model:      
