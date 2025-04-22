@@ -80,4 +80,4 @@ logger:
 
 model_name: "roc_mulan"
 restart_from_checkpoint: true
-float32_type: medium
+float32_type: high
