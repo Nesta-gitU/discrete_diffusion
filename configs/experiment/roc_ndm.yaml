@@ -47,7 +47,7 @@ trainer:
   log_every_n_steps: 50
   accumulate_grad_batches: 1
   devices: 2 #should be 2
-  strategy: ddp_find_unused_parameters_true
+  strategy: fsdp #ddp is useless when the whole mem issue is the model not the data
   #precision: bf16-mixed #try to fit the bs in memory. 
 
 model:      
