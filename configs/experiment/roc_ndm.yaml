@@ -45,8 +45,10 @@ trainer:
   val_check_interval: 50000
   max_epochs: null
   log_every_n_steps: 50
-  accumulate_grad_batches: 2
-  precision: bf16-mixed #try to fit the bs in memory. 
+  accumulate_grad_batches: 1
+  devices: 2
+  strategy: ddp
+  #precision: bf16-mixed #try to fit the bs in memory. 
 
 model:      
   compute_diffusion_loss: x_0
