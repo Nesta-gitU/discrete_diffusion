@@ -19,3 +19,4 @@ experiment_mode: lm
 logits_mode: 1
 embedding_model: true
 nfdm: true
+layer_norm_eps: 1e-4

@@ -20,3 +20,4 @@ logits_mode: 1
 embedding_model: false
 nfdm: true
 attn_implementation: eager
+layer_norm_eps: 1e-4
