@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu_h100
 #SBATCH --gpus=2
 #SBATCH --job-name=basic_diff
-#SBATCH --ntasks=2
+#SBATCH --ntasks-per-node=2
 #SBATCH --cpus-per-task=9
 #SBATCH --time=96:00:00
 #SBATCH --output=$HOME/discrete_diffusion/slurm_outputs/slurm_output_%A.out
