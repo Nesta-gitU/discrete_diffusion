@@ -106,8 +106,7 @@ class DiffusionModule(LightningModule):
         for p in self.ema.parameters():
             p.requires_grad = False
 
-    def on_train_start(self):
-        print(f"[RANK {self.global_rank}] on device {self.device}")
+        
         
 
     def forward(self, t, x: torch.Tensor, compute_diffusion_loss, compute_reconstruction_loss, compute_prior_loss, reconstruction_loss_type) -> torch.Tensor:
@@ -168,7 +167,7 @@ class DiffusionModule(LightningModule):
         """Lightning hook that is called when training begins."""
         # by default lightning executes validation step sanity checks before training starts,
         # so it's worth to make sure validation metrics don't store results from these checks
-        pass
+        print(f"[RANK {self.global_rank}] on device {self.device}")
     
 
     def training_step(
