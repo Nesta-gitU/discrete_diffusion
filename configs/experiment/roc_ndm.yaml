@@ -24,7 +24,7 @@ tags: ["roc", "bert_base", "vdm"]
 seed: 12345
 #commment
 data:
-  batch_size: 256 #should be 256
+  batch_size: 128 #should be 256
   block_size: 64
   overfit_one_batch: false #should be false normally
 
@@ -45,14 +45,14 @@ trainer:
   val_check_interval: 50000
   max_epochs: null
   log_every_n_steps: 50
-  accumulate_grad_batches: 1
-  devices: 2 #should be 2
-  strategy:
-    _target_: lightning.pytorch.strategies.FSDPStrategy
-    use_orig_params: true
-    fsdp_config:
-      ignore_unused_parameters: true
-    auto_wrap_policy: null #ddp is useless when the whole mem issue is the model not the data
+  accumulate_grad_batches: 4
+  #devices: 2 #should be 2
+  #strategy:
+  #  _target_: lightning.pytorch.strategies.FSDPStrategy
+  #  use_orig_params: true
+  #  fsdp_config:
+  #    ignore_unused_parameters: true
+  #  auto_wrap_policy: null #ddp is useless when the whole mem issue is the model not the data
   #precision: bf16-mixed #try to fit the bs in memory. 
 
 model:      
