@@ -23,5 +23,8 @@ class TransformerEncoder8M(nn.Module):
         Returns: [bs, seqlen, 256]
         """
         x = self.input_proj(x)  # [bs, seqlen, 256]
-        x = self.encoder(x, src_key_padding_mask=mask)
+        if mask is None:
+            x = self.encoder(x, src_key_padding_mask=mask)
+        else:
+            x = self.encoder(x)
         return x
