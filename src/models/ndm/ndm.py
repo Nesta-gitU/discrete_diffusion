@@ -201,7 +201,7 @@ class NeuralDiffusion(nn.Module):
             if isinstance(self.context, NoneContext):
                 gamma, _ = self.gamma(t)
             else:
-                context = torch.zeros_like(x)
+                context = torch.zeros_like(x, dtype=embeddings.dtype, device=x.device)
                 gamma = self.gamma.get_gamma(t, context) #prevent a tdir call -> noise boundaries are fixed at t=1 and t=0 and independent of context
 
             alpha = self.gamma.alpha_2(gamma) ** 0.5
