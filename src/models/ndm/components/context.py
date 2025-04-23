@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from wandb.proto.wandb_internal_pb2 import KeepaliveRequest
 
 class VaeContext(nn.Module):
     def __init__(self,
@@ -20,7 +21,7 @@ class VaeContext(nn.Module):
         return context, KLD
     
     def sample_context(self, x):
-        shape = x.mean(dim=-1)
+        shape = x.mean(dim=-1, keepdim=True)
         context = torch.randn_like(shape)
         return context
 
