@@ -11,7 +11,7 @@ class VaeContext(nn.Module):
         
     def forward(self, x): 
         #return the context and the loss from the context       
-        mean, log_std = self.model(x, torch.ones(x.size(0), device = x.device)).chunk(2, dim=1)
+        mean, log_std = self.model(x, torch.ones(x.size(0), device = x.device)).chunk(2, dim=-1)
         std = torch.exp(log_std)
         context = mean + std * torch.randn_like(std)
 
