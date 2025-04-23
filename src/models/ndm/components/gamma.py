@@ -334,6 +334,7 @@ class GammaMuLANContext(Gamma):
 
     def _compute_coefficients(self, x):
         x = x.flatten(start_dim=1)
+        print(x.shape, "x shape, after flatten")
         _h = torch.nn.functional.silu(self.l1(x))
         _h = torch.nn.functional.silu(self.l2(_h))
         a = self.l3_a(_h)
@@ -382,8 +383,10 @@ class GammaMuLANContext(Gamma):
 
         #shape should be bs=t.shape[0], gamma_shape
         #how do I append a value to the shape though?
+        print(gamma.shape, "before")
         gamma = gamma.view(-1, *self.gamma_shape)
         print(gamma.shape, "gamma shape")
+        print(t.shape)
         return gamma
     
     def forward(self, t, x):
