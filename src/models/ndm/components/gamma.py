@@ -333,13 +333,17 @@ class GammaMuLANContext(Gamma):
         return self.max_minus_min_gamma * polynomial / scale
 
     def _compute_coefficients(self, x):
-        #x = x.flatten(start_dim=1)
+        x = x.flatten(start_dim=1)
         print(x.shape, "x shape, after flatten")
         _h = torch.nn.functional.silu(self.l1(x))
         _h = torch.nn.functional.silu(self.l2(_h))
         a = self.l3_a(_h)
         b = self.l3_b(_h)
         c = 1e-3 + torch.nn.functional.softplus(self.l3_c(_h))
+        print(a.shape, "a shape")
+        a = a.unsqueeze(-1)
+        b = b.unsqueeze(-1)
+        c = c.unsqueeze(-1)
         return a, b, c
 
     def get_reference_gamma(self, t):
