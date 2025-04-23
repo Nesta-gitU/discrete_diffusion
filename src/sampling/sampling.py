@@ -64,7 +64,7 @@ def sample_code(model,
             ani(model)
 
         if hasattr(model, 'gamma'):
-            plot_gamma(model,out_dir,model_base_name)
+            plot_gamma(model,out_dir,model_base_name,batch_size,block_size,hidden_size)
         
         batches_needed = num_samples // batch_size
         w = []
@@ -240,7 +240,8 @@ def idx_to_words(index, tokenizer) -> list:
 
 
 
-def plot_gamma(model, out_dir, model_base_name):
+def plot_gamma(model, out_dir, model_base_name, batch_size, block_size, hidden_size):
+
     # Create the directory if it doesn't exist
     outpath = os.path.join(out_dir, f"{model_base_name}")
     os.makedirs(outpath, exist_ok=True)
@@ -248,12 +249,20 @@ def plot_gamma(model, out_dir, model_base_name):
     #also init a new gamma from scratch and plot that too see what it was originally
     gamma_og = GammaVDM()
 
+    z = torch.randn(batch_size, block_size, hidden_size)
+
     with torch.no_grad():
         model.to("cpu")
         t = torch.linspace(0, 1, 300)[:, None].to(model.pred.model.word_embedding.weight.device)
         t=t.unsqueeze(-1)
 
-        gmm, _ = model.gamma(t)
+        context = model.context.sample_context(z) #slightly incorrect if using NN but with VAE its fine
+
+        if context is None:
+            gmm, _ = model.gamma(t)
+        else:
+            gmm, _ = model.gamma(t, context)
+        
         alpha_2 = model.gamma.alpha_2(gmm)
         sigma_2 = model.gamma.sigma_2(gmm)
         alpha = alpha_2 ** 0.5
