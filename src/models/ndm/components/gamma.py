@@ -361,6 +361,7 @@ class GammaMuLANContext(Gamma):
         return gamma
     
     def get_gamma(self, t, x):
+        print(x.shape, "x shape")
         a, b, c = self._compute_coefficients(x)
         gamma = self._eval_polynomial(a, b, c, t)
         #print(gamma.shape, "before")
@@ -381,7 +382,7 @@ class GammaMuLANContext(Gamma):
         #shape should be bs=t.shape[0], gamma_shape
         #how do I append a value to the shape though?
         gamma = gamma.view(-1, *self.gamma_shape)
-
+        print(gamma.shape, "gamma shape")
         return gamma
     
     def forward(self, t, x):
