@@ -20,7 +20,8 @@ class VaeContext(nn.Module):
         return context, KLD
     
     def sample_context(self, x):
-        context = torch.randn_like(x)
+        shape = x.mean(dim=-1)
+        context = torch.randn_like(shape)
         return context
 
 class EncoderContext(nn.Module):
