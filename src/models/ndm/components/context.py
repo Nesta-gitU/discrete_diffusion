@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-from torch.nn.modules import loss
 
 class VaeContext(nn.Module):
     def __init__(self,
@@ -24,9 +23,6 @@ class VaeContext(nn.Module):
         context = torch.randn_like(x)
         return context
 
-
-
-
 class EncoderContext(nn.Module):
     def __init__(self,
                  model: nn.Module
@@ -49,7 +45,7 @@ class EncoderContext(nn.Module):
         return context
 
 class NoneContext(nn.Module):
-    def __init__(self
+    def __init__(self,
                  model
                  ):
         super().__init__()
