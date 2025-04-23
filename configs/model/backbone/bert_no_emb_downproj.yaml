@@ -2,7 +2,7 @@ _target_: src.models.backbones.transformer_model2.TransformerNetModel2
 
 in_channels: 128
 model_channels: 128
-out_channels: 1 #squash to one number per dim 
+out_channels: 2 #squash to one number per dim 
 num_res_blocks: 40000 #not used
 attention_resolutions: 0,1
 dropout: 0.1
