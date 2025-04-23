@@ -1,0 +1,19 @@
+_target_: src.models.ndm.ndm.NeuralDiffusion
+
+transform: 
+  _target_: src.models.ndm.components.transform.AffineTransformID
+
+gamma:
+  _target_: src.models.ndm.components.gamma.GammaMuLANContext
+  gamma_shape: [64, 1]
+  
+vol_eta:
+  _target_: src.models.ndm.components.vol_eta.VolatilityEtaOne
+
+pred:
+  _target_: src.models.ndm.components.predictor.Predictor
+  model: debug
+
+context:
+  _target_: src.models.ndm.components.context.VaeContext
+  model: debug

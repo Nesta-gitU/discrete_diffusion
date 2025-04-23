@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
+from multiprocessing import context
 from typing import Callable, Optional
 
 import numpy as np
 
 import torch
-from torch import nn, Tensor
+from torch import nn, Tensor, zeros_like
 from torch.nn import functional as F
 import torch.distributions as D
 
@@ -15,19 +16,22 @@ from src.models.ndm.components.gamma import Gamma
 from src.models.ndm.components.transform import AffineTransform
 from src.models.ndm.components.vol_eta import VolatilityEta
 from src.models.ndm.components.predictor import Predictor
+from src.models.ndm.components.context import NoneContext
 
 from their_utils.utils import token_discrete_loss
  
 
 
 class NeuralDiffusion(nn.Module):
-    def __init__(self, transform: AffineTransform, gamma: Gamma, vol_eta: VolatilityEta, pred: Predictor, clamp_max=10000, diff_loss_type = "elbo", gamma_init=False, 
+    def __init__(self, transform: AffineTransform, gamma: Gamma, vol_eta: VolatilityEta, pred: Predictor, context: NoneContext = NoneContext(None), clamp_max=10000, diff_loss_type = "elbo", gamma_init=False, 
                  add_pure_x_pred=False):
         super().__init__()
 
         self.transform = transform
         self.gamma = gamma
         self.add_pure_x_pred = add_pure_x_pred
+        self.context = context
+
         if clamp_max == "inf":
             clamp_max = float("inf")
         self.clamp_max = clamp_max
@@ -64,7 +68,7 @@ class NeuralDiffusion(nn.Module):
         pad_mask = x == 3
         embeddings = self.pred.model.get_embeds(x)    
 
-        diffusion_loss, diffusion_loss_full_elbo, embeddings_, _, _, _ = self.get_diffusion_loss(embeddings, t, pad_mask)
+        diffusion_loss, context_loss, diffusion_loss_full_elbo, embeddings_, _, _, _ = self.get_diffusion_loss(embeddings, t, pad_mask)
 
         if compute_reconstruction_loss:
             if reconstruction_loss_type == "collapse":
@@ -80,14 +84,21 @@ class NeuralDiffusion(nn.Module):
         else:
             prior_loss = torch.zeros(bs, dtype=embeddings.dtype, device=x.device)
         
-        return diffusion_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss
+        return diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss
 
             
         
     def get_diffusion_loss(self, x: Tensor, t: Tensor, pad_mask: Tensor):
+        
+        context, context_loss = self.context(x)
+
         eps = torch.randn_like(x)
 
-        gamma, d_gamma = self.gamma(t)
+        if context is None:
+            gamma, d_gamma = self.gamma(t)
+        else:
+            gamma, d_gamma = self.gamma(t, context)
+
         alpha = self.gamma.alpha_2(gamma) ** 0.5
         sigma = self.gamma.sigma_2(gamma) ** 0.5
 
@@ -109,10 +120,6 @@ class NeuralDiffusion(nn.Module):
         loss_1 = (1 + eta) / 2 * (m - m_) + one_over_dgamma * (d_m - d_m_)
         loss_1 = loss_1 ** 2
         loss = loss_1
-
-
-
-
 
         # Stabilises training
         if self.add_pure_x_pred:
@@ -180,7 +187,7 @@ class NeuralDiffusion(nn.Module):
 
         #loss = loss.sum(dim=1), dont reduce yet
 
-        return loss, diffusion_loss_full_elbo, x_, torch.exp(-gamma/2), d_gamma, loss_1
+        return loss, context_loss, diffusion_loss_full_elbo, x_, torch.exp(-gamma/2), d_gamma, loss_1
 
     def reconstruction_loss(self, x, t, embeddings):
         eps = torch.randn_like(embeddings)
@@ -191,7 +198,12 @@ class NeuralDiffusion(nn.Module):
         else:
             t = torch.zeros_like(t)
             print("recomputing reconstruction loss")
-            gamma = self.gamma.get_gamma(t) #prevent a tdir call
+            if isinstance(self.context, NoneContext):
+                gamma, _ = self.gamma(t)
+            else:
+                context = torch.zeros_like(x)
+                gamma = self.gamma.get_gamma(t, context) #prevent a tdir call -> noise boundaries are fixed at t=1 and t=0 and independent of context
+
             alpha = self.gamma.alpha_2(gamma) ** 0.5
             sigma = self.gamma.sigma_2(gamma) ** 0.5
             self.alpha_0 = alpha.detach()
@@ -213,7 +225,12 @@ class NeuralDiffusion(nn.Module):
         else:
             t = torch.ones_like(t)
             print("recomputing prior loss")
-            gamma = self.gamma.get_gamma(t) #prevent a tdir call
+            if isinstance(self.context, NoneContext):
+                gamma, _ = self.gamma(t)
+            else:
+                context = torch.zeros_like(x)
+                gamma = self.gamma.get_gamma(t, context)
+
             alpha = self.gamma.alpha_2(gamma) ** 0.5
             self.alpha_1 = alpha.detach()
 

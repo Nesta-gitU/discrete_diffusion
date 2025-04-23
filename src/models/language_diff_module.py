@@ -135,7 +135,7 @@ class DiffusionModule(LightningModule):
         #also put correct ifstatements and stuff in train
         #also finally if use diffusion_loss_full_elbo and IS not used automatically set use diff loss to False
         
-        diffusion_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.model.get_losses(x, t, 
+        diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.model.get_losses(x, t, 
                                                                                 compute_diffusion_loss, 
                                                                                 compute_prior_loss, 
                                                                                 compute_reconstruction_loss, 
@@ -160,8 +160,9 @@ class DiffusionModule(LightningModule):
         
 
         prior_loss = mean_flat(prior_loss)
+        context_loss = mean_flat(context_loss)
 
-        return diffusion_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss
+        return diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss
 
     def on_train_start(self) -> None:
         """Lightning hook that is called when training begins."""
@@ -193,7 +194,7 @@ class DiffusionModule(LightningModule):
         t = t.detach()
 
         #with torch.no_grad():
-        diffusion_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.forward(t, batch,
+        diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.forward(t, batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,
                                             compute_prior_loss=self.hparams.compute_prior_loss,
                                             compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
@@ -209,13 +210,14 @@ class DiffusionModule(LightningModule):
             else:
                 is_loss = diffusion_loss / p + self.time_sampler.loss(diffusion_loss.detach(), t)
             self.log("train/is_loss", is_loss.mean(), on_step=True, prog_bar=True, logger=True)
-            elbo = is_loss + reconstruction_loss + prior_loss 
+            elbo = is_loss + reconstruction_loss + prior_loss + context_loss
         else:
-            elbo = diffusion_loss + reconstruction_loss + prior_loss
+            elbo = diffusion_loss + reconstruction_loss + prior_loss + context_loss
         
         diffusion_loss = diffusion_loss.mean()
         reconstruction_loss = reconstruction_loss.mean()
         prior_loss = prior_loss.mean()
+        context_loss = context_loss.mean()
         elbo = elbo.mean()
         #print(diffusion_loss, "----------------------diffusion_loss")
 
@@ -228,6 +230,7 @@ class DiffusionModule(LightningModule):
         self.log("train/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=True,logger=True, sync_dist=True)
         self.log("train/prior_loss", prior_loss, on_step=True, prog_bar=True,logger=True, sync_dist=True)
         self.log("train/elbo", elbo, on_step=True, prog_bar=False,logger=True, sync_dist=True)
+        self.log("train/context_loss", context_loss, on_step=True, prog_bar=False,logger=True, sync_dist=True)
 
         '''
         missing = []
@@ -300,7 +303,7 @@ class DiffusionModule(LightningModule):
         :param batch_idx: The index of the current batch.
         """
         t = torch.rand(batch.size(0), 1).unsqueeze(2).to(batch.device) 
-        diffusion_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.forward(t, batch,
+        diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.forward(t, batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,
                                             compute_prior_loss=self.hparams.compute_prior_loss,
                                             compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
@@ -334,7 +337,7 @@ class DiffusionModule(LightningModule):
         #this is because I did runs without this attribute and thus it would not checkpoint load correctly otherwise...
         t = torch.rand(batch.size(0), 1).unsqueeze(2).to(batch.device) 
 
-        diffusion_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss  = self.forward(t,batch,
+        diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss  = self.forward(t,batch,
                                             compute_diffusion_loss=self.hparams.compute_diffusion_loss,
                                             compute_prior_loss=self.hparams.compute_prior_loss,
                                             compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,

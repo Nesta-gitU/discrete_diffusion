@@ -167,7 +167,13 @@ def get_next_star(x, t, model, denoised_fn=None):
     x_start = process_xstart(x_)
 
     if hasattr(model, "gamma"):
-        gamma, _ =  model.gamma(t)
+        context = model.context.sample_context(x_)
+
+        if context is None:
+            gamma, _ = model.gamma(t)
+        else:
+            gamma, _ = model.gamma(t, context)
+
         alpha = model.gamma.alpha_2(gamma) ** 0.5
         sigma2 =  model.gamma.sigma_2(gamma)
 
@@ -219,7 +225,13 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
 
         #step 2 get epsilon
         if hasattr(model, "gamma"):
-            gmm, _ = model.gamma(t)
+            context = model.context.sample_context(x_)
+
+            if context is None:
+                gmm, _ = model.gamma(t)
+            else:
+                gmm, _ = model.gamma(t, context)
+
             alpha2 = model.gamma.alpha_2(gmm)
             sigma2 =  model.gamma.sigma_2(gmm)
             alpha = alpha2 ** 0.5
@@ -239,7 +251,13 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
         noise = torch.randn_like(prev_sample)
 
         if hasattr(model, "gamma"):
-            gmm_s, _ = model.gamma(s)
+            context = model.context.sample_context(x_) #TODO, in case of NN = a,b,c context this is currently incorrect wrong x_. cause hmm actually does that mean also m_s is incorrect?
+
+            if context is None:
+                gmm_s, _ = model.gamma(t)
+            else:
+                gmm_s, _ = model.gamma(t, context)
+
             alpha2_s = model.gamma.alpha_2(gmm_s)
             sigma2_s =  model.gamma.sigma_2(gmm_s)
             alpha_s = alpha2_s ** 0.5
@@ -285,7 +303,6 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
             sigma2_tilde_s_t = (1 - (snr_t / snr_s)).float()
             sigma2_tilde_s_t = torch.clamp(sigma2_tilde_s_t, 0, 1)
             print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
-            
 
         epsilon_tilde_s_t = torch.sqrt(1 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t.sqrt()) * noise
 
@@ -323,7 +340,7 @@ def sde_drift(z, t, model, clamping):
     x = model.pred(z, t)
 
     if clamping: # and (t > 0.7).all():
-        x = clamp(z, model, x)
+        x = clamp(model, x)
         
     def f(t_in):
         return model.affine(x, t_in)
@@ -343,7 +360,7 @@ def ode_drift(z, t, model, clamping):
     x = model.pred(z, t)
     #print(x, "x")
     if clamping: # and (t > 0.7).all():
-        x = clamp(z, model, x)
+        x = clamp(model, x)
 
     def f(t_in):
         return model.affine(x, t_in)
@@ -355,7 +372,15 @@ def ode_drift(z, t, model, clamping):
     return dz, 0
 
 def sde_drift_ndm(z_in, t_in, model, clamping):
-    gmm, d_gmm = model.gamma(t_in)
+    x_ = model.pred(z_in, t_in)
+
+    context = model.context.sample_context(x_)
+
+    if context is None:
+        gmm, d_gmm = model.gamma(t_in)
+    else:
+        gmm, d_gmm = model.gamma(t_in, context)
+
     alpha_2 = model.gamma.alpha_2(gmm)
     sigma_2 = model.gamma.sigma_2(gmm)
     alpha = alpha_2 ** 0.5
@@ -364,10 +389,9 @@ def sde_drift_ndm(z_in, t_in, model, clamping):
 
     g = (sigma_2 * d_gmm * eta) ** 0.5
 
-    x_ = model.pred(z_in, t_in)
-
+    
     if clamping: # and (t_in > 0.7).all():
-        x = clamp(z, model, x)
+        x_ = clamp(model, x_)
 
     (m_, _), (d_m_, _) = model.transform(x_, t_in)
 
@@ -378,7 +402,15 @@ def sde_drift_ndm(z_in, t_in, model, clamping):
     return drift, g
 
 def ode_drift_ndm(z_in, t_in, model, clamping):
-    gmm, d_gmm = model.gamma(t_in)
+    x_ = model.pred(z_in, t_in)
+
+    context = model.context.sample_context(x_)
+
+    if context is None:
+        gmm, d_gmm = model.gamma(t_in)
+    else:
+        gmm, d_gmm = model.gamma(t_in, context)
+
     alpha_2 = model.gamma.alpha_2(gmm)
     sigma_2 = model.gamma.sigma_2(gmm)
     alpha = alpha_2 ** 0.5
@@ -387,7 +419,7 @@ def ode_drift_ndm(z_in, t_in, model, clamping):
     x_ = model.pred(z_in, t_in)
 
     if clamping: # and (t_in > 0.7).all():
-        x = clamp(z, model, x)
+        x_ = clamp(model, x_)
 
     (m_, _), (d_m_, _) = model.transform(x_, t_in)
 

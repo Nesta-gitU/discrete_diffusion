@@ -5,10 +5,11 @@
 
 defaults:
     #choose which components to use for the diffusion model
-  - /model/diffusion@model.diffusion: vdm.yaml
+  - /model/diffusion@model.diffusion: mulan_adaptive.yaml
 
   #choose which backbone to use for the predictor and forward process
   - /model/backbone@model.diffusion.pred.model: bert.yaml
+  - /model/backbone@model.diffusion.context.model: bert_no_emb.yaml
   
   - override /data: roc
   - override /model: language_diff_module
@@ -23,7 +24,7 @@ tags: ["roc", "bert_base", "vdm"]
 seed: 12345
 #commment
 data:
-  batch_size: 512
+  batch_size: 65
   block_size: 64
   overfit_one_batch: false #should be false normally
 
@@ -62,9 +63,6 @@ model:
     add_pure_x_pred: false
     pred:
       stabilize: true
-    gamma:
-      _target_: src.models.ndm.components.gamma.GammaMuLAN
-      gamma_shape: [64, 128]
   time_sampler:
     _target_: src.models.time_samplers.time_samplers.UniformBucketSampler #src.models.time_samplers.time_samplers.ContSampler #the other option is src.models.time_samplers.time_samplers.UniformBucketSampler
 

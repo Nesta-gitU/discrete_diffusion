@@ -59,7 +59,7 @@ def plot_lossdist(model, batch, out_dir):
             t = t.expand(batch.shape[0], 1, 1)
             #print(t.shape)
             embeddings = model.model.pred.model.get_embeds(batch)  
-            diffusion_loss, _, _, exp_gamma, d_gamma, diffusion_loss_meanpred = model.model.get_diffusion_loss(embeddings, t, None)
+            diffusion_loss, _, _, _, exp_gamma, d_gamma, diffusion_loss_meanpred = model.model.get_diffusion_loss(embeddings, t, None)
             avg_loss = diffusion_loss.mean()
             exp_gammas.append(exp_gamma.mean().item())
             d_gammas.append(d_gamma.mean().item())
