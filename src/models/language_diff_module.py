@@ -260,7 +260,7 @@ class DiffusionModule(LightningModule):
             else:
                 new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
         elif self.hparams.grad_clipping_type == "dynamic":
-            alpha = 0.99
+            alpha = 0.999
 
             if self.global_step == 0:
                 self.current_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
