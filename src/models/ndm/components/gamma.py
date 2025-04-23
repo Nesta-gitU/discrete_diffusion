@@ -383,7 +383,7 @@ class GammaMuLANContext(Gamma):
         #shape should be bs=t.shape[0], gamma_shape
         #how do I append a value to the shape though?
         gamma = gamma.view(-1, *self.gamma_shape)
-        #print(gamma.shape, "gamma shape")
+        print(gamma.shape, "gamma shape")
         return gamma
     
     def forward(self, t, x):
