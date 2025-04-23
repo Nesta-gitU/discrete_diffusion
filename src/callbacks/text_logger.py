@@ -100,7 +100,7 @@ class TextLogger(Callback):
 
         if hasattr(model, 'gamma'):
             plot_gamma(model,out_dir="output",model_base_name=f"vdm_{model.gamma.__class__.__name__}_{model.transform.__class__.__name__}_{run_name}", 
-                    self.batch_size, block_size, hidden_size)
+                    batch_size=self.batch_size, block_size=block_size, hidden_size=hidden_size)
         
         tokenizer = trainer.datamodule.tokenizer
         
