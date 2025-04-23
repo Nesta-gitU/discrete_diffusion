@@ -30,7 +30,7 @@ data:
 
 callbacks:
   word_sampler:
-    log_train_every_n_steps: 1000
+    log_train_every_n_steps: 20
     no_epoch_logging: true
     modes: ["star", "marginal"]
     n_steps: 2000
