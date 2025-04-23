@@ -70,7 +70,7 @@ model:
     clamp_max: 10000
     diff_loss_type: "x_0_prediction"
     gamma_init: false
-    add_pure_x_pred: true
+    add_pure_x_pred: false
     pred:
       stabilize: true
   time_sampler:
@@ -87,4 +87,4 @@ logger:
 
 model_name: "roc_mulan"
 restart_from_checkpoint: true
-float32_type: medium #idk if this being high vs medium matters in any way 
+float32_type: high #idk if this being high vs medium matters in any way 

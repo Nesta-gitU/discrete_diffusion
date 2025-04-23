@@ -8,7 +8,7 @@ gamma:
   _target_: src.models.ndm.components.gamma.GammaTheirs
 
 vol_eta:
-  _target_: src.models.ndm.components.vol_eta.VolatilityEtaNeural
+  _target_: src.models.ndm.components.vol_eta.VolatilityEtaOne
 
 pred:
   _target_: src.models.ndm.components.predictor.Predictor

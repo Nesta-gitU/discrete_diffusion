@@ -57,7 +57,7 @@ model:
   total_steps: ${trainer.max_steps}
   mask_padding: false
   grad_clipping_type: "warmup"
-  grad_clip: 0.5
+  grad_clip: 0.2
   time_sampler:
     _target_: src.models.time_samplers.time_samplers.UniformBucketSampler
   diffusion:
