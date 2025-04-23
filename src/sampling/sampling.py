@@ -249,7 +249,7 @@ def plot_gamma(model, out_dir, model_base_name, batch_size, block_size, hidden_s
     #also init a new gamma from scratch and plot that too see what it was originally
     gamma_og = GammaVDM()
 
-    z = torch.randn(batch_size, block_size, hidden_size)
+    z = torch.randn(300, block_size, hidden_size)
 
     with torch.no_grad():
         model.to("cpu")
