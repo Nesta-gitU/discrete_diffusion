@@ -333,7 +333,7 @@ class GammaMuLANContext(Gamma):
         return self.max_minus_min_gamma * polynomial / scale
 
     def _compute_coefficients(self, x):
-        x = x.flatten(start_dim=1)
+        #x = x.flatten(start_dim=1)
         print(x.shape, "x shape, after flatten")
         _h = torch.nn.functional.silu(self.l1(x))
         _h = torch.nn.functional.silu(self.l2(_h))
