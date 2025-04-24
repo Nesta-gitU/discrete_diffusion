@@ -291,7 +291,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     # For sampling_mode, the config may be provided as a comma‐separated string.
     # If you want multiple modes, pass them as a comma‐separated string like "ode,sde"
-    sampling_mode_cfg = cfg.get("sampling_mode", ["marginal"])
+    sampling_mode_cfg = cfg.get("sampling_mode", ["marginal", "star"])
     if isinstance(sampling_mode_cfg, str):
         sampling_mode = [x.strip() for x in sampling_mode_cfg.split(",")]
     else:

@@ -75,6 +75,6 @@ logger:
   aim:
     experiment: "text8test"
 
-model_name: "roc_mulan"
+model_name: "roc_mulan_adaptive"
 restart_from_checkpoint: true
 float32_type: high

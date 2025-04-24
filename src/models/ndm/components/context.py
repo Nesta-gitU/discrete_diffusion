@@ -23,6 +23,8 @@ class VaeContext(nn.Module):
     def sample_context(self, x):
         shape = x.mean(dim=-1, keepdim=True)
         context = torch.randn_like(shape)
+        print("sampled context for the generations, this should happen only once")
+        print(context.shape, "the shape of the context")
         return context
 
 class EncoderContext(nn.Module):
@@ -43,6 +45,7 @@ class EncoderContext(nn.Module):
     
     def sample_context(self, x):
         context = self.model(x)
+        
         
         return context
 
