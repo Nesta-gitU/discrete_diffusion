@@ -3,6 +3,7 @@ import torch
 from tqdm import tqdm
 from src.models.nfdm.nfdm import t_dir
 from src.their_utils.test_util import denoised_fn_round
+from src.models.ndm.components.context import VaeContext
 import torch
 from torch import nn
 from types import SimpleNamespace
@@ -30,14 +31,19 @@ def double_precision():
 ###
 
 def sample_loop(z, ts, tf, n_steps, model, mode, clamping = False):
+    if isinstance(model.context, VaeContext):
+        context = model.context.sample_context(z)
+    else:
+        context = None
+
     if mode == 'sde':
-        return solve_de(z, ts, tf, n_steps, model, mode, clamping)
+        return solve_de(z, ts, tf, n_steps, model, mode, clamping, context)
     elif mode == 'ode':
-        return solve_de(z, ts, tf, n_steps, model, mode, clamping)
+        return solve_de(z, ts, tf, n_steps, model, mode, clamping, context)
     elif mode == 'marginal':
-        return discrete_sampling(z, ts, tf, n_steps, model, mode, clamping)
+        return discrete_sampling(z, ts, tf, n_steps, model, mode, clamping, context)
     elif mode == 'star':
-        return discrete_sampling(z, ts, tf, n_steps, model, mode, clamping)
+        return discrete_sampling(z, ts, tf, n_steps, model, mode, clamping, context)
     else:
         raise ValueError("mode must be either 'sde', 'ode', 'marginal', or 'star'")
     
@@ -62,7 +68,7 @@ def clamp(model, x):
 ###
 
 @torch.no_grad()
-def solve_de(z, ts, tf, n_steps, model, mode, clamping = False):
+def solve_de(z, ts, tf, n_steps, model, mode, clamping = False, context=None):
     assert mode in ['sde', 'ode'], "mode must be either 'sde' or 'ode'"
 
     bs = z.shape[0]
@@ -70,6 +76,8 @@ def solve_de(z, ts, tf, n_steps, model, mode, clamping = False):
     tt = torch.linspace(ts, tf, n_steps + 1)[:-1].to(z.device) #[:-1].to(z.device)
     dt = (tf - ts) / n_steps
     dt_2 = abs(dt) ** 0.5
+
+
     
     if bs > 64:
         path = None
@@ -80,12 +88,12 @@ def solve_de(z, ts, tf, n_steps, model, mode, clamping = False):
         
         if mode == 'sde':
             if hasattr(model, 'vol_eta'):
-                f, g = sde_drift_ndm(z, t, model, clamping)
+                f, g = sde_drift_ndm(z, t, model, clamping, context)
             else:
                 f, g = sde_drift(z, t, model, clamping)
         else:
             if hasattr(model, 'vol_eta'):
-                f, g = ode_drift_ndm(z, t, model, clamping)
+                f, g = ode_drift_ndm(z, t, model, clamping, context)
             else:
                 f, g = ode_drift(z, t, model, clamping)
 
@@ -106,7 +114,8 @@ def discrete_sampling(
         n_steps: int,
         model: nn.Module,
         mode: str,
-        clamping: bool
+        clamping: bool,
+        context = None
 ):
     bs = z.shape[0]
 
@@ -137,9 +146,9 @@ def discrete_sampling(
         if mode == 'marginal': 
             if all(t == 0):
                 continue       
-            z = get_next_marginal(prev_sample=z, t=t, s=t+dt, model=model, denoised_fn=denoised_fn)
+            z = get_next_marginal(prev_sample=z, t=t, s=t+dt, model=model, denoised_fn=denoised_fn, context=context)
         elif mode == 'star':
-            z = get_next_star(x=z, t=t, model=model, denoised_fn=denoised_fn)
+            z = get_next_star(x=z, t=t, model=model, denoised_fn=denoised_fn, context=context)
 
         if path is not None:
             path.append(z)
@@ -152,7 +161,7 @@ def discrete_sampling(
 # functions that run the inner loop
 ###
 
-def get_next_star(x, t, model, denoised_fn=None):
+def get_next_star(x, t, model, denoised_fn=None, context=None):
     def process_xstart(x):
         if denoised_fn is not None:
             # print(denoised_fn)
@@ -167,7 +176,9 @@ def get_next_star(x, t, model, denoised_fn=None):
     x_start = process_xstart(x_)
 
     if hasattr(model, "gamma"):
-        context = model.context.sample_context(x_)
+        if context is None: 
+            context = model.context.sample_context(x_)
+        
 
         if context is None:
             gamma, _ = model.gamma(t)
@@ -208,7 +219,7 @@ def get_next_star(x, t, model, denoised_fn=None):
     sample = mean + nonzero_mask * th.exp(0.5 * log_variance) * noise #Maybe this is key!!!!!
     return sample
 
-def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
+def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
     with double_precision():
         def process_xstart(x):
             if denoised_fn is not None:
@@ -225,7 +236,8 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
 
         #step 2 get epsilon
         if hasattr(model, "gamma"):
-            context = model.context.sample_context(x_)
+            if context is None:
+                context = model.context.sample_context(x_)
 
             if context is None:
                 gmm, _ = model.gamma(t)
@@ -251,7 +263,9 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None):
         noise = torch.randn_like(prev_sample)
 
         if hasattr(model, "gamma"):
-            context = model.context.sample_context(x_) #TODO, in case of NN = a,b,c context this is currently incorrect wrong x_. cause hmm actually does that mean also m_s is incorrect?
+            if context is None:
+                context = model.context.sample_context(x_)
+            #TODO, in case of NN = a,b,c context this is currently incorrect wrong x_. cause hmm actually does that mean also m_s is incorrect?
 
             if context is None:
                 gmm_s, _ = model.gamma(t)
@@ -371,10 +385,10 @@ def ode_drift(z, t, model, clamping):
 
     return dz, 0
 
-def sde_drift_ndm(z_in, t_in, model, clamping):
+def sde_drift_ndm(z_in, t_in, model, clamping, context):
     x_ = model.pred(z_in, t_in)
-
-    context = model.context.sample_context(x_)
+    if context is None:
+        context = model.context.sample_context(x_)
 
     if context is None:
         gmm, d_gmm = model.gamma(t_in)
@@ -401,10 +415,11 @@ def sde_drift_ndm(z_in, t_in, model, clamping):
 
     return drift, g
 
-def ode_drift_ndm(z_in, t_in, model, clamping):
+def ode_drift_ndm(z_in, t_in, model, clamping, context):
     x_ = model.pred(z_in, t_in)
 
-    context = model.context.sample_context(x_)
+    if context is None:
+        context = model.context.sample_context(x_)
 
     if context is None:
         gmm, d_gmm = model.gamma(t_in)
