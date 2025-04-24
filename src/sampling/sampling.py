@@ -77,7 +77,7 @@ def sample_code(model,
             #print(latent_sde.shape, "sde this should have the shape [batch_size, block_size, hidden_size]")
             #print(latent_ode.shape, "ode this should have the shape [batch_size, block_size, hidden_size]")
             
-            if False:
+            if True:
                 #visualize the embedding matrix with color coding 
                 print("visualizing embedding matrix")
                 visualize_embedding_matrix(model)
