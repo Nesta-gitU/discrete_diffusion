@@ -68,7 +68,7 @@ model:
   grad_clip: 0.1
   diffusion:
     clamp_max: 10000
-    diff_loss_type: "x_0_prediction"
+    diff_loss_type: "elbo"
     gamma_init: false
     add_pure_x_pred: false
     pred:
