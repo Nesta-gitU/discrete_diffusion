@@ -32,6 +32,7 @@ class TransformerEncoder8M(nn.Module):
         self.LayerNorm = nn.LayerNorm(hidden_dim)
         self.dropout = nn.Dropout(dropout)
         self.hidden_dim = hidden_dim
+        self.input_dim = input_dim
 
 
 
