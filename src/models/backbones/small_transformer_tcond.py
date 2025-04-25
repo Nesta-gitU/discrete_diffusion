@@ -44,7 +44,7 @@ class TransformerEncoder8M(nn.Module):
         emb_x = self.input_proj(x)  # [bs, seqlen, 256]
 
         # concatenate time and positional embeddings
-        emb = self.time_embed(timestep_embedding(t, self.hidden_dim, True))
+        emb = self.time_embed(timestep_embedding(t, self.input_dim, True))
         seq_length = x.size(1)
 
         position_ids = torch.arange(x.size(1), dtype=torch.long, device=x.device)
