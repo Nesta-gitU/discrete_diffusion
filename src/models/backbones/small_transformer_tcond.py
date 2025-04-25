@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 
 from src.their_utils.nn import timestep_embedding
+from torch.nn.attention import sdpa_kernel, SDPBackend
 
 class TransformerEncoder8M(nn.Module):
     def __init__(self, vocab_size, input_dim=128, hidden_dim=256, output_dim=2, num_heads=8, mlp_dim=1024, num_layers=4, dropout=0.1):
@@ -56,7 +57,8 @@ class TransformerEncoder8M(nn.Module):
             x = self.encoder(emb_inputs, src_key_padding_mask=mask)
             raise NotImplementedError("mask not implemented")
         else:
-            out = self.encoder(emb_inputs)
+            with sdpa_kernel(SDPBackend.EFFICIENT_ATTENTION):
+                out = self.encoder(emb_inputs)
         
         out = self.output_proj(out)
 
