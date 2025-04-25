@@ -4,7 +4,7 @@ import torch.autograd.functional
 import torch.nn as nn
 
 from their_utils.utils import token_discrete_loss
-
+from torch.nn.attention import sdpa_kernel, SDPBackend
 
 from pathlib import Path
 import pickle
@@ -17,10 +17,11 @@ def jvp(f, x, v):
         v = v.clone()
         #print(x.requires_grad, "x requires grad")
         #print(v.requires_grad, "v requires grad")
-        return torch.autograd.functional.jvp(
-            f, x, v, 
-            create_graph=torch.is_grad_enabled()
-        )
+        with sdpa_kernel(SDPBackend.MATH): 
+            return torch.autograd.functional.jvp(
+                f, x, v, 
+                create_graph=torch.is_grad_enabled()
+            )
 
 def t_dir(f, t):
     return jvp(f, t, torch.ones_like(t))
