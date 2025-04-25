@@ -190,7 +190,7 @@ class ModernBert(nn.Module):
             assert y.shape == (x.shape[0],)
             emb = emb + self.label_emb(y)
 
-        emb_x = self.input_up_proj(x)
+        emb_x = self.input_up_proj(x) # I guess this brings it up to model channels 
         seq_length = x.size(1)
         position_ids = self.position_ids[:, :seq_length]
         emb_inputs = self.position_embeddings(position_ids) + emb_x + emb.unsqueeze(1).expand(-1, seq_length, -1)

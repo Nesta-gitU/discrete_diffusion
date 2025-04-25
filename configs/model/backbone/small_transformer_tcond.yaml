@@ -1,0 +1,4 @@
+_target_: src.models.backbones.small_transformer_tcond.TransformerEncoder8M
+
+vocab_size: ${data.vocab_size}
+output_dim: 128
