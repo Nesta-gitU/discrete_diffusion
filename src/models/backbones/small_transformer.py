@@ -18,6 +18,7 @@ class TransformerEncoder8M(nn.Module):
 
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
         self.output_proj = nn.Linear(hidden_dim, output_dim)
+        self.output_dim = output_dim/2
 
         # Positional embeddings (+1 for CLS token)
         self.position_embeddings = nn.Embedding(vocab_size + 1, hidden_dim)
