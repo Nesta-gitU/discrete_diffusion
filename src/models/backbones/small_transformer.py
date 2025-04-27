@@ -5,7 +5,7 @@ import torch.nn as nn
 from src.their_utils.nn import timestep_embedding
 
 class TransformerEncoder8M(nn.Module):
-    def __init__(self, vocab_size, input_dim=128, hidden_dim=256, output_dim=2, num_heads=8, mlp_dim=1024, num_layers=4, dropout=0.1):
+    def __init__(self, vocab_size, input_dim=128, hidden_dim=256, output_dim=256, num_heads=8, mlp_dim=1024, num_layers=5, dropout=0.1):
         super().__init__()
         self.input_proj = nn.Linear(input_dim, hidden_dim) #the big model has two of these layers and a non-linearity in between
 
