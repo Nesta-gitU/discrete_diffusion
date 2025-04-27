@@ -57,7 +57,7 @@ class TransformerEncoder8M(nn.Module):
             x = self.encoder(emb_inputs, src_key_padding_mask=mask)
             raise NotImplementedError("mask not implemented")
         else:
-            with sdpa_kernel(SDPBackend.EFFICIENT_ATTENTION): #both flash and efficient attention do not work with jvp
+            with sdpa_kernel([SDPBackend.EFFICIENT_ATTENTION]): #both flash and efficient attention do not work with jvp
                 out = self.encoder(emb_inputs)
         
         out = self.output_proj(out)

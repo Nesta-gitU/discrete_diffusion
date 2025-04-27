@@ -13,6 +13,7 @@ from tqdm import tqdm, trange
 
 from src.models.nfdm.nfdm import t_dir
 from math import prod
+from functools import partial
 
 
 class Gamma(nn.Module, ABC):
@@ -200,13 +201,13 @@ class GammaMuLAN(Gamma):
         + (b ** 2 + 2 * a * c) * (t ** 2)
         + a * b * (t ** 3) * 2.0
         + b * c * t * 2
-        + (c ** 2))
+        + (c ** 2) + self.grad_min_epsilon)
         
         scale = ((a ** 2) / 5.0
                 + (b ** 2 + 2 * a * c) / 3.0
                 + a * b / 2.0
                 + b * c
-                + (c ** 2))
+                + (c ** 2) + self.grad_min_epsilon)
 
         return self.max_minus_min_gamma * polynomial / scale
 
@@ -328,7 +329,7 @@ class GammaMuLANContext(Gamma):
                 + (b ** 2 + 2 * a * c) / 3.0
                 + a * b / 2.0
                 + b * c
-                + (c ** 2 + self.grad_min_epsilon))
+                + (c ** 2 + self.grad_min_epsilon)) #this is one of the differences 
 
         return self.max_minus_min_gamma * polynomial / scale
 
@@ -368,7 +369,7 @@ class GammaMuLANContext(Gamma):
         return gamma
     
     def get_gamma(self, t, x):
-        #print(x.shape, "x shape")
+        #print(x.shape, "x shape") -> [bs, seqlen, n_features]
         a, b, c = self._compute_coefficients(x)
         gamma = self._eval_polynomial(a, b, c, t)
         #print(gamma.shape, "before")
@@ -396,7 +397,8 @@ class GammaMuLANContext(Gamma):
     
     def forward(self, t, x):
         if self.around_reference:
-            gamma, dgamma = t_dir(self.get_gamma, t)
+            partial_gamma = partial(self.get_gamma, x=x)
+            gamma, dgamma = t_dir(partial_gamma, t)
             dgamma = torch.clamp(dgamma, min=self.grad_min_epsilon)
             return gamma, dgamma
 

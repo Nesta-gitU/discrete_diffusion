@@ -17,7 +17,7 @@ def jvp(f, x, v):
         v = v.clone()
         #print(x.requires_grad, "x requires grad")
         #print(v.requires_grad, "v requires grad")
-        with sdpa_kernel(SDPBackend.MATH): 
+        with sdpa_kernel([SDPBackend.MATH]): 
             return torch.autograd.functional.jvp(
                 f, x, v, 
                 create_graph=torch.is_grad_enabled()
