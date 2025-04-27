@@ -336,7 +336,7 @@ class GammaMuLANContext(Gamma):
     def _compute_coefficients(self, x):
         x = x.flatten(start_dim=1)
         #print(x.shape, "x shape, after flatten")
-        x = torch.ones_like(x)
+        #x = torch.ones_like(x)
         _h = torch.nn.functional.silu(self.l1(x))
         _h = torch.nn.functional.silu(self.l2(_h))
         a = self.l3_a(_h)
