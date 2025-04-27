@@ -21,8 +21,8 @@ class VaeContext(nn.Module):
         return context, KLD
     
     def sample_context(self, x):
-        shape = x.mean(dim=-1, keepdim=True)
-        context = torch.randn_like(shape)
+        bs = x.size(0)
+        context = torch.randn(bs, self.model.output_dim, dtype=x.dtype, device=x.device)
         print("sampled context for the generations, this should happen only once")
         print(context.shape, "the shape of the context")
         return context
