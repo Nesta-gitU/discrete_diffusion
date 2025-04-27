@@ -293,8 +293,8 @@ class GammaMuLANContext(Gamma):
         #if I want the noise injection to not depend on the input, more like vdm, since input dependence will be injected through ndm function transformation, I can just make the input of
         #l1 to be 1. which means the input is just the time t. That is not fully equal to MuLAN since there the a, b, d are dependent only on input not on t.
         #that also mean I will still need to implement the get_gamma method, but not the forward method, we need tdir still. 
-        #self.l1 = nn.Linear(self.n_features, self.n_features)
-        self.l1 = nn.Linear(1, self.n_features)
+        self.l1 = nn.Linear(self.n_features, self.n_features)
+        #self.l1 = nn.Linear(1, self.n_features)
         self.l2 = nn.Linear(self.n_features, self.n_features)
         self.l3_a = nn.Linear(self.n_features, self.n_features)
         self.l3_b = nn.Linear(self.n_features, self.n_features)
@@ -337,7 +337,8 @@ class GammaMuLANContext(Gamma):
     def _compute_coefficients(self, x):
         x = x.flatten(start_dim=1)
         #print(x.shape, "x shape, after flatten")
-        x = torch.ones_like(x)
+        #x = torch.ones_like(x)
+        print(x.shape, "x shape, after ones")
         _h = torch.nn.functional.silu(self.l1(x))
         _h = torch.nn.functional.silu(self.l2(_h))
         a = self.l3_a(_h)
@@ -347,6 +348,7 @@ class GammaMuLANContext(Gamma):
         a = a.unsqueeze(-1)
         b = b.unsqueeze(-1)
         c = c.unsqueeze(-1)
+        print(a.shape, "a shape, after unsqueeze")
         return a, b, c
 
     def get_reference_gamma(self, t):
@@ -371,7 +373,7 @@ class GammaMuLANContext(Gamma):
     
     def get_gamma(self, t, x):
         #print(x.shape, "x shape") -> [bs, seqlen, n_features]
-        a, b, c = self._compute_coefficients(t)
+        a, b, c = self._compute_coefficients(x)
         gamma = self._eval_polynomial(a, b, c, t)
         #print(gamma.shape, "before")
 
@@ -403,7 +405,7 @@ class GammaMuLANContext(Gamma):
             dgamma = torch.clamp(dgamma, min=self.grad_min_epsilon)
             return gamma, dgamma
 
-        a, b, c = self._compute_coefficients(t)
+        a, b, c = self._compute_coefficients(x)
         dg = self._grad_t(a, b, c, t)
         dg = dg.clamp(min=self.grad_min_epsilon)
         dg = dg.view(x.shape[0], *self.gamma_shape)
