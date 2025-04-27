@@ -403,7 +403,7 @@ class GammaMuLANContext(Gamma):
             dgamma = torch.clamp(dgamma, min=self.grad_min_epsilon)
             return gamma, dgamma
 
-        a, b, c = self._compute_coefficients(x)
+        a, b, c = self._compute_coefficients(t)
         dg = self._grad_t(a, b, c, t)
         dg = dg.clamp(min=self.grad_min_epsilon)
         dg = dg.view(x.shape[0], *self.gamma_shape)
