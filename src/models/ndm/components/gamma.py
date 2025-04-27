@@ -390,7 +390,7 @@ class GammaMuLANContext(Gamma):
         #shape should be bs=t.shape[0], gamma_shape
         #how do I append a value to the shape though?
         #print(gamma.shape, "before")
-        gamma = gamma.view(-1, *self.gamma_shape)
+        gamma = gamma.view(x.shape[0], *self.gamma_shape)
         #print(gamma.shape, "gamma shape")
         #print(t.shape)
         return gamma
@@ -405,7 +405,7 @@ class GammaMuLANContext(Gamma):
         a, b, c = self._compute_coefficients(x)
         dg = self._grad_t(a, b, c, t)
         dg = dg.clamp(min=self.grad_min_epsilon)
-        dg = dg.view(-1, *self.gamma_shape)
+        dg = dg.view(x.shape[0], *self.gamma_shape)
         return self.get_gamma(t, x), dg
 
 
