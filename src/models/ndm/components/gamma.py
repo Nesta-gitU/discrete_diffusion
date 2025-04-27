@@ -293,7 +293,8 @@ class GammaMuLANContext(Gamma):
         #if I want the noise injection to not depend on the input, more like vdm, since input dependence will be injected through ndm function transformation, I can just make the input of
         #l1 to be 1. which means the input is just the time t. That is not fully equal to MuLAN since there the a, b, d are dependent only on input not on t.
         #that also mean I will still need to implement the get_gamma method, but not the forward method, we need tdir still. 
-        self.l1 = nn.Linear(self.n_features, self.n_features)
+        #self.l1 = nn.Linear(self.n_features, self.n_features)
+        self.l1 = nn.Linear(1, self.n_features)
         self.l2 = nn.Linear(self.n_features, self.n_features)
         self.l3_a = nn.Linear(self.n_features, self.n_features)
         self.l3_b = nn.Linear(self.n_features, self.n_features)
@@ -370,7 +371,7 @@ class GammaMuLANContext(Gamma):
     
     def get_gamma(self, t, x):
         #print(x.shape, "x shape") -> [bs, seqlen, n_features]
-        a, b, c = self._compute_coefficients(x)
+        a, b, c = self._compute_coefficients(t)
         gamma = self._eval_polynomial(a, b, c, t)
         #print(gamma.shape, "before")
 
