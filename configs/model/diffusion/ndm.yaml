@@ -5,7 +5,7 @@ transform:
   model: debug
 
 gamma:
-  _target_: src.models.ndm.components.gamma.GammaTheirs
+  _target_: src.models.ndm.components.gamma.GammaLinear #GammaTheirs
 
 vol_eta:
   _target_: src.models.ndm.components.vol_eta.VolatilityEtaOne
