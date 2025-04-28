@@ -5,7 +5,7 @@ from src.their_utils.nn import timestep_embedding
 from torch.nn.attention import sdpa_kernel, SDPBackend
 
 class TransformerEncoder8M(nn.Module):
-    def __init__(self, vocab_size, input_dim=128, hidden_dim=256, output_dim=2, num_heads=8, mlp_dim=1024, num_layers=4, dropout=0.1):
+    def __init__(self, vocab_size, input_dim=128, hidden_dim=256, output_dim=2, num_heads=8, mlp_dim=1024, num_layers=5, dropout=0.1):
         super().__init__()
         self.input_proj = nn.Linear(input_dim, hidden_dim) #the big model has two of these layers and a non-linearity in between
 
@@ -57,7 +57,7 @@ class TransformerEncoder8M(nn.Module):
             x = self.encoder(emb_inputs, src_key_padding_mask=mask)
             raise NotImplementedError("mask not implemented")
         else:
-            with sdpa_kernel([SDPBackend.EFFICIENT_ATTENTION]): #both flash and efficient attention do not work with jvp
+            with sdpa_kernel([SDPBackend.MATH]): #both flash and efficient attention do not work with jvp
                 out = self.encoder(emb_inputs)
         
         out = self.output_proj(out)
