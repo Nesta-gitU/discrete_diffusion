@@ -271,9 +271,9 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             #TODO, in case of NN = a,b,c context this is currently incorrect wrong x_. cause hmm actually does that mean also m_s is incorrect?
 
             if context is None:
-                gmm_s, _ = model.gamma(t)
+                gmm_s, _ = model.gamma(s)
             else:
-                gmm_s, _ = model.gamma(t, context)
+                gmm_s, _ = model.gamma(s, context)
 
             alpha2_s = model.gamma.alpha_2(gmm_s)
             sigma2_s =  model.gamma.sigma_2(gmm_s)
