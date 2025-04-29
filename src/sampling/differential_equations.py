@@ -300,10 +300,10 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
                 pass
             #    print(t, s)
             sigma2_tilde_s_t = -torch.expm1(gmm_s - gmm) #-(torch.exp(gmm_s - gmm)-1) = 1-torch.exp(gmm_s - gmm) => gmm > gmm_s so quantity should be positive
-            print(sigma2_tilde_s_t, "sigma2_tilde_s_t, before clamp")
-            print(torch.all(gmm == gmm_s), "gmm == gmm_s")
-            print(gmm_s, "gmm_s")
-            print(s, t, "s, t")
+            #print(sigma2_tilde_s_t, "sigma2_tilde_s_t, before clamp")
+            #print(torch.all(gmm == gmm_s), "gmm == gmm_s")
+            #print(gmm_s, "gmm_s")
+            #print(s, t, "s, t")
             sigma2_tilde_s_t = torch.clamp(sigma2_tilde_s_t, 0, 1)
             if torch.any(sigma2_tilde_s_t > 1) or torch.any(sigma2_tilde_s_t < 0):
                 #print("sigma2_tilde_s_t out of bounds", sigma2_tilde_s_t[sigma2_tilde_s_t > 1], sigma2_tilde_s_t[sigma2_tilde_s_t < 0])
