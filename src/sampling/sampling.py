@@ -252,6 +252,7 @@ def plot_gamma(model, out_dir, model_base_name, batch_size, block_size, hidden_s
     #z = torch.randn(300, block_size, hidden_size) #this means each t has a different z, but I want to see all t for some z 
     z = torch.randn(1, block_size, hidden_size)
     z = z.expand(300, -1, -1) 
+    #although the fact that for a different t at each time we get a bunch of smooth lines seems like a really bad sign to me, means z has almost no effect?
 
     with torch.no_grad():
         model.to("cpu")
