@@ -249,7 +249,9 @@ def plot_gamma(model, out_dir, model_base_name, batch_size, block_size, hidden_s
     #also init a new gamma from scratch and plot that too see what it was originally
     gamma_og = GammaVDM()
 
-    z = torch.randn(300, block_size, hidden_size)
+    #z = torch.randn(300, block_size, hidden_size) #this means each t has a different z, but I want to see all t for some z 
+    z = torch.randn(1, block_size, hidden_size)
+    z = z.expand(300, -1, -1) 
 
     with torch.no_grad():
         model.to("cpu")
