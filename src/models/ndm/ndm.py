@@ -145,8 +145,15 @@ class NeuralDiffusion(nn.Module):
         elif self.diff_loss_type == "x_0_prediction":
             # L_x weighting
             lmbd_x = 4 / (1 + eta) ** 2 
+            
             loss = lmbd_x * loss 
             diffusion_loss_full_elbo = None
+            #context_loss -> this lmdb_x implies we scaled full elbo by (lmbd_x/lmbd_elbo)
+            #so to correctly scale the context loss we need to scale it by the same factor
+            if context_loss is not None:
+                lmbd_elb = 0.5 * torch.exp(-gamma*0.5) * d_gamma / eta
+                context_loss = (lmbd_x/lmbd_elb) * context_loss
+ 
             if loss.isnan().any():
                 print("loss is nan")
                 print("lmbd_x: ", lmbd_x)
