@@ -152,7 +152,7 @@ class NeuralDiffusion(nn.Module):
             #so to correctly scale the context loss we need to scale it by the same factor
             if context_loss is not None:
                 lmbd_elb = 0.5 * torch.exp(-gamma) * d_gamma / eta
-                context_loss = (lmbd_x/lmbd_elb) * context_loss
+                context_loss = (lmbd_x/lmbd_elb).detach() * context_loss
  
             if loss.isnan().any():
                 print("loss is nan")
