@@ -127,6 +127,7 @@ def discrete_sampling(
     dt_2 = abs(dt) ** 0.5
 
     if clamping:
+        print("clamping ---------------------------------------")
         denoised_fn = clamp
     else:
         print("no clamping ---------------------------------------")
@@ -265,6 +266,8 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
         if hasattr(model, "gamma"):
             if context is None:
                 context = model.context.sample_context(x_)
+                #This is wrong!!!!! it should never resample context ever only the first time
+                #wait maybe im wrong
             #TODO, in case of NN = a,b,c context this is currently incorrect wrong x_. cause hmm actually does that mean also m_s is incorrect?
 
             if context is None:
@@ -297,7 +300,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
                 pass
             #    print(t, s)
             sigma2_tilde_s_t = -torch.expm1(gmm_s - gmm) #-(torch.exp(gmm_s - gmm)-1) = 1-torch.exp(gmm_s - gmm) => gmm > gmm_s so quantity should be positive
-            #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
+            print(sigma2_tilde_s_t, "sigma2_tilde_s_t, before clamp")
             sigma2_tilde_s_t = torch.clamp(sigma2_tilde_s_t, 0, 1)
             if torch.any(sigma2_tilde_s_t > 1) or torch.any(sigma2_tilde_s_t < 0):
                 #print("sigma2_tilde_s_t out of bounds", sigma2_tilde_s_t[sigma2_tilde_s_t > 1], sigma2_tilde_s_t[sigma2_tilde_s_t < 0])
