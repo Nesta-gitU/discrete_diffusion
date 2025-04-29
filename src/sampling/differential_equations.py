@@ -336,7 +336,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
         #    print("last step ")
         #    sample = alpha_s * m_s + sigma_s * torch.sqrt(1 - sigma2_tilde_s_t) * eps 
         #else:
-        if all(s == 0):
+        if False:#all(s == 0):
             if hasattr(model, "gamma"):
                 sample = alpha_s * m_s
             else:
