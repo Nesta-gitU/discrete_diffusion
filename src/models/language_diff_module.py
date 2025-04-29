@@ -60,6 +60,7 @@ class DiffusionModule(LightningModule):
         use_scheduler: bool = True,
         grad_clip: float = float('inf'),
         grad_clipping_type: str = "always", #options are always, warmup, dynamic
+        beta_vae_anneal: int = 1,
         use_full_elbo_in_is: bool = True,
         compute_diffusion_loss: bool = True,
         compute_prior_loss: bool = False,
@@ -92,6 +93,8 @@ class DiffusionModule(LightningModule):
         self.max_steps = total_steps
         self.mask_padding = mask_padding
         self.grad_clip = grad_clip
+        self.beta_vae_anneal = beta_vae_anneal
+        self.beta = 0.0
         print(self.model)
         print(self.model.pred)
         #self.ema = copy.deepcopy(self.model)
@@ -217,7 +220,7 @@ class DiffusionModule(LightningModule):
         diffusion_loss = diffusion_loss.mean()
         reconstruction_loss = reconstruction_loss.mean()
         prior_loss = prior_loss.mean()
-        context_loss = context_loss.mean()
+        context_loss = self.beta * context_loss.mean()
         elbo = elbo.mean()
         #print(diffusion_loss, "----------------------diffusion_loss")
 
@@ -285,6 +288,10 @@ class DiffusionModule(LightningModule):
 
     
         self.log("grad_norm", new_grad_norm, on_step=True, on_epoch=False, prog_bar=True, logger=True)
+        
+        # anneal beta
+        self.beta = float(min(1.0, self.global_step / float(self.beta_vae_anneal)))
+        self.log("beta", self.beta, on_step=True, on_epoch=False, prog_bar=True, logger=True)
 
     def on_save_checkpoint(self, checkpoint):
         if self.hparams.grad_clipping_type == "dynamic":
