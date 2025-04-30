@@ -293,7 +293,7 @@ class GammaMuLANContext(Gamma):
         #if I want the noise injection to not depend on the input, more like vdm, since input dependence will be injected through ndm function transformation, I can just make the input of
         #l1 to be 1. which means the input is just the time t. That is not fully equal to MuLAN since there the a, b, d are dependent only on input not on t.
         #that also mean I will still need to implement the get_gamma method, but not the forward method, we need tdir still. 
-        self.l1 = nn.Linear(self.n_features * 2, self.n_features) #need to down prod first
+        self.l1 = nn.Linear(self.n_features, self.n_features) #need to down prod first
         #self.l1 = nn.Linear(1, self.n_features)
         self.l2 = nn.Linear(self.n_features, self.n_features)
         self.l3_a = nn.Linear(self.n_features, self.n_features)
@@ -345,13 +345,15 @@ class GammaMuLANContext(Gamma):
         b = self.l3_b(_h)
         c = 1e-3 + torch.nn.functional.softplus(self.l3_c(_h))
         #print(a.shape, "a shape")
-        a = a.unsqueeze(-1)
-        b = b.unsqueeze(-1)
-        c = c.unsqueeze(-1)
+        #a = a.unsqueeze(-1)
+        #b = b.unsqueeze(-1)
+        #c = c.unsqueeze(-1)
         print(a.shape, "a shape, after unsqueeze")
         return a, b, c
 
     def get_reference_gamma(self, t):
+        #print(t.shape)
+        t = t.reshape(t.shape[0], -1)
         def safe_logit(x, eps=1e-6):
             """
             Stable log( x / (1 - x) ) for x in (0, 1).
@@ -372,6 +374,7 @@ class GammaMuLANContext(Gamma):
         return gamma
     
     def get_gamma(self, t, x):
+        t = t.reshape(t.shape[0], -1)
         #print(x.shape, "x shape") -> [bs, seqlen, n_features]
         a, b, c = self._compute_coefficients(x)
         gamma = self._eval_polynomial(a, b, c, t)
@@ -397,8 +400,11 @@ class GammaMuLANContext(Gamma):
         #print(gamma.shape, "gamma shape")
         #print(t.shape)
         return gamma
-    
+
     def forward(self, t, x):
+        t = t.reshape(t.shape[0], -1)
+        #print(t.shape)
+        #print("haloooooooooooooooooooo")
         if self.around_reference:
             partial_gamma = partial(self.get_gamma, x=x)
             gamma, dgamma = t_dir(partial_gamma, t)
