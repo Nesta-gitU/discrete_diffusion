@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/train.py experiment=roc_mulan_adaptive.yaml ++restart_from_checkpoint=True
+srun python src/train.py experiment=roc_mulan_adaptive.yaml ++restart_from_checkpoint=False
