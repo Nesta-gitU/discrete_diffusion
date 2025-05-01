@@ -29,8 +29,11 @@ def double_precision():
 ###
 # Orchestrator
 ###
+from src.models.ndm.components.context import NoneContext
 
 def sample_loop(z, ts, tf, n_steps, model, mode, clamping = False):
+    if not hasattr(model, 'context'):
+        model.context = NoneContext(None)
     if isinstance(model.context, VaeContext):
         context = model.context.sample_context(z)
     else:
