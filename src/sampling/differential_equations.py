@@ -300,11 +300,18 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
                 pass
             #    print(t, s)
             if model.gamma.around_reference:
-                gmm_s_r = model.gamma.get_reference_gamma(s)
-                gmm_r = model.gamma.get_reference_gamma(t)
-                #reshape to correct shape
-                gmm_s_r = gmm_s_r.view(gmm_s.shape)
-                gmm_r = gmm_r.view(gmm.shape)
+                # get reference gammas of shape [bs]
+                ref_s = model.gamma.get_reference_gamma(s)
+                ref_t = model.gamma.get_reference_gamma(t)
+
+                # compute a view shape [bs, 1, 1, …] matching gmm_s.dim()
+                view_shape = [ref_s.size(0)] + [1] * (gmm_s.dim() - 1)
+                ref_s = ref_s.view(*view_shape)
+                ref_t = ref_t.view(*view_shape)
+
+                # expand to exactly match gmm_s and gmm
+                gmm_s_r = ref_s.expand_as(gmm_s)
+                gmm_r   = ref_t.expand_as(gmm)
                 sigma2_tilde_s_t = -torch.expm1(gmm_s_r - gmm_r)
             else:
                 sigma2_tilde_s_t = -torch.expm1(gmm_s - gmm) #-(torch.exp(gmm_s - gmm)-1) = 1-torch.exp(gmm_s - gmm) => gmm > gmm_s so quantity should be positive
