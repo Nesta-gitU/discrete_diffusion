@@ -185,6 +185,26 @@ class NeuralDiffusion(nn.Module):
             diffusion_loss_full_elbo = lmbd_elb * loss
 
             loss = coef * diffusion_loss_full_elbo
+        elif self.diff_loss_type == "two_losses":
+            lmbd_elb = 0.5 * torch.exp(-gamma) * d_gamma / eta
+            lmbd_x = 4 / (1 + eta) ** 2 
+            
+            pred_params = list(self.pred.parameters())
+            noise_params = list(self.transform.parameters()) + list(self.gamma.parameters()) + list(self.vol_eta.parameters()) + list(self.context.parameters())
+            for p in pred_params: p.requires_grad_(True)
+            for p in noise_params: p.requires_grad_(False)
+            loss_pred = lmbd_x * loss
+
+            # 2) Compute noiser loss only
+            for p in pred_params: p.requires_grad_(False)
+            for p in noise_params: p.requires_grad_(True)
+            loss_noise = lmbd_elb * loss
+
+            # 3) Restore all requires_grad flags
+            for p in pred_params + noise_params:
+                p.requires_grad_(True)
+
+            loss = loss_pred + loss_noise
 
         # mask out the seq len dim (which is dim 1) where pad tokens are
         #loss = loss.masked_fill(pad_mask.unsqueeze(-1), 0)
