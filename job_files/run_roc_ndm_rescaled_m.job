@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/train.py experiment=roc_ndm ++restart_from_checkpoint=True ++model.diffusion.diff_loss_type=two_losses
+srun python src/train.py experiment=roc_ndm ++restart_from_checkpoint=False ++model_name=roc_ndm_rescaled_m  
