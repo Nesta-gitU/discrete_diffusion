@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-class TransformerEncoder8M(nn.Module):
-    def __init__(self, vocab_size, input_dim=128, hidden_dim=256, output_dim=256,
+class TransformerEncoder8M(nn.Module):           #hidden_dim=256
+    def __init__(self, vocab_size, input_dim=128, hidden_dim=512, output_dim=256,
                  num_heads=8, mlp_dim=1024, num_layers=5, dropout=0.1):
         super().__init__()
         self.input_proj = nn.Linear(input_dim, hidden_dim)
@@ -17,7 +17,14 @@ class TransformerEncoder8M(nn.Module):
         )
 
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-        self.output_proj = nn.Linear(hidden_dim, output_dim)
+        #self.output_proj = nn.Linear(hidden_dim, output_dim)
+        #bigger output_proj
+        self.output_proj = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, output_dim)
+        )
+
         self.output_dim = int(output_dim/2)
 
         # Positional embeddings (+1 for CLS token)

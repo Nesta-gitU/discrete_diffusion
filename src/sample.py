@@ -61,7 +61,7 @@ from src.metrics.mauve import print_mauve
 from src.metrics.utils import get_preprocessed_data, file_to_list, metric_to_std
 from src.metrics.diversity import compute_diversity, compute_memorization
 from src.metrics.hf_ppl_under_ar import compute_perplexity
-
+from src.models.ndm.components.context import NoneContext
 import numpy as np
 
 
@@ -268,6 +268,8 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     model = model_lightning.ema.module #EMA model is the one we want to sample from
     #model: LightningModule = hydra.utils.instantiate(cfg.model)
     model.eval()
+    if not hasattr(model, "context"):
+        model.context = NoneContext(None)
 
     datamodule.setup(stage="fit")
 
