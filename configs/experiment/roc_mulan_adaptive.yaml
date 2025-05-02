@@ -55,8 +55,8 @@ model:
   enable_cudnn_tf32: true
   total_steps: ${trainer.max_steps}
   mask_padding: false
-  grad_clipping_type: "warmup"
-  grad_clip: 15
+  grad_clipping_type: "dynamic"
+  grad_clip: 10
   diffusion:
     diff_loss_type: "elbo"
     gamma_init: false
