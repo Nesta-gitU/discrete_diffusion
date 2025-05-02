@@ -20,7 +20,7 @@ class Predictor(nn.Module):
                 raise ValueError("context and z must have the same hidden_dim")
             #unsqueeze the middel dimension of context
             context = context.unsqueeze(1)
-            z = torch.cat([z, context], dim=1)       
+            z = torch.cat([context, z], dim=1)       
         x = self.model(z, t.squeeze(-1).squeeze(-1), **model_kwargs) 
 
         #dont actually need the first token
