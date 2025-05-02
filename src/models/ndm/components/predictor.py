@@ -16,7 +16,7 @@ class Predictor(nn.Module):
         if context is not None:
             #concatenate context with z
             #check if context is the same shape as one vector in z
-            if context.shape[1] != z.shape[1]:
+            if context.shape[1] != z.shape[-1]:
                 raise ValueError("context and z must have the same hidden_dim")
             z = torch.cat([z, context], dim=1)       
         x = self.model(z, t.squeeze(-1).squeeze(-1), **model_kwargs) 
