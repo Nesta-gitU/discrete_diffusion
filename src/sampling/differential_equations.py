@@ -175,7 +175,7 @@ def get_next_star(x, t, model, denoised_fn=None, context=None):
         return x
 
     #print(x, "x")
-    x_ = model.pred(x, t) 
+    x_ = model.pred(x, t, context) 
     #print(x_, "x_")   
     x_start = process_xstart(x_)
 
@@ -234,7 +234,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             return x
         
         #step 1 do prediction 
-        x_ = model.pred(prev_sample, t) 
+        x_ = model.pred(prev_sample, t, context) 
         
         x_start = process_xstart(x_)
 

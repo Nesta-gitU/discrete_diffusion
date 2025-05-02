@@ -108,7 +108,7 @@ class NeuralDiffusion(nn.Module):
 
         z = alpha * m + sigma * eps
 
-        x_ = self.pred(z, t)
+        x_ = self.pred(z, t, context)
 
         (m_, _), (d_m_, _) = self.transform(x_, t)
 
