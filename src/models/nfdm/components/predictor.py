@@ -11,7 +11,7 @@ class Predictor(nn.Module):
         self.model = model
         self.stabilize = stabilize  
         
-    def forward(self, z, t, **model_kwargs):       
+    def forward(self, z, t, context=None, **model_kwargs):       
         x = self.model(z, t.squeeze(-1).squeeze(-1), **model_kwargs) 
 
         value = True if hasattr(self, "stabilize") else False
