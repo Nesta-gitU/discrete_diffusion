@@ -12,6 +12,7 @@ from torch import Tensor
 import torch as th
 
 from contextlib import contextmanager
+from src.models.nfdm.components.forward_process import NFDM_gaussian
 
 @contextmanager
 def double_precision():
@@ -259,7 +260,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             eps = (prev_sample - alpha * m_) / sigma
         else:
             f_m, sigma, alpha = model.affine(x_start, t)
-            if alpha is None:
+            if isinstance(model.affine, NFDM_gaussian):
                 gamma_ref = GammaTheirs()
                 gmm = model.gamma(t)
                 alpha2 = gamma_ref.alpha_2(gmm)
@@ -293,7 +294,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             m_s , _ = model.transform.get_m_s(x_start, s)
         else:
             f_m_s, sigma_s, alpha_s = model.affine(x_start, s)
-            if alpha_s is None:
+            if isinstance(model.affine, NFDM_gaussian):
                 gamma_ref = GammaTheirs()
                 gmm_s = model.gamma(s)
                 alpha2_s = gamma_ref.alpha_2(gmm_s)
