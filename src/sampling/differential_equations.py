@@ -262,7 +262,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             f_m, sigma, alpha = model.affine(x_start, t)
             if isinstance(model.affine, NFDM_gaussian):
                 gamma_ref = GammaTheirs()
-                gmm = model.gamma(t)
+                gmm = gamma_ref(t)
                 alpha2 = gamma_ref.alpha_2(gmm)
                 sigma2 = gamma_ref.sigma_2(gmm)
             else:
@@ -296,7 +296,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             f_m_s, sigma_s, alpha_s = model.affine(x_start, s)
             if isinstance(model.affine, NFDM_gaussian):
                 gamma_ref = GammaTheirs()
-                gmm_s = model.gamma(s)
+                gmm_s = gamma_ref(s)
                 alpha2_s = gamma_ref.alpha_2(gmm_s)
                 sigma2_s = gamma_ref.sigma_2(gmm_s)
             else:
