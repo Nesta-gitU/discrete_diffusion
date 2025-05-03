@@ -161,6 +161,10 @@ class DiffusionModule(LightningModule):
                                                                                     compute_reconstruction_loss, 
                                                                                     reconstruction_loss_type,
                                                                                     compute_their_loss=False)  
+
+        if context_loss is None:
+            context_loss = torch.zeros_like(diffusion_loss)
+
                          
         #reduce correctly 
         if self.mask_padding:
@@ -221,9 +225,7 @@ class DiffusionModule(LightningModule):
                                             compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
                                             reconstruction_loss_type = self.hparams.reconstruction_loss_type)
         
-        if context_loss is None:
-            context_loss = torch.zeros_like(diffusion_loss)
-
+        
 
         if isinstance(self.time_sampler, TimeSampler):
             if (diffusion_loss_full_elbo is not None) and self.use_full_elbo_in_is:
