@@ -131,7 +131,7 @@ class NeuralDiffusion(nn.Module):
         else:
             prior_loss = torch.zeros(bs, dtype=embeddings.dtype, device=x.device)
 
-        return diffusion_loss, None, reconstruction_loss, prior_loss
+        return diffusion_loss, None, None, reconstruction_loss, prior_loss
 
     def diffusion_loss(self, alpha, alpha_prime, f_s, f_dm, f_ds, eps, g2, x_, x, z, t, f):
         # compute the drift term of the forward process based on eps

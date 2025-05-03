@@ -220,6 +220,9 @@ class DiffusionModule(LightningModule):
                                             compute_prior_loss=self.hparams.compute_prior_loss,
                                             compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
                                             reconstruction_loss_type = self.hparams.reconstruction_loss_type)
+        
+        if context_loss is None:
+            context_loss = torch.zeros_like(diffusion_loss)
 
 
         if isinstance(self.time_sampler, TimeSampler):
