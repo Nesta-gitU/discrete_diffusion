@@ -62,6 +62,9 @@ model:
     diff_loss_type: "elbo" #options are elbo, half_elbo, x_0_prediction
     pred:
       stabilize: true
+    affine:
+      model:
+        output_dim: 256
 
 logger:
   wandb:
