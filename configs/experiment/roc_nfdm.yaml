@@ -66,6 +66,8 @@ model:
     affine:
       model:
         output_dim: 256
+  time_sampler:
+    _target_: src.models.time_samplers.time_samplers.UniformBucketSampler
 
 logger:
   wandb:
