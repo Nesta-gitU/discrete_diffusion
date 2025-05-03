@@ -4,6 +4,7 @@ from tqdm import tqdm
 from src.models.nfdm.nfdm import t_dir
 from src.their_utils.test_util import denoised_fn_round
 from src.models.ndm.components.context import VaeContext
+from src.models.ndm.components.gamma import GammaTheirs
 import torch
 from torch import nn
 from types import SimpleNamespace
@@ -258,8 +259,14 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             eps = (prev_sample - alpha * m_) / sigma
         else:
             f_m, sigma, alpha = model.affine(x_start, t)
-            sigma2 = sigma ** 2
-            alpha2 = alpha ** 2
+            if alpha is None:
+                gamma_ref = GammaTheirs()
+                gmm = model.gamma(t)
+                alpha2 = gamma_ref.alpha_2(gmm)
+                sigma2 = gamma_ref.sigma_2(gmm)
+            else:
+                sigma2 = sigma ** 2
+                alpha2 = alpha ** 2
             eps = (prev_sample - f_m) / sigma
 
         #step 3 get epsilon s|t
@@ -286,8 +293,14 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             m_s , _ = model.transform.get_m_s(x_start, s)
         else:
             f_m_s, sigma_s, alpha_s = model.affine(x_start, s)
-            sigma2_s = sigma_s ** 2
-            alpha2_s = alpha_s ** 2
+            if alpha_s is None:
+                gamma_ref = GammaTheirs()
+                gmm_s = model.gamma(s)
+                alpha2_s = gamma_ref.alpha_2(gmm_s)
+                sigma2_s = gamma_ref.sigma_2(gmm_s)
+            else:
+                sigma2_s = sigma_s ** 2
+                alpha2_s = alpha_s ** 2
             m_s = f_m_s #should not be this in general nfdm case only works if static. 
     
 

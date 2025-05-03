@@ -99,9 +99,6 @@ class NeuralDiffusion(nn.Module):
         #fix epsilon to some value
         #eps = torch.ones_like(embeddings)/10
         z = f_m + f_s * eps # function evaluation of F(e(x), t, eps)
-
-       
-
         
         if compute_diffusion_loss == "x_0":         #self, f_dm, f_ds, f_s, eps, g2, x_,           x, z, t
             embeddings_ = self.pred(z, t, **model_kwargs) # z is not neccerily a word embedding here.
@@ -109,28 +106,16 @@ class NeuralDiffusion(nn.Module):
             #print(embeddings_, "embeddings_")
 
             diffusion_loss = self.diffusion_loss(alpha, alpha_prime, f_s, f_dm, f_ds, eps, g2, embeddings_ , x, z, t, f)
-        elif compute_diffusion_loss == "flow":
-            # compute the drift term of the forward process based on eps
-            f_dz = f_dm + f_ds * eps  # ODE drift
-            f_score = - eps / f_s  # score function
-            f_drift = f_dz - 0.5 * g2 * f_score  # SDE drift
-
-            # predict f_drift from z_t
-            r_drift = self.pred.model(z, t.squeeze(-1).squeeze(-1), **model_kwargs)
-            
-            # compute the diffusion loss
-            diffusion_loss = 0.5 * (f_drift - r_drift) ** 2 / g2
             
         elif compute_their_loss:
             #put their mse loss here, then tune it until it initializes in exactly the same way with that loss, it should!
             #if do the loss below I replicate their loss precisely, but is this actually what diff loss for me does?
-            #diffusion_loss = (embeddings - embeddings_) ** 2
+            #
             #now clearly this loss is not an ELBO (or its optimizable part), so lets add back the removed terms to see if it still works.
-            embeddings_ = self.pred(z, t, **model_kwargs) # z is not neccerily a word embedding here.
-            diffusion_loss = 0.5 * (embeddings - embeddings_) ** 2 / (f_s ** 2)
+            embeddings_ = self.pred(z.detach(), t, **model_kwargs) # z is not neccerily a word embedding here.
+            diffusion_loss = (embeddings - embeddings_) ** 2
 
             #doing x_0 prediction with elbo and continuous time seems hard so maybe test it instead in their code. 
-            
         else:
             diffusion_loss = torch.zeros(bs, dtype=embeddings.dtype, device=x.device)
         

@@ -9,7 +9,7 @@ defaults:
 
   #choose which backbone to use for the predictor and forward process
   - /model/backbone@model.diffusion.pred.model: bert.yaml
-  - /model/backbone@model.diffusion.affine.model: bert_no_emb.yaml
+  - /model/backbone@model.diffusion.affine.model: small_transformer_tcond.yaml
   
   - override /data: roc
   - override /model: language_diff_module
@@ -24,18 +24,18 @@ tags: ["bert-base", "roc", "nfdm"]
 seed: 12345
 #commment
 data:
-  batch_size: 256
+  batch_size: 512
   block_size: 64
   overfit_one_batch: false #should be false normally
 
 callbacks:
   word_sampler:
-    log_train_every_n_steps: 5000
+    log_train_every_n_steps: 10000
     no_epoch_logging: true
-    modes: ["sde", "ode"]
+    modes: ["star", "marginal"]
     n_steps: 2000
   model_checkpoint:
-    every_n_train_steps: 5000 #save every 1000 steps
+    every_n_train_steps: 10000 #save every 1000 steps
 
 #one epoch has 12556 batches
 #one val epoch has 1396 batches on batch size 256
@@ -44,7 +44,7 @@ trainer:
   max_epochs: null
   check_val_every_n_epoch: null
   val_check_interval: 50000
-  accumulate_grad_batches: 2
+  #accumulate_grad_batches: 
   log_every_n_steps: 50
 
 model:      
@@ -55,9 +55,13 @@ model:
   enable_matmul_tf32: true
   enable_cudnn_tf32: true
   total_steps: ${trainer.max_steps}
-  mask_padding: true
+  mask_padding: false
+  grad_clipping_type: "dynamic"
+  switch_to_rescaled: 300000
   diffusion:
     diff_loss_type: "elbo" #options are elbo, half_elbo, x_0_prediction
+    pred:
+      stabilize: true
 
 logger:
   wandb:
@@ -70,4 +74,6 @@ logger:
 
 model_name: "roc_nfdm"
 restart_from_checkpoint: true
+float32_type: high
+
 

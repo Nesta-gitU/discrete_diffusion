@@ -68,7 +68,8 @@ class DiffusionModule(LightningModule):
         reconstruction_loss_type: str = "diff_anchor",
         mask_padding: bool = False,
         enable_matmul_tf32: bool = False,
-        enable_cudnn_tf32: bool = False
+        enable_cudnn_tf32: bool = False,
+        switch_to_rescaled: int = None,
     ) -> None:
         """Initialize a `Diffusion Module`.
 
@@ -83,6 +84,7 @@ class DiffusionModule(LightningModule):
         self.save_hyperparameters(logger=False)
 
         self.use_full_elbo_in_is = use_full_elbo_in_is
+        self.switch_to_rescaled = switch_to_rescaled
 
         if use_full_elbo_in_is and not isinstance(time_sampler, TimeSampler):
             self.use_full_elbo_in_is = False
@@ -137,13 +139,29 @@ class DiffusionModule(LightningModule):
         #and the setting for use diffusion loss full elbo is was set, then throw an error for incompatible combination of settings
         #also put correct ifstatements and stuff in train
         #also finally if use diffusion_loss_full_elbo and IS not used automatically set use diff loss to False
+
+
         
-        diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.model.get_losses(x, t, 
-                                                                                compute_diffusion_loss, 
+        if self.switch_to_rescaled is not None and self.global_step >= self.switch_to_rescaled:
+            if self.switch_to_rescaled == self.global_step:
+                #turn of gradients on all but the predictor 
+                print("switching to rescaled")
+                noise_params = list(self.model.affine.parameters()) + list(self.vol.parameters())
+                for p in noise_params: p.requires_grad_(False)
+            diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.model.get_losses(x, t, 
+                                                                                None, 
                                                                                 compute_prior_loss, 
                                                                                 compute_reconstruction_loss, 
                                                                                 reconstruction_loss_type,
-                                                                                compute_their_loss=False)   
+                                                                                compute_their_loss=True)  
+        else:
+            diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.model.get_losses(x, t, 
+                                                                                    compute_diffusion_loss, 
+                                                                                    compute_prior_loss, 
+                                                                                    compute_reconstruction_loss, 
+                                                                                    reconstruction_loss_type,
+                                                                                    compute_their_loss=False)  
+                         
         #reduce correctly 
         if self.mask_padding:
             #print("masking padding")
