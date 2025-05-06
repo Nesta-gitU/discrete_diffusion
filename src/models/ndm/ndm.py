@@ -72,9 +72,9 @@ class NeuralDiffusion(nn.Module):
             #if do the loss below I replicate their loss precisely, but is this actually what diff loss for me does?
             #
             #now clearly this loss is not an ELBO (or its optimizable part), so lets add back the removed terms to see if it still works.
-            context, context_loss = self.context(x)
+            context, context_loss = self.context(embeddings)
 
-            eps = torch.randn_like(x)
+            eps = torch.randn_like(embeddings)
 
             if context is None:
                 gamma, d_gamma = self.gamma(t)
@@ -84,7 +84,7 @@ class NeuralDiffusion(nn.Module):
             alpha = self.gamma.alpha_2(gamma) ** 0.5
             sigma = self.gamma.sigma_2(gamma) ** 0.5
 
-            (m, _), (d_m, _) = self.transform(x, t)
+            (m, _), (d_m, _) = self.transform(embeddings, t)
 
             eta = self.vol_eta(t)
 
