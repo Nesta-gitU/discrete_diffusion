@@ -128,7 +128,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    model_base_name = os.path.basename(os.path.split(cfg.ckpt_path)[0]) + f'.{os.path.split(cfg.ckpt_path)[1]}' + '.' + args.modality + f'.{cfg.model_name}'
+    model_base_name = os.path.basename(os.path.split(cfg.ckpt_path)[0]) + f'.{os.path.split(cfg.ckpt_path)[1]}' + '.' + "roc" + f'.{cfg.model_name}'
     outpath = os.path.join(out_dir, f"{model_base_name}")
     os.makedirs(outpath, exist_ok=True)
 
@@ -153,14 +153,9 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         else:
             gmm, _ = model.gamma(t, context)
         
-        alpha_2 = model.gamma.alpha_2(gmm)
-        sigma_2 = model.gamma.sigma_2(gmm)
-        alpha = alpha_2 ** 0.5
-        sigma = sigma_2 ** 0.5
-
         gmm = gmm.squeeze(-1)
-        alpha = alpha.squeeze(-1)
-        sigma = sigma.squeeze(-1)
+
+        #MULAN paper plots mean and variance of snr over time 
 
         #print the order of the sequence wise gamma. 
         print("the order gamma is: ")
@@ -170,14 +165,6 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         sorted_gmm = torch.argsort(gmm_for_order, descending=True) #high to low so we know what is being maksed out first 
         print(sorted_gmm, "sorted gmm")
         # [64, 1] I want the order where I print (ggm_dim, )
-
-        plt.plot(alpha)
-        plt.savefig(f"{outpath}/alpha_plot.png")
-        plt.close()
-
-        plt.plot(sigma)
-        plt.savefig(f"{outpath}/sigma_plot.png")
-        plt.close()
 
         plt.plot(gmm)
         plt.savefig(f"{outpath}/gamma_plot.png")
@@ -189,7 +176,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     
 
 
-@hydra.main(version_base="1.3", config_path="../configs", config_name="sample.yaml")
+@hydra.main(version_base="1.3", config_path="../configs", config_name="plot.yaml")
 def main(cfg: DictConfig) -> None:
     """Main entry point for evaluation.
 
