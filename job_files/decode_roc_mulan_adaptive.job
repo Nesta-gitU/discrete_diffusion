@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/sample.py experiment=roc_mulan_adaptive.yaml ++model_name=roc_mulan_adaptive
+srun python src/sample.py experiment=roc_mulan_adaptive.yaml ++model_name=roc_mulan_adaptive +setting=full_mode
