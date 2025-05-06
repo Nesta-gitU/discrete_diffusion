@@ -146,7 +146,10 @@ class DiffusionModule(LightningModule):
             if self.switch_to_rescaled == self.global_step:
                 #turn of gradients on all but the predictor 
                 print("switching to rescaled")
-                noise_params = list(self.model.affine.parameters()) + list(self.model.vol.parameters())
+                if hasattr(self.model, "affine"):
+                    noise_params = list(self.model.affine.parameters()) + list(self.model.vol.parameters())
+                else:
+                    noise_params = list(self.model.transform.parameters()) + list(self.model.gamma.parameters()) + list(self.model.vol_eta.parameters()) + list(self.model.context.parameters())
                 for p in noise_params: p.requires_grad_(False)
             diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.model.get_losses(x, t, 
                                                                                 None, 
