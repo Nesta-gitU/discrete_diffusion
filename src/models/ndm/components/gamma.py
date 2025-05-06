@@ -338,7 +338,7 @@ class GammaMuLANContext(Gamma):
         x = x.flatten(start_dim=1)
         #print(x.shape, "x shape, after flatten")
         #x = torch.ones_like(x)
-        print(x.shape, "x shape, after ones")
+        #print(x.shape, "x shape, after ones")
         _h = torch.nn.functional.silu(self.l1(x))
         _h = torch.nn.functional.silu(self.l2(_h))
         a = self.l3_a(_h)
@@ -348,7 +348,7 @@ class GammaMuLANContext(Gamma):
         #a = a.unsqueeze(-1)
         #b = b.unsqueeze(-1)
         #c = c.unsqueeze(-1)
-        print(a.shape, "a shape, after unsqueeze")
+        #print(a.shape, "a shape, after unsqueeze")
         return a, b, c
 
     def get_reference_gamma(self, t):

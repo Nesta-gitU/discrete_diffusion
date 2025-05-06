@@ -34,23 +34,24 @@ def double_precision():
 from src.models.ndm.components.context import NoneContext
 
 def sample_loop(z, ts, tf, n_steps, model, mode, clamping = False):
-    if not hasattr(model, 'context'):
-        model.context = NoneContext(None)
-    if isinstance(model.context, VaeContext):
-        context = model.context.sample_context(z)
-    else:
-        context = None
+    with torch.no_grad():
+        if not hasattr(model, 'context'):
+            model.context = NoneContext(None)
+        if isinstance(model.context, VaeContext):
+            context = model.context.sample_context(z)
+        else:
+            context = None
 
-    if mode == 'sde':
-        return solve_de(z, ts, tf, n_steps, model, mode, clamping, context)
-    elif mode == 'ode':
-        return solve_de(z, ts, tf, n_steps, model, mode, clamping, context)
-    elif mode == 'marginal':
-        return discrete_sampling(z, ts, tf, n_steps, model, mode, clamping, context)
-    elif mode == 'star':
-        return discrete_sampling(z, ts, tf, n_steps, model, mode, clamping, context)
-    else:
-        raise ValueError("mode must be either 'sde', 'ode', 'marginal', or 'star'")
+        if mode == 'sde':
+            return solve_de(z, ts, tf, n_steps, model, mode, clamping, context)
+        elif mode == 'ode':
+            return solve_de(z, ts, tf, n_steps, model, mode, clamping, context)
+        elif mode == 'marginal':
+            return discrete_sampling(z, ts, tf, n_steps, model, mode, clamping, context)
+        elif mode == 'star':
+            return discrete_sampling(z, ts, tf, n_steps, model, mode, clamping, context)
+        else:
+            raise ValueError("mode must be either 'sde', 'ode', 'marginal', or 'star'")
     
 
 ####

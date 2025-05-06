@@ -6,7 +6,7 @@ from lightning import LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
 from sklearn.metrics import mean_tweedie_deviance
-
+import torch
 
 
 
@@ -273,6 +273,9 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     model.eval()
     if not hasattr(model, "context"):
         model.context = NoneContext(None)
+    
+    print("---------------------------------model_device---------------------------------")
+
 
     datamodule.setup(stage="fit")
 
@@ -335,7 +338,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     elif args.setting == 'full_mode':
         args.std_split = 5
         args.num_samples = 5000
-        args.batch_size = 1000
+        args.batch_size = 5000
     elif args.setting == 'reference_mode':
         args.std_split = 5
         args.num_samples = 5000
@@ -364,7 +367,8 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         batch = batch.to(model_lightning.device)
         plot_lossdist(model_lightning, batch, out_dir)
 
-    sample_here(args, model, args.modality, datamodule)
+    with torch.no_grad():
+        sample_here(args, model, args.modality, datamodule)
 
 
 

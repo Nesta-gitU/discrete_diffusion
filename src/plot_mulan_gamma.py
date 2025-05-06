@@ -123,7 +123,11 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     #####################
 
     # Create the directory if it doesn't exist
-    out_dir = "also a name for now"
+    out_dir = 'mulan_plots'   
+    
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
     model_base_name = os.path.basename(os.path.split(cfg.ckpt_path)[0]) + f'.{os.path.split(cfg.ckpt_path)[1]}' + '.' + args.modality + f'.{cfg.model_name}'
     outpath = os.path.join(out_dir, f"{model_base_name}")
     os.makedirs(outpath, exist_ok=True)
