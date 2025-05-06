@@ -354,7 +354,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
         else:
             sigma2_tilde_s_t = (1 - (snr_t / snr_s)).float()
             sigma2_tilde_s_t = torch.clamp(sigma2_tilde_s_t, 0, 1)
-            print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
+            #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
 
         epsilon_tilde_s_t = torch.sqrt(1 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t.sqrt()) * noise
 
