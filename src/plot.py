@@ -120,7 +120,7 @@ def plot_gamma_snr_with_colormap(
         plt.figure(figsize=(6,4))
         for d in range(D):
             plt.plot(ts, y[:, d], color=colors[d], alpha=0.8)
-        plt.title(title)
+        #plt.title(title)
         plt.xlabel("t")
         plt.ylabel(ylabel)
         plt.tight_layout()
