@@ -26,8 +26,10 @@ class Predictor(nn.Module):
         #dont actually need the first token
         #print(x.shape)
         #print(z.shape)
-        x = x[:, 1:, :]
-        z = z[:, 1:, :]
+        if context is not None:
+            x = x[:, 1:, :]
+            z = z[:, 1:, :]
+        
         if self.stabilize:
             x = (1 - t) * z + (t + 0.01) * x
         

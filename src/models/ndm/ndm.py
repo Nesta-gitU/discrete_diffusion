@@ -90,7 +90,7 @@ class NeuralDiffusion(nn.Module):
 
             z = alpha * m + sigma * eps
 
-            embeddings_ = self.pred(z.detach(), t, **model_kwargs) # z is not neccerily a word embedding here.
+            embeddings_ = self.pred(z.detach(), t, context, **model_kwargs) # z is not neccerily a word embedding here.
             diffusion_loss = (embeddings - embeddings_) ** 2
 
             diffusion_loss_full_elbo = None
