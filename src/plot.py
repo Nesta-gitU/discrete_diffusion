@@ -74,83 +74,89 @@ import os
 def plot_gamma_snr_with_colormap(
     model, z, T=300, outpath=".", device="cuda:0", cmap_name="viridis"
 ):
-    """
-    model: your diffusion model
-    z:     [N, D, hidden_size]  latent samples
-    T:     number of t-steps
-    device:"cuda:0" or "cpu"
-    cmap_name: name of a matplotlib colormap (we're using "viridis")
-    """
-    os.makedirs(outpath, exist_ok=True)
-    model.to(device)
-    z = z.to(device)
+    with torch.no_grad():
+        """
+        model: your diffusion model
+        z:     [N, D, hidden_size]  latent samples
+        T:     number of t-steps
+        device:"cuda:0" or "cpu"
+        cmap_name: name of a matplotlib colormap (we're using "viridis")
+        """
+        os.makedirs(outpath, exist_ok=True)
+        model.to(device)
+        z = z.to(device)
 
-    N, D, _ = z.shape
-    # build t-grid
-    t = torch.linspace(0, 1, T, device=device).view(T, 1, 1).expand(T, N, 1)
-    t_flat = t.reshape(T * N, 1)
+        N, D, _ = z.shape
+        # build t-grid
+        t = torch.linspace(0, 1, T, device=device).view(T, 1, 1).expand(T, N, 1)
+        t_flat = t.reshape(T * N, 1)
 
-    # sample + repeat contexts
-    ctx = model.context.sample_context(z)                # [N, C]
-    ctx_flat = ctx.unsqueeze(0).expand(T, N, -1).reshape(T * N, -1)
+        # sample + repeat contexts
+        if not isinstance(model.context, NoneContext):
 
-    # run gamma
-    gmm_flat, _ = model.gamma(t_flat, ctx_flat)          # [T*N, D, 1]
-    gmm_flat = gmm_flat.squeeze(-1)
-    gmm = gmm_flat.view(T, N, D)                         # [T, N, D]
+            ctx = model.context.sample_context(z)                # [N, C]
+            ctx_flat = ctx.unsqueeze(0).expand(T, N, -1).reshape(T * N, -1)
 
-    # compute SNR
-    a2   = model.gamma.alpha_2(gmm)
-    s2   = model.gamma.sigma_2(gmm)
-    snr  = a2 / s2                                       # [T, N, D]
+            # run gamma
+            gmm_flat, _ = model.gamma(t_flat, ctx_flat)          # [T*N, D, 1]
+        else:
+            gmm_flat, _ = model.gamma(t_flat)                    # [T*N, D, 1]
+            
+        gmm_flat = gmm_flat.squeeze(-1)
+        gmm = gmm_flat.view(T, N, D)                         # [T, N, D]
 
-    # stats over N
-    γ_mean = gmm.mean(dim=1).cpu()                       # [T, D]
-    γ_std  = gmm.std(dim=1).cpu()                        # [T, D]
-    μ_snr  = snr.mean(dim=1).cpu()                       # [T, D]
-    var_snr= snr.var(dim=1).cpu()                        # [T, D]
+        # compute SNR
+        a2   = model.gamma.alpha_2(gmm)
+        s2   = model.gamma.sigma_2(gmm)
+        snr  = a2 / s2                                       # [T, N, D]
 
-    ts = torch.linspace(0, 1, T).cpu().numpy()
+        # stats over N
+        γ_mean = gmm.mean(dim=1).cpu()                       # [T, D]
+        γ_std  = gmm.std(dim=1).cpu()                        # [T, D]
+        μ_snr  = snr.mean(dim=1).cpu()                       # [T, D]
+        var_snr= snr.var(dim=1).cpu()                        # [T, D]
 
-    # prepare viridis colormap
-    cmap   = plt.get_cmap(cmap_name)
-    colors = [cmap(i/(D-1)) for i in range(D)]
+        ts = torch.linspace(0, 1, T).cpu().numpy()
 
-    def _plot_and_save(y, title, fname, ylabel):
-        plt.figure(figsize=(6,4))
-        for d in range(D):
-            plt.plot(ts, y[:, d], color=colors[d], alpha=0.8)
-        #plt.title(title)
-        plt.xlabel("t")
-        plt.ylabel(ylabel)
+        # prepare viridis colormap
+        cmap   = plt.get_cmap(cmap_name)
+        colors = [cmap(i/(D-1)) for i in range(D)]
+
+        def _plot_and_save(y, title, fname, ylabel):
+            plt.figure(figsize=(6,4))
+            for d in range(D):
+                plt.plot(ts, y[:, d], color=colors[d], alpha=0.8)
+            #plt.title(title)
+            plt.xlabel("t")
+            plt.ylabel(ylabel)
+            plt.tight_layout()
+            plt.savefig(os.path.join(outpath, fname))
+            plt.close()
+
+        # 4 separate plots
+        _plot_and_save(γ_mean,  "Mean γ(t) per latent dim",       "gamma_mean.png", "γ")
+        _plot_and_save(γ_std,   "Std  γ(t) per latent dim",       "gamma_std.png",  "γ")
+        _plot_and_save(μ_snr,   "Mean SNR(t) per latent dim",     "snr_mean.png",   "SNR")
+        _plot_and_save(var_snr, "Var  SNR(t) per latent dim",     "snr_var.png",    "SNR")
+
+        # gradient legend
+        gradient = np.linspace(0, 1, D).reshape(1, D)
+        plt.figure(figsize=(8,1))
+        plt.imshow(gradient, aspect="auto", cmap=cmap)
+        plt.xticks([0, D-1], [0, D-1])
+        plt.yticks([])
+        plt.xlabel("latent‐index →")
+        plt.title("Color‐map: latent dim index 0 → 63")
         plt.tight_layout()
-        plt.savefig(os.path.join(outpath, fname))
+        plt.savefig(os.path.join(outpath, "colormap_legend.png"))
         plt.close()
 
-    # 4 separate plots
-    _plot_and_save(γ_mean,  "Mean γ(t) per latent dim",       "gamma_mean.png", "γ")
-    _plot_and_save(γ_std,   "Std  γ(t) per latent dim",       "gamma_std.png",  "γ")
-    _plot_and_save(μ_snr,   "Mean SNR(t) per latent dim",     "snr_mean.png",   "SNR")
-    _plot_and_save(var_snr, "Var  SNR(t) per latent dim",     "snr_var.png",    "SNR")
-
-    # gradient legend
-    gradient = np.linspace(0, 1, D).reshape(1, D)
-    plt.figure(figsize=(8,1))
-    plt.imshow(gradient, aspect="auto", cmap=cmap)
-    plt.xticks([0, D-1], [0, D-1])
-    plt.yticks([])
-    plt.xlabel("latent‐index →")
-    plt.title("Color‐map: latent dim index 0 → 63")
-    plt.tight_layout()
-    plt.savefig(os.path.join(outpath, "colormap_legend.png"))
-    plt.close()
-
-    print(f"Saved 5 figures under {outpath}/:")
-    print("  • gamma_mean.png       (mean γ)")
-    print("  • gamma_std.png        (std  γ)")
-    print("  • snr_mean.png         (mean SNR)")
-    print("  • snr_var.png          (var  SNR)")
-    print("  • colormap_legend.png  (index→color mapping)")
+        print(f"Saved 5 figures under {outpath}/:")
+        print("  • gamma_mean.png       (mean γ)")
+        print("  • gamma_std.png        (std  γ)")
+        print("  • snr_mean.png         (mean SNR)")
+        print("  • snr_var.png          (var  SNR)")
+        print("  • colormap_legend.png  (index→color mapping)")
 
 
 @task_wrapper
@@ -228,49 +234,10 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     z = torch.randn(N, block_size, hidden_size)
     #z = z.expand(300, -1, -1) 
     #although the fact that for a different t at each time we get a bunch of smooth lines seems like a really bad sign to me, means z has almost no effect?
+   
     plot_gamma_snr_with_colormap(model, z, T=T, outpath=outpath, device="cuda")
-    
-    if False:
-        with torch.no_grad():
-            model.to("cpu")
-            t = torch.linspace(0, 1, T)[:, None].to("cpu")
-            t=t.unsqueeze(-1)
 
-            context = model.context.sample_context(z) #slightly incorrect if using NN but with VAE its fine
-            context = context.expand(300, -1, -1) 
-            
-            if context is None:
-                gmm, _ = model.gamma(t)
-            else:
-                gmm, _ = model.gamma(t, context)
-            
-            gmm = gmm.squeeze(-1)
-
-            #MULAN paper plots mean and variance of snr over time 
-            #so we need to get for each t N contexts and thus N gmm's and then average over the contexts
-            #there is probably a batched way to do this, yes the batched way is to loop over the t's and batch the contexts.
-
-            #get snr
-            alpha_2 = model.gamma.alpha_2(gmm)
-            sigma_2 = model.gamma.sigma_2(gmm)
-            snr = alpha_2 / sigma_2
-
-            #print the order of the sequence wise gamma. 
-            print("the order gamma is: ")
-            #shape of gmm in the case where an order is relevant is [300, 64, 1]
-            #now it is not data dependent so we can ignore batch dim and just look at the order at 0.5 I guess
-            gmm_for_order = gmm[150]
-            sorted_gmm = torch.argsort(gmm_for_order, descending=True) #high to low so we know what is being maksed out first 
-            print(sorted_gmm, "sorted gmm")
-            # [64, 1] I want the order where I print (ggm_dim, )
-
-            plt.plot(gmm)
-            plt.savefig(f"{outpath}/gamma_plot.png")
-            plt.close()
-
-            plt.plot(snr)
-            plt.savefig(f"{outpath}/snr_plot.png")
-            plt.close()
+       
 
     #it crashes at the end for some reason I have no idea why?
     return None, None
