@@ -107,7 +107,7 @@ class NeuralDiffusion(nn.Module):
             #print(embeddings_, "embeddings_")
                                           #self, alpha, alpha_prime, f_s, f_dm, f_ds, eps, g2, x_, x, z, t, f
             diffusion_loss = self.diffusion_loss(alpha, alpha_prime, f_s, f_dm, f_ds, eps, g2, embeddings_ , x, z, t, f)
-            print(((embeddings - embeddings_) ** 2).mean(), "mse_loss")
+            #print(((embeddings - embeddings_) ** 2).mean(), "mse_loss")
             
         elif compute_their_loss:
             #put their mse loss here, then tune it until it initializes in exactly the same way with that loss, it should!
