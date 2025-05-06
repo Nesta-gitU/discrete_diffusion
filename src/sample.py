@@ -335,7 +335,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     elif args.setting == 'full_mode':
         args.std_split = 5
         args.num_samples = 5000
-        args.batch_size = 5000
+        args.batch_size = 1000
     elif args.setting == 'reference_mode':
         args.std_split = 5
         args.num_samples = 5000
