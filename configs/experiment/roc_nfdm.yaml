@@ -24,7 +24,7 @@ tags: ["bert-base", "roc", "nfdm"]
 seed: 12345
 #commment
 data:
-  batch_size: 256
+  batch_size: 512
   block_size: 64
   overfit_one_batch: false #should be false normally
 
@@ -56,7 +56,7 @@ model:
   enable_cudnn_tf32: true
   total_steps: ${trainer.max_steps}
   mask_padding: false
-  grad_clipping_type: "dynamic"
+  grad_clipping_type: "always"
   grad_clip: 2.5
   switch_to_rescaled: 300000
   diffusion:
