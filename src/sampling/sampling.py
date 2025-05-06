@@ -88,8 +88,10 @@ def sample_code(model,
 
 
             if latent is not None:
-                logits = model.pred.model.get_logits(latent)
-                total_entropy += get_entropy(logits, words, tokenizer, sampling_mode)
+                total_entropy=0
+                #logits = model.pred.model.get_logits(latent)
+                #total_entropy += get_entropy(logits, words, tokenizer, sampling_mode)
+                
             else:
                 logits = None
            
