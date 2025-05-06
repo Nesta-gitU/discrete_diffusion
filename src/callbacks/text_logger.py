@@ -90,6 +90,8 @@ class TextLogger(Callback):
         self.sample_code(trainer, pl_module, logger)
 
     def sample_code(self, trainer, pl_module, logger):
+        if trainer.global_step < 20:
+            return
         block_size = trainer.datamodule.data_train.block_size
         hidden_size = pl_module.ema.module.pred.model.in_channels
 

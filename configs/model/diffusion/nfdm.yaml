@@ -5,7 +5,7 @@ affine:
   model: debug
 
 vol:
-  _target_: src.models.nfdm.components.volatility.LearnedVolatility
+  _target_: src.models.nfdm.components.volatility.LearnedVolatility #
 
 pred:
   _target_: src.models.nfdm.components.predictor.Predictor

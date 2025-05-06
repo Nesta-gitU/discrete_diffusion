@@ -129,6 +129,7 @@ class TransformerNetModel2(nn.Module):
 
         if training_mode == 'e2e' and embedding_model:
             self.word_embedding = nn.Embedding(vocab_size, self.in_channels)
+            #self.word_embedding.requires_grad_ = False
             if self.logits_mode == 2:
                 self.lm_head = nn.Linear(self.in_channels, vocab_size, bias=True)
             else:

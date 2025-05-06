@@ -34,6 +34,7 @@ class NeuralDiffusion(nn.Module):
         self.pred = pred
         self.vol = vol
         self.diff_loss_type = diff_loss_type
+        print("using diff loss type: ", diff_loss_type)
 
         #self.encoder = encoder # instead of the encoder it should be like model.get_embedding() or something like that. #TODO
         #self.decoder = decoder #same goes for the decoder here. #TODO
@@ -104,8 +105,9 @@ class NeuralDiffusion(nn.Module):
             embeddings_ = self.pred(z, t, **model_kwargs) # z is not neccerily a word embedding here.
             #print(embeddings, "embeddings")
             #print(embeddings_, "embeddings_")
-
+                                          #self, alpha, alpha_prime, f_s, f_dm, f_ds, eps, g2, x_, x, z, t, f
             diffusion_loss = self.diffusion_loss(alpha, alpha_prime, f_s, f_dm, f_ds, eps, g2, embeddings_ , x, z, t, f)
+            print(((embeddings - embeddings_) ** 2).mean(), "mse_loss")
             
         elif compute_their_loss:
             #put their mse loss here, then tune it until it initializes in exactly the same way with that loss, it should!
@@ -121,7 +123,10 @@ class NeuralDiffusion(nn.Module):
         
         # compute the reconstruction loss
         if compute_reconstruction_loss:
-            reconstruction_loss = self.reconstruction_loss(x, t, embeddings, token_discrete_loss)
+            if reconstruction_loss_type == "diff_anchor":
+                reconstruction_loss = self.reconstruction_loss(x, t, embeddings_, token_discrete_loss)
+            elif reconstruction_loss_type == "collapse":
+                reconstruction_loss = self.reconstruction_loss(x, t, embeddings, token_discrete_loss)
         else:
             reconstruction_loss = torch.zeros(bs, dtype=embeddings.dtype, device=x.device).mean()
 
@@ -146,9 +151,10 @@ class NeuralDiffusion(nn.Module):
         #x_.requires_grad = True
         
         # substitute predicted \hat{x} into the forward process to parameterise the reverse process
-        
+        #print(t)
         (r_m, r_s, avalue), (r_dm, r_ds, anothervalue) = t_dir(f(x_), t)
         #print(r_dm, r_ds, "r_dm, r_ds")
+        #print("r_ds", r_ds)
 
         # compute the drift term of the reverse process based on z_t
         r_dz = r_dm + r_ds / r_s * (z - r_m)  # ODE drift
@@ -207,10 +213,11 @@ class NeuralDiffusion(nn.Module):
     def prior_loss(self, x, t):
         # compute the prior loss 
         #not implemented error
+        #print("then this should also be 0's", x**2)
         mean, _, _ = self.affine(x, torch.ones_like(t))
         #print(mean, "mean")
         #print(variance, "variance")
-        
+        #print("prior loss, ", mean**2)
         return mean ** 2
         
         

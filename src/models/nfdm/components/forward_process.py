@@ -18,30 +18,51 @@ class NFDM_gaussian(nn.Module):
         
         #the net used to predict the mean and std_bar in the gaussian parameterization, with as input x and t, and as ouput mu and log(sigma)
         self.net = model
+        self.output_dim = 128
+        self.linear_layer = nn.Sequential(nn.Linear(self.output_dim, int(self.output_dim * 4)), 
+                                        nn.ReLU(), 
+                                        nn.Linear(int(self.output_dim * 4), int(self.output_dim*4)),
+                                        nn.ReLU(),
+                                        nn.Linear(int(self.output_dim*4), 1))	
+
+        self.linear_layer2 = nn.Sequential(nn.Linear(self.output_dim, int(self.output_dim * 4)), 
+                                        nn.ReLU(), 
+                                        nn.Linear(int(self.output_dim * 4), int(self.output_dim*4)),
+                                        nn.ReLU(),
+                                        nn.Linear(int(self.output_dim*4), 1))	
         
     def forward(self, x, t):
         #print("using NFDM-Gaussian")
         # Conditional optimal transport (FM-OT)
-        # return (1 - t) * x, t + (1 - t) * 0.01
+        #return (1 - t) * x, t + (1 - t) * 0.1, torch.tensor(0.0).to(x.device)
 
         # Learnable Gaussian forward process (NFDM-Gaussian)
         #x_t = torch.cat([x, t], dim=1)
         #m_ls = self.net(x_t)  
         #TODO: t conditioning not implemented yet 0.01
-        small_value = torch.log(torch.sqrt(torch.sigmoid(torch.tensor(-10))))
-        if torch.all(t == torch.ones_like(t)):
-            m = torch.zeros_like(x)
-            ls = torch.zeros_like(x)
+        #small_value = torch.log(torch.sqrt(torch.sigmoid(torch.tensor(-10))))
+        #small_value2 = torch.log(torch.sqrt(torch.sigmoid(torch.tensor(10))))
+        small_value = np.log(0.1) #i I make it 0.01 it gets very low loss but that implies t=0 -> s = exp(0.01) = 1.01	which is clearly wrong 
+        #if torch.all(t == torch.ones_like(t)):
+        #    m = torch.zeros_like(x)
+        #    ls = torch.zeros_like(x)
 
-        elif torch.all(t == torch.zeros_like(t)):
+        if torch.all(t == torch.zeros_like(t)):
             m = x
-            ls = (1 - t) * small_value
+            ls = (1 - t) * small_value# * torch.ones_like(x)
         else:
             m_ls = self.net(x, t.squeeze(-1).squeeze(-1)) 
             m, ls = m_ls.chunk(2, dim=2)#why was this 1 before 
 
-            m = (1 - t) * x + t * (1 - t) * m #m is mu_hat
-            ls = (1 - t) * small_value + t * (1 - t) * ls #ls is log(sigma_hat) so the final expresion is log sigma. 
+            #make the variance tokenwise instead of dimensionwise
+            ls = self.linear_layer(ls)
+            m = self.linear_layer2(m)
+            #ls = ls.mean(dim=2, keepdim=True)
+            #print("hello", ls.shape)
+
+            m = (1 - t) * x + t * (1 - t) * m   #m is mu_hat -> (1 - t) * x = z - t * (1 - t) * x  -> x = 1/(1-t) * z - t * x
+            #m = (1-t) * m * x
+            ls = (1 - t) * small_value + t * (1 - t) * ls  #ls is log(sigma_hat) so the final expresion is log sigma. 
         #0.01 is delta, so delta^2 = 0.0001 like in the paper
         
         return m, torch.exp(ls), torch.tensor(0.0).to(x.device)

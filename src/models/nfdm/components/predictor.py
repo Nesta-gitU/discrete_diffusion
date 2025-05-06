@@ -19,5 +19,7 @@ class Predictor(nn.Module):
         if value:
             if self.stabilize:
                 x = (1 - t) * z + (t + 0.01) * x
+                #x = 1/(1-t) * z - (t + 0.01) * x # this formulation fails to take into account the end points 0 and 1 which makes it unstable 
+                #x = (1 + t) * z - (t + 0.01) * x
         
         return x
