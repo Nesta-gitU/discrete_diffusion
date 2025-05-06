@@ -67,8 +67,36 @@ class NeuralDiffusion(nn.Module):
         bs = x.size(0)
         pad_mask = x == 3
         embeddings = self.pred.model.get_embeds(x)    
+        if compute_their_loss:
+            #put their mse loss here, then tune it until it initializes in exactly the same way with that loss, it should!
+            #if do the loss below I replicate their loss precisely, but is this actually what diff loss for me does?
+            #
+            #now clearly this loss is not an ELBO (or its optimizable part), so lets add back the removed terms to see if it still works.
+            context, context_loss = self.context(x)
 
-        diffusion_loss, context_loss, diffusion_loss_full_elbo, embeddings_, _, _, _ = self.get_diffusion_loss(embeddings, t, pad_mask)
+            eps = torch.randn_like(x)
+
+            if context is None:
+                gamma, d_gamma = self.gamma(t)
+            else:
+                gamma, d_gamma = self.gamma(t, context)
+
+            alpha = self.gamma.alpha_2(gamma) ** 0.5
+            sigma = self.gamma.sigma_2(gamma) ** 0.5
+
+            (m, _), (d_m, _) = self.transform(x, t)
+
+            eta = self.vol_eta(t)
+
+            z = alpha * m + sigma * eps
+
+            embeddings_ = self.pred(z.detach(), t, **model_kwargs) # z is not neccerily a word embedding here.
+            diffusion_loss = (embeddings - embeddings_) ** 2
+
+            diffusion_loss_full_elbo = None
+
+        else:
+            diffusion_loss, context_loss, diffusion_loss_full_elbo, embeddings_, _, _, _ = self.get_diffusion_loss(embeddings, t, pad_mask)
 
         if compute_reconstruction_loss:
             if reconstruction_loss_type == "collapse":
