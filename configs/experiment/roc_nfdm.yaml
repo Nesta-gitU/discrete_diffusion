@@ -24,7 +24,7 @@ tags: ["bert-base", "roc", "nfdm"]
 seed: 12345
 #commment
 data:
-  batch_size: 128
+  batch_size: 512
   block_size: 64
   overfit_one_batch: false #should be false normally
 
@@ -51,7 +51,7 @@ model:
   compute_diffusion_loss: x_0
   compute_prior_loss: true
   compute_reconstruction_loss: true
-  reconstruction_loss_type: collapse
+  reconstruction_loss_type: diff_anchor
   enable_matmul_tf32: true
   enable_cudnn_tf32: true
   total_steps: ${trainer.max_steps}
@@ -70,8 +70,8 @@ model:
   optimizer:
     lr: 1e-4
         #hidden_dim: 512
-  #time_sampler:
-  #  _target_: src.models.time_samplers.time_samplers.UniformBucketSampler
+  time_sampler:
+    _target_: src.models.time_samplers.time_samplers.UniformBucketSampler
 
 logger:
   wandb:
