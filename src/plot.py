@@ -190,6 +190,8 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     if not hasattr(model, "context"):
         model.context = NoneContext(None)
 
+    if not hasattr(model.gamma, "around_reference"):
+        model.gamma.around_reference = False
     datamodule.setup(stage="fit")
 
     log.info("Instantiating loggers...")
