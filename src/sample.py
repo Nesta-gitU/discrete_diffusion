@@ -229,7 +229,10 @@ def sample_here(args, model, modality, datamodule):
             "new_ppl_mean": mean_ppl,
             "new_ppl_std": std_ppl,
             "num_samples": args.num_samples,
-            "split": args.std_split
+            "split": args.std_split,
+            "clamp": args.clamping,
+            "n_steps": args.n_steps,
+            "sampling_mode": name,
         }
 
         
@@ -332,7 +335,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     elif args.setting == 'full_mode':
         args.std_split = 5
         args.num_samples = 5000
-        args.batch_size = 400
+        args.batch_size = 5000
     elif args.setting == 'reference_mode':
         args.std_split = 5
         args.num_samples = 5000
