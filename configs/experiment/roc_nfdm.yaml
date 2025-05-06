@@ -57,7 +57,7 @@ model:
   total_steps: ${trainer.max_steps}
   mask_padding: false
   grad_clipping_type: "always"
-  grad_clip: 2.5
+  grad_clip: 2
   switch_to_rescaled: 300000
   diffusion:
     diff_loss_type: "elbo" #options are elbo, half_elbo, x_0_prediction
@@ -68,7 +68,7 @@ model:
         output_dim: 256
         #hidden_dim: 256
   optimizer:
-    lr: 1e-4
+    lr: 5e-5
         #hidden_dim: 512
   time_sampler:
     _target_: src.models.time_samplers.time_samplers.UniformBucketSampler
