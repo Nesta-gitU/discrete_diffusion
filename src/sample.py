@@ -89,6 +89,7 @@ def generate_samples_mine(args, model, datamodule, batch_size, out_dir):
         output_cands = glob.glob(outpath)
 
         if len(output_cands) > 0 and not args.rerun:
+            print("not generating samples, already exist")
             entropy = None
         else:
             entropy  = sample_code(model = model, 
