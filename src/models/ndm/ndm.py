@@ -372,7 +372,7 @@ class NeuralDiffusion(nn.Module):
 
         z_0 = alpha * m + sigma * eps
         
-        decoder_nll = token_discrete_loss(z_0, self.pred.model.get_logits, x)
+        decoder_nll = token_discrete_loss(z_0, self.pred.model.get_logits, x, sum=True)
         
         return decoder_nll
 

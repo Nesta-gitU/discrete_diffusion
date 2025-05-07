@@ -252,7 +252,7 @@ class NeuralDiffusion(nn.Module):
         f_m, f_s, blank = self.affine(embeddings, torch.zeros_like(t))
         z_0 = f_m + f_s * torch.randn_like(embeddings)
 
-        decoder_nll = token_discrete_loss(z_0, self.pred.model.get_logits, x)
+        decoder_nll = token_discrete_loss(z_0, self.pred.model.get_logits, x, sum=True)
         
         return decoder_nll
 
