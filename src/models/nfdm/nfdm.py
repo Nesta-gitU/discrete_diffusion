@@ -2,6 +2,7 @@ import torch
 import torch.autograd
 import torch.autograd.functional
 import torch.nn as nn
+from torch.nn.functional import embedding
 
 from their_utils.utils import token_discrete_loss
 from torch.nn.attention import sdpa_kernel, SDPBackend
@@ -219,7 +220,69 @@ class NeuralDiffusion(nn.Module):
         #print(variance, "variance")
         #print("prior loss, ", mean**2)
         return mean ** 2
+    
+    def get_elbo_diffusion_loss(self, x, t):
+        #in nfdm case the diffusion loss == elbo diffusion loss since we didnt simplify. so this can just call that. 
+        #returns also a None vector where otherwise the context loss would be 
+        def f(x_in):
+            def f_(t_in):
+                return self.affine(x_in, t_in)
+            return f_
+
+        embeddings = self.pred.model.get_embeds(x)
+
+
+        g2 = self.vol(t) ** 2
+
+        (f_m, f_s, alpha), (f_dm, f_ds, alpha_prime) = t_dir(f(embeddings), t) #(function output), (jvp) == (mean, sigma), (mean derivative, sigma derivative)
+
+        eps = torch.randn_like(embeddings)
+
+        z = f_m + f_s * eps
+  
+        embeddings_ = self.pred(z, t) 
+        diffusion_loss = self.diffusion_loss(alpha, alpha_prime, f_s, f_dm, f_ds, eps, g2, embeddings_ , x, z, t, f)
+
+        return diffusion_loss, None
+    
+    def get_elbo_reconstruction_loss(self, x, t):
+        #this is also just cross entropy so it can call the same function as the reconstruction loss.
+        embeddings = self.pred.model.get_embeds(x)
+
+        f_m, f_s, blank = self.affine(embeddings, torch.zeros_like(t))
+        z_0 = f_m + f_s * torch.randn_like(embeddings)
+
+        decoder_nll = token_discrete_loss(z_0, self.pred.model.get_logits, x)
         
-        
+        return decoder_nll
+
+    def get_elbo_prior_loss(self, x, t):
+        embeddings = self.pred.model.get_embeds(x)
+
+        B, D, H = embeddings.shape
+
+        f_m, f_s, blank = self.affine(embeddings, torch.ones_like(t))
+
+        mu_flat = f_m.view(B, -1)                  # shape [B, D] where D=seq_len*hidden_dim
+
+        # 2) Broadcast sigma up to mu1’s shape, then flatten
+        #    torch.ones_like(mu1) has shape [B,seq_len,hidden_dim], so sigma * that
+        sigma_bcast = f_s * torch.ones_like(f_m)  # broadcasts σ to [B,seq_len,hidden_dim]
+        sigma_flat  = sigma_bcast.view(B, -1)      # now [B, D] exactly matching mu_flat
+
+        # 3) Compute D (total latent dim)
+        D = mu_flat.shape[1]
+
+        # 4) Compute the three KL pieces
+        term_trace  = torch.sum(sigma_flat**2,    dim=1)   # ∑ σ_i^2
+        term_mean   = torch.sum(mu_flat**2,       dim=1)   # ∑ μ_i^2
+        term_logdet = torch.sum(torch.log(sigma_flat**2), dim=1)  # ∑ log σ_i^2
+
+        # 5) KL per example and mean over batch
+        kl_per_example = 0.5*(term_trace + term_mean - D - term_logdet)
+        loss_prior     = kl_per_example.mean()
+        return loss_prior
+                
+
     
 

@@ -12,6 +12,7 @@ from collections import OrderedDict
 from their_utils.nn import mean_flat
 from torch.optim.swa_utils import AveragedModel
 from src.models.time_samplers.time_samplers import TimeSampler, UniformBucketSampler, ContSampler
+import math
 
 
 #from src.likelihoods.compute_nll import get_likelihood_fn
@@ -361,35 +362,71 @@ class DiffusionModule(LightningModule):
 
        
     def test_step(self, batch: torch.Tensor, batch_idx: int) -> None:
-        """Perform a single test step on a batch of data from the test set.
+        """Perform a single test step on a batch of data from the test set with MC ELBO averaging."""
+        B = batch.size(0)
+        elbo_model = self.model #self.ema.module  # use EMA weights for evaluation
 
-        :param batch: A batch of data (a tuple) containing the input tensor of images and target
-            labels.
-        :param batch_idx: The index of the current batch.
-        """
-        #this is because I did runs without this attribute and thus it would not checkpoint load correctly otherwise...
-        t = torch.rand(batch.size(0), 1).unsqueeze(2).to(batch.device) 
+        # Generate a base antithetic t for shape, to compute recon/prior (they ignore t)
+        n0 = (B + 1) // 2
+        u0 = torch.rand(n0, device=batch.device)
+        t0_full = torch.cat([u0, 1 - u0], dim=0)[:B]
+        t0 = t0_full.unsqueeze(-1).unsqueeze(-1)
 
-        diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss  = self.forward(t,batch,
-                                            compute_diffusion_loss=self.hparams.compute_diffusion_loss,
-                                            compute_prior_loss=self.hparams.compute_prior_loss,
-                                            compute_reconstruction_loss=self.hparams.compute_reconstruction_loss,
-                                            reconstruction_loss_type = self.hparams.reconstruction_loss_type)
+        # Compute reconstruction and prior losses once (independent of t)
+        reconstruction_loss = elbo_model.get_elbo_reconstruction_loss(batch, t0)  # [B]
+        prior_loss = elbo_model.get_elbo_prior_loss(batch, t0)                    # [B]
 
-        diffusion_loss = diffusion_loss.mean()
-        reconstruction_loss = reconstruction_loss.mean()
-        prior_loss = prior_loss.mean()
+        # Number of Monte Carlo samples for ELBO per sequence
+        K = 4
 
-        #note elbo may or may not be valid depending on what we actualy calculatte in the forward pass
-        elbo = diffusion_loss + reconstruction_loss + prior_loss 
-        print(diffusion_loss)
+        # Collect per-seq ELBOs and diffusion losses
+        elbo_samples = []
+        diff_samples = []
 
-        # update and log metrics
-        self.log("test/diffusion_loss", diffusion_loss, on_step=True, prog_bar=True)
-        self.log("test/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=True)
-        self.log("test/prior_loss", prior_loss, on_step=True, prog_bar=True)
-        self.log("test/elbo", elbo, on_step=True, prog_bar=True)
-        self.log("test/nfe", nfe, on_step=True, prog_bar=True)
+        for _ in range(K):
+            # Antithetic sampling of t for diffusion term
+            n = (B + 1) // 2
+            u = torch.rand(n, device=batch.device)
+            t_full = torch.cat([u, 1 - u], dim=0)[:B]
+            t = t_full.unsqueeze(-1).unsqueeze(-1)
+
+            # Compute diffusion (and context) loss
+            diffusion_loss, context_loss = elbo_model.get_elbo_diffusion_loss(batch, t)
+            if context_loss is None:
+                context_loss = torch.zeros_like(prior_loss)
+
+            # Sum diffusion over hidden dims: shape [B]
+            diff_per_seq = diffusion_loss.flatten(start_dim=1).sum(dim=1)
+            # Combine with fixed recon/prior and variable context
+            elbo_per_seq = diff_per_seq + reconstruction_loss + prior_loss + context_loss
+            elbo_samples.append(elbo_per_seq)
+            diff_samples.append(diff_per_seq)
+
+        # Stack and average over K samples
+        elbo_stack = torch.stack(elbo_samples, dim=0)       # [K, B]
+        diff_stack = torch.stack(diff_samples, dim=0)       # [K, B]
+        elbo_per_seq_mc = elbo_stack.mean(dim=0)            # [B]
+        mean_elbo = elbo_per_seq_mc.mean()
+        var_elbo = elbo_per_seq_mc.var()
+        mean_diffusion_loss = diff_stack.mean(dim=0).mean()
+
+        # Compute bits/nats per character
+        seq_len = batch.shape[1]
+        nats_per_char = mean_elbo / seq_len
+        bits_per_char = nats_per_char / math.log(2)
+
+        # Log metrics
+        self.log("test/diffusion_loss", mean_diffusion_loss, on_step=True, prog_bar=False)
+        self.log("test/reconstruction_loss", reconstruction_loss.mean(), on_step=True, prog_bar=False)
+        self.log("test/prior_loss", prior_loss.mean(), on_step=True, prog_bar=False)
+        # Log averaged context over last batch of samples
+        self.log("test/context_loss", context_loss.mean(), on_step=True, prog_bar=False)
+        self.log("test/elbo", mean_elbo, on_step=True, prog_bar=False)
+        self.log("test/elbo_var", var_elbo, on_step=True, prog_bar=False)
+        self.log("test/bits_per_char", bits_per_char, on_step=True, prog_bar=False)
+        self.log("test/nats_per_char", nats_per_char, on_step=True, prog_bar=False)
+
+
 
     def setup(self, stage: str) -> None:
         """Lightning hook that is called at the beginning of fit (train + validate), validate,

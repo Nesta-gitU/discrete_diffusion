@@ -5,7 +5,7 @@ from typing import Callable, Optional
 import numpy as np
 
 import torch
-from torch import nn, Tensor, zeros_like
+from torch import embedding, nn, Tensor, zeros_like
 from torch.nn import functional as F
 import torch.distributions as D
 
@@ -297,13 +297,128 @@ class NeuralDiffusion(nn.Module):
 
         return mean ** 2
 
-    def get_elbo_prior_loss():
-        pass
+    
+    def get_elbo_diffusion_loss(self, x, t):
+        #this is not exactly the same as loss now, need to make sure to compute the full objective, but I did write it all out previously, but it is on a different piece of paper 
+        x = self.pred.model.get_embeds(x)
 
-    def get_elbo_recon_loss():
-        pass
+        context, context_loss = self.context(x)
 
-    def get_elbo_diffusion_loss():
-        pass #-> the parts we drop when training need to be evaluated when you cmpute elbo 
+        eps = torch.randn_like(x)
+
+        if context is None:
+            gamma, d_gamma = self.gamma(t)
+        else:
+            gamma, d_gamma = self.gamma(t, context)
+
+        alpha2 = self.gamma.alpha_2(gamma)
+        sigma2 = self.gamma.sigma_2(gamma)
+
+        alpha = alpha2 ** 0.5
+        sigma = sigma2 ** 0.5
+
+        (m, _), (d_m, _) = self.transform(x, t)
+
+        eta = self.vol_eta(t)
+
+        z = alpha * m + sigma * eps
+
+        x_ = self.pred(z, t, context)
+
+        (m_, _), (d_m_, _) = self.transform(x_, t)
+
+        g2 = sigma2 * d_gamma * eta
+
+        d_alpha = -0.5 * d_gamma * alpha2 * (1 - alpha2)
+        d_sigma = 0.5 * d_gamma * sigma2 * (1 - sigma2)
+
+        # compute backward flow '
+        epsilon = (z - alpha * m) / sigma
+        s = (alpha * m - z) / sigma2
+        f = d_alpha * x + d_sigma * epsilon
+        f_B = f - (g2 / 2) * s
+
+        #compute predicted backward flow 
+        epsilon_ = (z - alpha * m_) / sigma
+        s_ = (alpha * m_ - z) / sigma2
+        f_ = d_alpha * x_ + d_sigma * epsilon
+        f_B_ = f_ - (g2 / 2) * s_
+
+        #compute the loss
+        elbo =(1/(2*g2)) * (f_B - f_B_) ** 2
+
+        return elbo, context_loss
+    
+    def get_elbo_reconstruction_loss(self, x, t):
+        #this is also just cross entropy so it can call the same function as the reconstruction loss.
+        embeddings = self.pred.model.get_embeds(x)
+
+        eps = torch.randn_like(embeddings)
+
+        t = torch.zeros_like(t)
+           
+        if isinstance(self.context, NoneContext):
+            gamma, _ = self.gamma(t)
+        else:
+            bs = t.size(0)
+            context_hidden_dim = self.context.model.output_dim#context should always be input as [bs, hidden dim]
+            context = torch.zeros(int(bs), int(context_hidden_dim), dtype = embeddings.dtype, device=embeddings.device)
+            gamma = self.gamma.get_gamma(t, context) #prevent a tdir call -> noise boundaries are fixed at t=1 and t=0 and independent of context
+
+        alpha = self.gamma.alpha_2(gamma) ** 0.5
+        sigma = self.gamma.sigma_2(gamma) ** 0.5
+
+        m, _ = self.transform.get_m_s(embeddings, t) #prevent another tdir call
+
+        z_0 = alpha * m + sigma * eps
+        
+        decoder_nll = token_discrete_loss(z_0, self.pred.model.get_logits, x)
+        
+        return decoder_nll
+
+    def get_elbo_prior_loss(self, x, t):
+        embeddings = self.pred.model.get_embeds(x)
+
+        B, D, H = embeddings.shape
+
+        eps = torch.randn_like(embeddings)
+
+        t = torch.ones_like(t)
+           
+        if isinstance(self.context, NoneContext):
+            gamma, _ = self.gamma(t)
+        else:
+            bs = t.size(0)
+            context_hidden_dim = self.context.model.output_dim#context should always be input as [bs, hidden dim]
+            context = torch.zeros(int(bs), int(context_hidden_dim), dtype = embeddings.dtype, device=embeddings.device)
+            gamma = self.gamma.get_gamma(t, context) #prevent a tdir call -> noise boundaries are fixed at t=1 and t=0 and independent of context
+
+        alpha = self.gamma.alpha_2(gamma) ** 0.5
+        sigma = self.gamma.sigma_2(gamma) ** 0.5
+
+        m, _ = self.transform.get_m_s(embeddings, t) #prevent another tdir call
+
+        f_m = alpha * m 
+        f_s = sigma
+
+        mu_flat = f_m.view(B, -1)                  # shape [B, D] where D=seq_len*hidden_dim
+
+        # 2) Broadcast sigma up to mu1’s shape, then flatten
+        #    torch.ones_like(mu1) has shape [B,seq_len,hidden_dim], so sigma * that
+        sigma_bcast = f_s * torch.ones_like(f_m)  # broadcasts σ to [B,seq_len,hidden_dim]
+        sigma_flat  = sigma_bcast.view(B, -1)      # now [B, D] exactly matching mu_flat
+
+        # 3) Compute D (total latent dim)
+        D = mu_flat.shape[1]
+
+        # 4) Compute the three KL pieces
+        term_trace  = torch.sum(sigma_flat**2,    dim=1)   # ∑ σ_i^2
+        term_mean   = torch.sum(mu_flat**2,       dim=1)   # ∑ μ_i^2
+        term_logdet = torch.sum(torch.log(sigma_flat**2), dim=1)  # ∑ log σ_i^2
+
+        # 5) KL per example and mean over batch
+        kl_per_example = 0.5*(term_trace + term_mean - D - term_logdet)
+       
+        return kl_per_example
         
 

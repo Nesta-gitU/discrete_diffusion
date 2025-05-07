@@ -6,6 +6,7 @@ from lightning import LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
 
+
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 # ------------------------------------------------------------------------------------ #
 # the setup_root above is equivalent to:
@@ -33,6 +34,8 @@ from src.utils import (
 )
 
 from src.models.language_diff_module import DiffusionModule
+from src.utils.checkpoint_loading import get_latest_checkpoint, get_latest_run_folder
+from src.models.ndm.components.context import NoneContext
 
 log = RankedLogger(__name__, rank_zero_only=True)
 
@@ -47,13 +50,29 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     :param cfg: DictConfig configuration composed by Hydra.
     :return: Tuple[dict, dict] with metrics and dict with all instantiated objects.
     """
-    assert cfg.ckpt_path
+    if not cfg.ckpt_path:
+        log.info("Finding latest checkpoint...")
+
+        run_folder = get_latest_run_folder(cfg.model_name)
+        print(run_folder)
+        print(cfg.model_name)
+        cfg.ckpt_path = get_latest_checkpoint(run_folder)  # Use model_name from config
+
+    assert cfg.ckpt_path, "Checkpoint path must be specified or found automatically!"
 
     log.info(f"Instantiating datamodule <{cfg.data._target_}>")
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.data)
 
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model = DiffusionModule.load_from_checkpoint(cfg.ckpt_path)
+
+    model.eval()
+    if not hasattr(model.model, "context"):
+        model.ema.module.context = NoneContext(None)
+        model.model.context = NoneContext(None)
+    if not hasattr(model.model.gamma, "around_reference"):
+        model.ema.module.gamma.around_reference = False
+        model.model.gamma.around_reference = False    
 
     log.info("Instantiating loggers...")
     logger: List[Logger] = instantiate_loggers(cfg.get("logger"))
