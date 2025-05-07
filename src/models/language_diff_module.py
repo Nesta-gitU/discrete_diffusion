@@ -373,11 +373,11 @@ class DiffusionModule(LightningModule):
         t0 = t0_full.unsqueeze(-1).unsqueeze(-1)
 
         # Compute reconstruction and prior losses once (independent of t)
-        reconstruction_loss = elbo_model.get_elbo_reconstruction_loss(batch, t0)  # [B]
-        prior_loss = elbo_model.get_elbo_prior_loss(batch, t0)                    # [B]
+        reconstruction_loss = elbo_model.get_elbo_reconstruction_loss(batch, t0)  # [B] recon loss per example
+        prior_loss = elbo_model.get_elbo_prior_loss(batch, t0)                    # [B] prior loss per example
 
         # Number of Monte Carlo samples for ELBO per sequence
-        K = 4
+        K = 20
 
         # Collect per-seq ELBOs and diffusion losses
         elbo_samples = []
@@ -391,12 +391,12 @@ class DiffusionModule(LightningModule):
             t = t_full.unsqueeze(-1).unsqueeze(-1)
 
             # Compute diffusion (and context) loss
-            diffusion_loss, context_loss = elbo_model.get_elbo_diffusion_loss(batch, t)
+            diffusion_loss, context_loss = elbo_model.get_elbo_diffusion_loss(batch, t) #gives unreduced diffusion loss
             if context_loss is None:
                 context_loss = torch.zeros_like(prior_loss)
 
             # Sum diffusion over hidden dims: shape [B]
-            diff_per_seq = diffusion_loss.flatten(start_dim=1).sum(dim=1)
+            diff_per_seq = diffusion_loss.flatten(start_dim=1).sum(dim=1) # gives diffusion loss per example
             # Combine with fixed recon/prior and variable context
             elbo_per_seq = diff_per_seq + reconstruction_loss + prior_loss + context_loss
             elbo_samples.append(elbo_per_seq)
@@ -404,16 +404,16 @@ class DiffusionModule(LightningModule):
 
         # Stack and average over K samples
         elbo_stack = torch.stack(elbo_samples, dim=0)       # [K, B]
-        diff_stack = torch.stack(diff_samples, dim=0)       # [K, B]
-        elbo_per_seq_mc = elbo_stack.mean(dim=0)            # [B]
-        mean_elbo = elbo_per_seq_mc.mean()
+        diff_stack = torch.stack(diff_samples, dim=0)       # [K, B] 
+        elbo_per_seq_mc = elbo_stack.mean(dim=0)            # [B] # average elbo per example 
+        mean_elbo = elbo_per_seq_mc.mean() # average elbo over the whole batch -> arround 10 now
         var_elbo = elbo_per_seq_mc.var()
-        mean_diffusion_loss = diff_stack.mean(dim=0).mean()
+        mean_diffusion_loss = diff_stack.mean(dim=0).mean() # average diff loss over the whole batch 
 
         # Compute bits/nats per character
-        seq_len = batch.shape[1]
-        nats_per_char = mean_elbo / seq_len
-        bits_per_char = nats_per_char / math.log(2)
+        seq_len = batch.shape[1] #seq len of 64
+        nats_per_char = mean_elbo / seq_len # average elbo per character (dividing the elbo per example by seq len)
+        bits_per_char = nats_per_char / math.log(2) # average elbo per character in bits
 
         # Log metrics
         self.log("test/diffusion_loss", mean_diffusion_loss, on_step=True, prog_bar=False)

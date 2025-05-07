@@ -280,8 +280,7 @@ class NeuralDiffusion(nn.Module):
 
         # 5) KL per example and mean over batch
         kl_per_example = 0.5*(term_trace + term_mean - D - term_logdet)
-        loss_prior     = kl_per_example.mean()
-        return loss_prior
+        return kl_per_example
                 
 
     
