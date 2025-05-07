@@ -341,7 +341,7 @@ class NeuralDiffusion(nn.Module):
         #compute predicted backward flow 
         epsilon_ = (z - alpha * m_) / sigma
         s_ = (alpha * m_ - z) / sigma2
-        f_ = d_alpha * x_ + d_sigma * epsilon
+        f_ = d_alpha * x_ + d_sigma * epsilon_
         f_B_ = f_ - (g2 / 2) * s_
 
         #compute the loss
