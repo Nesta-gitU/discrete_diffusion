@@ -364,7 +364,7 @@ class DiffusionModule(LightningModule):
     def test_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         """Perform a single test step on a batch of data from the test set with MC ELBO averaging."""
         B = batch.size(0)
-        elbo_model = self.model #self.ema.module  # use EMA weights for evaluation
+        elbo_model = self.ema.module #self.ema.module  # use EMA weights for evaluation
 
         # Generate a base antithetic t for shape, to compute recon/prior (they ignore t)
         n0 = (B + 1) // 2
