@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#SBATCH --partition=gpu_a100
+#SBATCH --partition=gpu_mig
 #SBATCH --gpus=1
 #SBATCH --job-name=basic_diff
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=9
-#SBATCH --time=0:30:00
+#SBATCH --time=00:30:00
 #SBATCH --output=$HOME/discrete_diffusion/slurm_outputs/slurm_output_%A.out
 
 module purge
@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/eval.py experiment=roc_mulan_adaptive.yaml ++model_name=roc_mulan_adaptive +setting=full_mode
+srun python src/eval.py experiment=roc_static ++restart_from_checkpoint=True "+sampling_mode=[star, marginal]" +n_steps=2000 +setting=full_mode
