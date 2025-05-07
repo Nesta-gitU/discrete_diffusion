@@ -261,8 +261,12 @@ def plot_gamma(model, out_dir, model_base_name, batch_size, block_size, hidden_s
         t = torch.linspace(0, 1, 300)[:, None].to(model.pred.model.word_embedding.weight.device)
         t=t.unsqueeze(-1)
 
+        
         context = model.context.sample_context(z) #slightly incorrect if using NN but with VAE its fine
-        context = context.expand(300, -1, -1) 
+        if context is None:
+            pass
+        else:
+            context = context.expand(300, -1, -1) 
         
         if context is None:
             gmm, _ = model.gamma(t)
