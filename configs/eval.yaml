@@ -25,4 +25,4 @@ task_name: "train"
 # overwrite from command line with `python train.py tags="[first_tag, second_tag]"`
 tags: ["dev"]
 
-seed: 42
+seed: 45
