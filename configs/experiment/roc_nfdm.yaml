@@ -45,7 +45,9 @@ trainer:
   check_val_every_n_epoch: null
   val_check_interval: 50000
   accumulate_grad_batches: 1
-  log_every_n_steps: 50
+  log_every_n_steps: 
+  devices: 1
+  strategy: ddp
 
 model:      
   compute_diffusion_loss: x_0
