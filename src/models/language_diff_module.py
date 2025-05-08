@@ -100,6 +100,7 @@ class DiffusionModule(LightningModule):
         self.grad_clip = grad_clip
         self.beta_vae_anneal = beta_vae_anneal
         self.beta = 0.0
+        self.reduction_type = reduction_type
         print(self.model)
         print(self.model.pred)
         #self.ema = copy.deepcopy(self.model)
@@ -173,7 +174,7 @@ class DiffusionModule(LightningModule):
 
         #keep everything unreduced before this 
         #then use an if statement to choose to either mean or sum reduce everything 
-        
+
         def sum_reduce(x):
             #sum over all but the first dimension
             return x.flatten(start_dim=1).sum(dim=1)
