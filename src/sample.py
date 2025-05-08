@@ -133,7 +133,7 @@ class DotDict(dict):
     def __delattr__(self, key):
         try:
             del self[key]
-        except KeyError
+        except KeyError:
             raise AttributeError(f"'DotDict' object has no attribute '{key}'")
 
 
