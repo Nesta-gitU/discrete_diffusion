@@ -13,7 +13,7 @@ from their_utils.nn import mean_flat
 from torch.optim.swa_utils import AveragedModel
 from src.models.time_samplers.time_samplers import TimeSampler, UniformBucketSampler, ContSampler
 import math
-
+from muon import Muon 
 
 #from src.likelihoods.compute_nll import get_likelihood_fn
 
@@ -72,6 +72,9 @@ class DiffusionModule(LightningModule):
         enable_cudnn_tf32: bool = False,
         switch_to_rescaled: int = None,
         reduction_type: str = "mean", #reduction type should be specified if you want to do summing instead ----->>>>>>>
+        use_muon: bool = False,
+        do_lr_warmup: bool = False,
+        muon_params: Dict[str, Any] = None,
     ) -> None:
 
         """Initialize a `Diffusion Module`.
@@ -101,6 +104,9 @@ class DiffusionModule(LightningModule):
         self.beta_vae_anneal = beta_vae_anneal
         self.beta = 0.0
         self.reduction_type = reduction_type
+        self.use_muon = use_muon
+        self.do_lr_warmup = do_lr_warmup
+        self.muon_params = muon_params
         print(self.model)
         print(self.model.pred)
         #self.ema = copy.deepcopy(self.model)
@@ -483,22 +489,94 @@ class DiffusionModule(LightningModule):
         """
         #torch.optim.Adam([*model.parameters(), *time_sampler.parameters()], lr=1e-4)
 
-        if isinstance(self.time_sampler, TimeSampler):
-            optimizer = self.hparams.optimizer([*self.model.parameters(), *self.time_sampler.parameters()])
+        if not self.use_muon:
+            if isinstance(self.time_sampler, TimeSampler):
+                optimizer = self.hparams.optimizer([*self.model.parameters(), *self.time_sampler.parameters()])
+            else:
+                optimizer = self.hparams.optimizer(self.model.parameters())
+
+            def linear_anneal_lambda(step, total_steps):
+                if self.do_lr_warmup:
+                    warmup_steps = 10000
+                    if step < warmup_steps:
+                        return step / warmup_steps
+                return 1 - (step / total_steps)
+
+            total_steps = self.max_steps  # Replace with your total annealing steps
+            if self.hparams.use_scheduler:
+                scheduler = LambdaLR(optimizer, lr_lambda=lambda step: linear_anneal_lambda(step, total_steps))
+                return_dict = {"optimizer": optimizer, "lr_scheduler": scheduler}
+            else:
+                return_dict = {"optimizer": optimizer}
+
+            return return_dict
         else:
-            optimizer = self.hparams.optimizer(self.model.parameters())
+            muon_params = []
+            adamw_params = []
 
-        def linear_anneal_lambda(step, total_steps):
-            return 1 - (step / total_steps)
+            # this is very important since this is where we decide which parameters go to which optimizer 
+            # from the repo: 
+            # Muon is intended to optimize only the internal ≥2D parameters of a network. Embeddings, classifier heads, and scalar or vector parameters should be optimized using AdamW.
+            # So I will only use Muon for parameters in self.model.pred.model and in affine.net is forward_process exists, if we use the gamma representation it should only work on the transfom parameters
+            # so for pred it should only work on self.model.pred.model.input_transformers
+            # and for the affine it should only work on self.model.affine.net.encoder
 
-        total_steps = self.max_steps  # Replace with your total annealing steps
-        if self.hparams.use_scheduler:
-            scheduler = LambdaLR(optimizer, lr_lambda=lambda step: linear_anneal_lambda(step, total_steps))
-            return_dict = {"optimizer": optimizer, "lr_scheduler": scheduler}
-        else:
-            return_dict = {"optimizer": optimizer}
+            pred_trans = self.model.pred.model.input_transformers
+            for p in pred_trans.parameters():
+                if not p.requires_grad:
+                    continue
+                if p.ndim >= 2:
+                    muon_params.append(p)
+                else:
+                    adamw_params.append(p)
 
-        return return_dict
+            # 2) Affine: only encoder if using forward_process
+            affine_net = self.model.affine.net
+            if hasattr(affine_net, "forward_process"):
+                for p in affine_net.encoder.parameters():
+                    if not p.requires_grad:
+                        continue
+                    if p.ndim >= 2:
+                        muon_params.append(p)
+                    else:
+                        adamw_params.append(p)
+
+            # 3) Everything else → AdamW
+            #    Skip any p already in one of the two lists
+            seen = {id(p) for p in muon_params + adamw_params}
+            for p in self.parameters():
+                if not p.requires_grad or id(p) in seen:
+                    continue
+                adamw_params.append(p)
+
+            # 2) Instantiate optimizers
+            optim_muon = Muon(
+                muon_params,
+                lr=self.hparams.muon_lr,
+                momentum=self.muon_params.muon_momentum,
+                ns_steps=self.muon_params.muon_ns_steps,
+                weight_decay=self.muon_params.muon_weight_decay,
+            )
+            optim_adamw = self.hparams.optimizer(adamw_params)
+
+            # 3) Create a shared LR schedule with warmup + cosine decay
+            def linear_anneal_lambda(step, total_steps):
+                if self.do_lr_warmup:
+                    warmup_steps = 10000
+                    if step < warmup_steps:
+                        return step / warmup_steps
+                return 1 - (step / total_steps)
+
+            scheduler_muon = LambdaLR(optim_muon, linear_anneal_lambda)
+            scheduler_adamw = LambdaLR(optim_adamw, linear_anneal_lambda)
+
+            return (
+                [optim_muon, optim_adamw],
+                [
+                    {"scheduler": scheduler_muon, "interval": "step"},
+                    {"scheduler": scheduler_adamw, "interval": "step"},
+                ],
+            )
 
 if __name__ == "__main__":
     _ = DiffusionModule(None, None, None, None)
