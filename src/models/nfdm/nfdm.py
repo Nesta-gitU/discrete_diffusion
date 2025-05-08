@@ -254,7 +254,7 @@ class NeuralDiffusion(nn.Module):
 
         decoder_nll = token_discrete_loss(z_0, self.pred.model.get_logits, x, sum=True)
         
-        return decoder_nll
+        return decoder_nll.mean(-1)
 
     def get_elbo_prior_loss(self, x, t):
         embeddings = self.pred.model.get_embeds(x)

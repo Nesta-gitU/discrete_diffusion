@@ -71,7 +71,9 @@ class DiffusionModule(LightningModule):
         enable_matmul_tf32: bool = False,
         enable_cudnn_tf32: bool = False,
         switch_to_rescaled: int = None,
+        reduction_type: str = "mean", #reduction type should be specified if you want to do summing instead ----->>>>>>>
     ) -> None:
+
         """Initialize a `Diffusion Module`.
 
         :param net: The model to train.
@@ -169,6 +171,15 @@ class DiffusionModule(LightningModule):
         if context_loss is None:
             context_loss = torch.zeros_like(diffusion_loss)
 
+        #keep everything unreduced before this 
+        #then use an if statement to choose to either mean or sum reduce everything 
+        
+        def sum_reduce(x):
+            #sum over all but the first dimension
+            return x.flatten(start_dim=1).sum(dim=1)
+        
+        reduce_function = sum_reduce if self.reduction_type == "sum" else mean_flat
+
                          
         #reduce correctly 
         if self.mask_padding:
@@ -184,12 +195,13 @@ class DiffusionModule(LightningModule):
                 diffusion_loss_full_elbo = mean_flat(diffusion_loss_full_elbo)* N_over_S
 
         else:
-            diffusion_loss = mean_flat(diffusion_loss)   
-            diffusion_loss_full_elbo = mean_flat(diffusion_loss_full_elbo) if diffusion_loss_full_elbo is not None else None
+            diffusion_loss = reduce_function(diffusion_loss)   
+            diffusion_loss_full_elbo = reduce_function(diffusion_loss_full_elbo) if diffusion_loss_full_elbo is not None else None
         
 
-        prior_loss = mean_flat(prior_loss)
-        context_loss = mean_flat(context_loss)
+        prior_loss = reduce_function(prior_loss)
+        reconstruction_loss = reduce_function(reconstruction_loss)
+        context_loss = reduce_function(context_loss)
 
         return diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss
 
@@ -311,9 +323,6 @@ class DiffusionModule(LightningModule):
                 self.log("current_clip", self.current_grad_norm*2, on_step=True, on_epoch=False, prog_bar=True, logger=True)
                 self.current_grad_norm = alpha * self.current_grad_norm + (1 - alpha) * new_grad_norm
             
-            
-
-    
         self.log("grad_norm", new_grad_norm, on_step=True, on_epoch=False, prog_bar=True, logger=True)
         
         # anneal beta

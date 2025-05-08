@@ -16,7 +16,7 @@ class VaeContext(nn.Module):
         std = torch.exp(log_std)
         context = mean + std * torch.randn_like(std)
 
-        KLD = -0.5 * torch.sum(1 + (2*log_std) - mean**2 - (2*log_std).exp(), dim=-1)
+        KLD = -0.5 * (1 + (2*log_std) - mean**2 - (2*log_std).exp())
         
         return context, KLD
     
@@ -39,7 +39,7 @@ class EncoderContext(nn.Module):
         context = self.model(x)
 
         #loss is torch.zeros of bs
-        loss = torch.zeros(x.size(0), dtype=context.dtype, device=x.device)
+        loss = torch.zeros(x.size(0), x.size(1), dtype=context.dtype, device=x.device)
         
         return context, loss
     

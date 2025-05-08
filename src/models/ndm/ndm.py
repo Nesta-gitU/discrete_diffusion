@@ -347,7 +347,7 @@ class NeuralDiffusion(nn.Module):
         #compute the loss
         elbo =(1/(2*g2)) * (f_B - f_B_) ** 2
 
-        return elbo, context_loss
+        return elbo, context_loss.mean(dim=-1)
     
     def get_elbo_reconstruction_loss(self, x, t):
         #this is also just cross entropy so it can call the same function as the reconstruction loss.
@@ -374,7 +374,7 @@ class NeuralDiffusion(nn.Module):
         
         decoder_nll = token_discrete_loss(z_0, self.pred.model.get_logits, x, sum=True)
         
-        return decoder_nll
+        return decoder_nll.mean(dim=-1)
 
     def get_elbo_prior_loss(self, x, t):
         embeddings = self.pred.model.get_embeds(x)
