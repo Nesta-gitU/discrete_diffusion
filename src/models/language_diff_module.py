@@ -556,6 +556,8 @@ class DiffusionModule(LightningModule):
                 momentum=self.muon_params.muon_momentum,
                 ns_steps=self.muon_params.muon_ns_steps,
                 weight_decay=self.muon_params.muon_weight_decay,
+                rank=0,
+                world_size=1
             )
             optim_adamw = self.hparams.optimizer(adamw_params)
 
