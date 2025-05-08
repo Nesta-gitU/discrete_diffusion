@@ -321,6 +321,30 @@ class DiffusionModule(LightningModule):
             sch.step()
 
         return elbo
+
+    def optimizer_step(
+        self,
+        epoch: int,
+        batch_idx: int,
+        optimizer,
+        optimizer_idx: int,
+        optimizer_closure=None,
+        **kwargs,
+    ) -> None:
+        # If this optimizer is Muon, call its bare step() with no closure
+        if isinstance(optimizer, Muon):
+            optimizer.step()
+            optimizer.zero_grad()
+        else:
+            # Otherwise delegate back to Lightning’s default (which may use closure)
+            super().optimizer_step(
+                epoch,
+                batch_idx,
+                optimizer,
+                optimizer_idx,
+                optimizer_closure,
+                **kwargs,
+            )
     
     def on_after_backward(self) -> None:
         self.ema.update_parameters(self.model)
