@@ -552,7 +552,7 @@ class DiffusionModule(LightningModule):
             # 2) Instantiate optimizers
             optim_muon = Muon(
                 muon_params,
-                lr=self.hparams.muon_lr,
+                lr=self.muon_params.muon_lr,
                 momentum=self.muon_params.muon_momentum,
                 ns_steps=self.muon_params.muon_ns_steps,
                 weight_decay=self.muon_params.muon_weight_decay,
