@@ -121,6 +121,7 @@ class DiffusionModule(LightningModule):
         for p in self.ema.parameters():
             p.requires_grad = False
 
+        self.automatic_optimization = not use_muon
         
         
 
@@ -210,6 +211,8 @@ class DiffusionModule(LightningModule):
         reconstruction_loss = reduce_function(reconstruction_loss)
         context_loss = reduce_function(context_loss)
 
+        
+
         return diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss
 
     def on_train_start(self) -> None:
@@ -297,6 +300,26 @@ class DiffusionModule(LightningModule):
             print(f"[!] Still have grad for {len(still_have)} params:", still_have)
         '''
         # return loss or backpropagation will fail
+        if self.automatic_optimization:
+            return elbo
+
+        # (3) otherwise, manual optimization (Muon + AdamW)
+        #    manual_backward() will invoke your on_after_backward() hook,
+        #    so gradient‐clipping & EMA update still happen there.
+        optimizers = self.optimizers()        # [optim_muon, optim_adamw]
+        schedulers = self.lr_schedulers()     # [sched_muon, sched_adamw]
+
+        self.manual_backward(elbo)
+
+        # step & zero out each optimizer
+        for opt in optimizers:
+            opt.step()
+            opt.zero_grad()
+
+        # step each scheduler
+        for sch in schedulers:
+            sch.step()
+
         return elbo
     
     def on_after_backward(self) -> None:
