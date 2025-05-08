@@ -350,6 +350,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         args.batch_size = 2500
         #but this on will be used later to generate by sampling from the dataset instead of the model
         args.decode_theirs = False
+        args.model_base_name = args.modality + "." + "reference_mode"
 
     #if args.plot_time_and_loss:
     if False:
