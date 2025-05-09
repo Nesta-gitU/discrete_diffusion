@@ -14,7 +14,7 @@ from torch.optim.swa_utils import AveragedModel
 from src.models.time_samplers.time_samplers import TimeSampler, UniformBucketSampler, ContSampler
 import math
 from muon import Muon 
-
+from src.utils.utils import MuonLightning
 #from src.likelihoods.compute_nll import get_likelihood_fn
 
 
@@ -314,7 +314,7 @@ class DiffusionModule(LightningModule):
         self.on_after_backward()
 
         # step & zero out each optimizer
-        optimizers[0].optimizer.step()
+        optimizers[0].step()
         optimizers[0].zero_grad()
         optimizers[1].step()
         optimizers[1].zero_grad()
@@ -582,7 +582,7 @@ class DiffusionModule(LightningModule):
                 adamw_params.append(p)
 
             # 2) Instantiate optimizers
-            optim_muon = Muon(
+            optim_muon = MuonLightning(
                 muon_params,
                 lr=self.muon_params.muon_lr,
                 momentum=self.muon_params.muon_momentum,

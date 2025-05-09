@@ -101,6 +101,7 @@ class ROCdatamodule(LightningDataModule):
             num_workers=self.hparams.num_workers,
             shuffle=True,  # Typically, you want to shuffle training data.
             pin_memory=self.hparams.pin_memory
+            drop_last=True,  # Drop the last incomplete batch
         )
 
     def val_dataloader(self) -> DataLoader[Any]:

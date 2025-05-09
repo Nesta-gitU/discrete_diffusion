@@ -117,3 +117,17 @@ def get_metric_value(metric_dict: Dict[str, Any], metric_name: Optional[str]) ->
     log.info(f"Retrieved metric value! <{metric_name}={metric_value}>")
 
     return metric_value
+
+from muon import Muon
+import torch 
+
+class MuonLightning(Muon):
+    # Accept *anything* Lightning might pass
+    def step(self, closure=None, *args, **kwargs):
+        # 1) run the closure if Lightning gave one
+        if closure is not None:
+            with torch.enable_grad():
+                closure()
+
+        # 2) delegate to the real Muon update
+        return super().step(*args, **kwargs)
