@@ -90,7 +90,6 @@ class ROCdatamodule(LightningDataModule):
             block_size=self.hparams.block_size,
             epoch_length=self.hparams.epoch_length,
             overfit_one_batch=self.hparams.overfit_one_batch,
-            
         )
         self.data_test.prepare(data_args, tokenizer=tokenizer, nlp_tokenizer=nlp_tokenizer)
 
@@ -100,7 +99,7 @@ class ROCdatamodule(LightningDataModule):
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
             shuffle=True,  # Typically, you want to shuffle training data.
-            pin_memory=self.hparams.pin_memory
+            pin_memory=self.hparams.pin_memory,
             drop_last=True,  # Drop the last incomplete batch
         )
 
