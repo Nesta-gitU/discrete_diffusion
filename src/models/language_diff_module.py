@@ -387,6 +387,10 @@ class DiffusionModule(LightningModule):
             # Save the current gradient norm to the checkpoint
             checkpoint['current_grad_norm'] = self.current_grad_norm
 
+        #if self.use_muon:
+        #    print(checkpoint["optimizer_states"])
+        #    self._manual_optim_state = checkpoint["optimizer_states"]
+
     def on_load_checkpoint(self, checkpoint):
         self.current_grad_norm = checkpoint.get('current_grad_norm', 0.22) #if its not there then its not used so None would also be fine
         
@@ -401,6 +405,10 @@ class DiffusionModule(LightningModule):
         """
         if self.use_muon:
             self.flag = True
+            #print(self.optimizers())
+            #print(checkpoint["optimizer_states"])
+            self._manual_optim_state = checkpoint["optimizer_states"]
+
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         """Perform a single validation step on a batch of data from the validation set.
@@ -630,8 +638,14 @@ class DiffusionModule(LightningModule):
             scheduler_muon = LambdaLR(optim_muon, lr_lambda=lambda step: linear_anneal_lambda(step, total_steps))
             scheduler_adamw = LambdaLR(optim_adamw,  lr_lambda=lambda step: linear_anneal_lambda(step, total_steps))
 
+            self._optimizers = [optim_muon, optim_adamw]
+
+            if hasattr(self, "_manual_optim_state"):
+                for opt, state in zip(self._optimizers, self._manual_optim_state):
+                    opt.load_state_dict(state)
+
             return (
-                [optim_muon, optim_adamw],
+                self._optimizers,
                 [
                     {"scheduler": scheduler_muon, "interval": "step"},
                     {"scheduler": scheduler_adamw, "interval": "step"},

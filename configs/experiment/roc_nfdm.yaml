@@ -24,7 +24,7 @@ tags: ["bert-base", "roc", "nfdm"]
 seed: 12345
 #commment
 data:
-  batch_size: 512 #512
+  batch_size: 32 #512
   block_size: 64
   overfit_one_batch: false #should be false normally
 
@@ -35,7 +35,7 @@ callbacks:
     modes: ["star", "marginal"]
     n_steps: 2000
   model_checkpoint:
-    every_n_train_steps: 10000 #save every 1000 steps
+    every_n_train_steps: 300 #save every 1000 steps
 
 #one epoch has 12556 batches
 #one val epoch has 1396 batches on batch size 256
