@@ -592,7 +592,7 @@ class DiffusionModule(LightningModule):
                 rank=0,
                 world_size=1
             )
-            optim_adamw = self.hparams.optimizer([adamw_params, *self.time_sampler.parameters()])
+            optim_adamw = self.hparams.optimizer([*adamw_params, *self.time_sampler.parameters()])
 
             # 3) Create a shared LR schedule with warmup + cosine decay
             def linear_anneal_lambda(step, total_steps):
