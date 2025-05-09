@@ -13,9 +13,10 @@ from their_utils.nn import mean_flat
 from torch.optim.swa_utils import AveragedModel
 from src.models.time_samplers.time_samplers import TimeSampler, UniformBucketSampler, ContSampler
 import math
-from muon import Muon 
+#from muon import Muon 
 from src.utils.utils import MuonLightning
 #from src.likelihoods.compute_nll import get_likelihood_fn
+from heavyball import Muon 
 
 
 class DiffusionModule(LightningModule):
@@ -123,6 +124,7 @@ class DiffusionModule(LightningModule):
             p.requires_grad = False
 
         self.automatic_optimization = not use_muon
+        self.flag = False
         
         
 
@@ -314,6 +316,8 @@ class DiffusionModule(LightningModule):
         self.manual_backward(elbo) #-> manual backward should call on_after_backward, but clearly it doesnt 
         self.on_after_backward()
 
+        #print(optimizers[0].optimizer.param_groups)
+
         # step & zero out each optimizer
         optimizers[0].step()
         optimizers[0].zero_grad()
@@ -328,6 +332,15 @@ class DiffusionModule(LightningModule):
     
     def on_after_backward(self) -> None:
         #print("I dont think we are calling this function at all ")
+        if self.flag:
+            optimizers = self.optimizers()
+            for group in optimizers[0].optimizer.param_groups:
+                group["update_buffer"] = group["update_buffer"].to(self.device)
+                group["update_buffer_views"] = [
+                    tensor.to(self.device) for tensor in group["update_buffer_views"]
+                ]
+            self.flag = False
+        
         self.ema.update_parameters(self.model)
 
         # Compute gradient norm
@@ -376,14 +389,18 @@ class DiffusionModule(LightningModule):
 
     def on_load_checkpoint(self, checkpoint):
         self.current_grad_norm = checkpoint.get('current_grad_norm', 0.22) #if its not there then its not used so None would also be fine
-        device = self.device            # current GPU of this rank
-        for opt in self.trainer.optimizers:
-            if opt.__class__.__name__.lower().startswith("muon"):
-                for state in opt.state.values():
-                    for k, v in state.items():
-                        if torch.is_tensor(v):
-                            state[k] = v.to(device)      # move buffer
         
+        """
+        print("did this happen?")
+        for opt_state in checkpoint["optimizer_states"]:
+            print(opt_state)
+            for state in opt_state["state"].values():
+                for k, v in state.items():
+                    if torch.is_tensor(v):
+                        state[k] = v.cuda()
+        """
+        if self.use_muon:
+            self.flag = True
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         """Perform a single validation step on a batch of data from the validation set.
