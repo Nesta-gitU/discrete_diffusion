@@ -376,6 +376,13 @@ class DiffusionModule(LightningModule):
 
     def on_load_checkpoint(self, checkpoint):
         self.current_grad_norm = checkpoint.get('current_grad_norm', 0.22) #if its not there then its not used so None would also be fine
+        device = self.device            # current GPU of this rank
+        for opt in self.trainer.optimizers:
+            if opt.__class__.__name__.lower().startswith("muon"):
+                for state in opt.state.values():
+                    for k, v in state.items():
+                        if torch.is_tensor(v):
+                            state[k] = v.to(device)      # move buffer
         
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
