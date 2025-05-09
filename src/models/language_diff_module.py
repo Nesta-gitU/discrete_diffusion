@@ -16,7 +16,7 @@ import math
 #from muon import Muon 
 from src.utils.utils import MuonLightning
 #from src.likelihoods.compute_nll import get_likelihood_fn
-from heavyball import Muon 
+
 
 
 class DiffusionModule(LightningModule):
