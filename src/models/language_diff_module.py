@@ -643,6 +643,9 @@ class DiffusionModule(LightningModule):
             if hasattr(self, "_manual_optim_state"):
                 for opt, state in zip(self._optimizers, self._manual_optim_state):
                     opt.load_state_dict(state)
+                    #print(state)
+                    #print("loaded muon state dict-----------------------------------")
+                print("loaded muon state dict-----------------------------------")	
 
             return (
                 self._optimizers,
