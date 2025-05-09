@@ -24,7 +24,7 @@ tags: ["bert-base", "roc", "nfdm"]
 seed: 12345
 #commment
 data:
-  batch_size: 512
+  batch_size: 512 #512
   block_size: 64
   overfit_one_batch: false #should be false normally
 
@@ -59,7 +59,7 @@ model:
   total_steps: ${trainer.max_steps}
   mask_padding: false
   grad_clipping_type: "warmup"
-  grad_clip: 1
+  grad_clip: 1 # 1
   switch_to_rescaled: 300000000
   diffusion:
     diff_loss_type: "elbo" #options are elbo, half_elbo, x_0_prediction
@@ -70,7 +70,7 @@ model:
         output_dim: 256
         #hidden_dim: 256
   optimizer:
-    lr: 5e-5
+    lr: 1e-4
         #hidden_dim: 512
   time_sampler:
     _target_: src.models.time_samplers.time_samplers.UniformBucketSampler #####below this add stabilization parameters like learning rate warmup and muon 
@@ -78,8 +78,8 @@ model:
   use_muon: true
   muon_params:
     use_muon: true
-    muon_lr: 0.002
-    muon_momentum: 0.9
+    muon_lr: 0.02
+    muon_momentum: 0.95
     muon_ns_steps: 5
     muon_weight_decay: 0.01
 

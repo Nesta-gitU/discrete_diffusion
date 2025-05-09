@@ -309,7 +309,9 @@ class DiffusionModule(LightningModule):
         optimizers = self.optimizers()        # [optim_muon, optim_adamw]
         schedulers = self.lr_schedulers()     # [sched_muon, sched_adamw]
 
-        self.manual_backward(elbo)
+        #print("I do think we are getting here?")
+        self.manual_backward(elbo) #-> manual backward should call on_after_backward, but clearly it doesnt 
+        self.on_after_backward()
 
         # step & zero out each optimizer
         optimizers[0].optimizer.step()
@@ -324,15 +326,21 @@ class DiffusionModule(LightningModule):
         return elbo
     
     def on_after_backward(self) -> None:
+        #print("I dont think we are calling this function at all ")
         self.ema.update_parameters(self.model)
 
         # Compute gradient norm
 
         if self.hparams.grad_clipping_type == "always":
             new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.grad_clip)
+            #if new_grad_norm > self.grad_clip:
+                #print("we should have clipped")
+
         elif self.hparams.grad_clipping_type == "warmup":
             if self.global_step > 3000:
                 new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.grad_clip)
+                #if new_grad_norm > self.grad_clip:
+                    #print("we should have clipped")
             else:
                 new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=float('inf'))
         elif self.hparams.grad_clipping_type == "dynamic":
