@@ -23,13 +23,13 @@ class NFDM_gaussian(nn.Module):
                                         nn.ReLU(), 
                                         nn.Linear(int(self.output_dim * 4), int(self.output_dim*4)),
                                         nn.ReLU(),
-                                        nn.Linear(int(self.output_dim*4), 1))	
+                                        nn.Linear(int(self.output_dim*4), self.output_dim))	
 
         self.linear_layer2 = nn.Sequential(nn.Linear(self.output_dim, int(self.output_dim * 4)), 
                                         nn.ReLU(), 
                                         nn.Linear(int(self.output_dim * 4), int(self.output_dim*4)),
                                         nn.ReLU(),
-                                        nn.Linear(int(self.output_dim*4), 1))	
+                                        nn.Linear(int(self.output_dim*4), self.output_dim))	
         
     def forward(self, x, t):
         #print("using NFDM-Gaussian")
@@ -53,6 +53,7 @@ class NFDM_gaussian(nn.Module):
         else:
             m_ls = self.net(x, t.squeeze(-1).squeeze(-1)) 
             m, ls = m_ls.chunk(2, dim=2)#why was this 1 before 
+            ls = ls.clamp(min=-20, max=10) #clamping
 
             #make the variance tokenwise instead of dimensionwise
             ls = self.linear_layer(ls)

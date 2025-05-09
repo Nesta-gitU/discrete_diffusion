@@ -107,6 +107,7 @@ class DiffusionModule(LightningModule):
         self.use_muon = use_muon
         self.do_lr_warmup = do_lr_warmup
         self.muon_params = muon_params
+        self.clip_warmup = 6000 if self.use_muon else 3000
         print(self.model)
         print(self.model.pred)
         #self.ema = copy.deepcopy(self.model)
@@ -337,7 +338,7 @@ class DiffusionModule(LightningModule):
                 #print("we should have clipped")
 
         elif self.hparams.grad_clipping_type == "warmup":
-            if self.global_step > 3000:
+            if self.global_step > self.clip_warmup:
                 new_grad_norm = torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=self.grad_clip)
                 #if new_grad_norm > self.grad_clip:
                     #print("we should have clipped")
@@ -576,7 +577,7 @@ class DiffusionModule(LightningModule):
             # 3) Everything else → AdamW
             #    Skip any p already in one of the two lists
             seen = {id(p) for p in muon_params + adamw_params}
-            for p in self.parameters():
+            for p in self.model.parameters():
                 if not p.requires_grad or id(p) in seen:
                     continue
                 adamw_params.append(p)
@@ -591,7 +592,7 @@ class DiffusionModule(LightningModule):
                 rank=0,
                 world_size=1
             )
-            optim_adamw = self.hparams.optimizer(adamw_params)
+            optim_adamw = self.hparams.optimizer([adamw_params, *self.time_sampler.parameters()])
 
             # 3) Create a shared LR schedule with warmup + cosine decay
             def linear_anneal_lambda(step, total_steps):
