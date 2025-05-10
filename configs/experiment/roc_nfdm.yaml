@@ -24,7 +24,7 @@ tags: ["bert-base", "roc", "nfdm"]
 seed: 12345
 #commment
 data:
-  batch_size: 32 #512
+  batch_size: 512 #512
   block_size: 64
   overfit_one_batch: false #should be false normally
 
