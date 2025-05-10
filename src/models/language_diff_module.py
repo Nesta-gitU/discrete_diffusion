@@ -337,10 +337,14 @@ class DiffusionModule(LightningModule):
             for group in optimizers[0].optimizer.param_groups:
                 group["update_buffer"] = group["update_buffer"].to(self.device)
                 group["update_buffer_views"] = [
-                    tensor.to(self.device) for tensor in group["update_buffer_views"]
+                    group["update_buffer"].to(self.device) for tensor in group["update_buffer_views"]
                 ]
-            self.flag = False
+        self.flag = False
         
+        #optimizers = self.optimizers()
+        #for group in optimizers[0].optimizer.param_groups:
+        #    print("test", group["update_buffer"] == group["update_buffer_views"][0])
+                
         self.ema.update_parameters(self.model)
 
         # Compute gradient norm
@@ -391,7 +395,8 @@ class DiffusionModule(LightningModule):
         if self.use_muon:
             #optimizer state should already be saved
             #print(self.optimizers()[0])
-            checkpoint["muon_param_groups"] = self.optimizers()[0].optimizer.param_groups
+            #checkpoint["muon_param_groups"] = self.optimizers()[0].optimizer.param_groups
+            pass
             
 
     def on_load_checkpoint(self, checkpoint):
@@ -408,10 +413,16 @@ class DiffusionModule(LightningModule):
         """
         if self.use_muon:
             self.flag = True
+            #save optimizer state as txt file so I can look at it 
+            #save a string as txt file by using 
+            #create that file
+            with open("optimizer_state.txt", "w") as f:
+                f.write(str(checkpoint["optimizer_states"]))
+            
             #print(self.optimizers())
             #print(checkpoint["optimizer_states"])
             self._manual_optim_state = checkpoint["optimizer_states"]
-            self._muon_param_groups = checkpoint["muon_param_groups"]
+            #self._muon_param_groups = checkpoint["muon_param_groups"]
             #print(self._muon_param_groups)
 
 
@@ -648,14 +659,12 @@ class DiffusionModule(LightningModule):
             if hasattr(self, "_manual_optim_state"):
                 for opt, state in zip(self._optimizers, self._manual_optim_state):
                     opt.load_state_dict(state)
-            if hasattr(self, "_muon_param_groups"):
-                optimizers = self._optimizers
-                for group, loaded_group in zip(optimizers[0].param_groups, self._muon_param_groups):
-                    print(group["update_buffer"] == loaded_group["update_buffer"])
-                    group["update_buffer"] = loaded_group["update_buffer"]
-                    group["update_buffer_views"] = [
-                        tensor.to(self.device) for tensor in loaded_group["update_buffer_views"]
-                ]
+
+            
+            optimizers = self._optimizers
+            for group in optimizers[0].param_groups:
+                group["update_buffer"] = group["update_buffer"].to(self.device)
+                group["update_buffer_views"] = [group["update_buffer"][i] for i in range(1)]
                     
             #if hasattr(self, "_muon_param_groups"):
                 #Im not 100% sure this is correct
