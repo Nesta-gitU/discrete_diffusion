@@ -648,7 +648,7 @@ class DiffusionModule(LightningModule):
             if hasattr(self, "_manual_optim_state"):
                 for opt, state in zip(self._optimizers, self._manual_optim_state):
                     opt.load_state_dict(state)
-            if hassattr(self, "_muon_param_groups"):
+            if hasattr(self, "_muon_param_groups"):
                 optimizers = self._optimizers
                 for group, loaded_group in zip(optimizers[0].param_groups, self._muon_param_groups):
                     print(group["update_buffer"] == loaded_group["update_buffer"])
