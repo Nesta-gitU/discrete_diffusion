@@ -386,10 +386,13 @@ class DiffusionModule(LightningModule):
         if self.hparams.grad_clipping_type == "dynamic":
             # Save the current gradient norm to the checkpoint
             checkpoint['current_grad_norm'] = self.current_grad_norm
+            
 
-        #if self.use_muon:
-        #    print(checkpoint["optimizer_states"])
-        #    self._manual_optim_state = checkpoint["optimizer_states"]
+        if self.use_muon:
+            #optimizer state should already be saved
+            #print(self.optimizers()[0])
+            checkpoint["muon_param_groups"] = self.optimizers()[0].optimizer.param_groups
+            
 
     def on_load_checkpoint(self, checkpoint):
         self.current_grad_norm = checkpoint.get('current_grad_norm', 0.22) #if its not there then its not used so None would also be fine
@@ -408,6 +411,8 @@ class DiffusionModule(LightningModule):
             #print(self.optimizers())
             #print(checkpoint["optimizer_states"])
             self._manual_optim_state = checkpoint["optimizer_states"]
+            self._muon_param_groups = checkpoint["muon_param_groups"]
+            #print(self._muon_param_groups)
 
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
@@ -643,10 +648,20 @@ class DiffusionModule(LightningModule):
             if hasattr(self, "_manual_optim_state"):
                 for opt, state in zip(self._optimizers, self._manual_optim_state):
                     opt.load_state_dict(state)
-                    #print(state)
-                    #print("loaded muon state dict-----------------------------------")
-                print("loaded muon state dict-----------------------------------")	
-
+            
+            optimizers = self._optimizers
+            for group, loaded_group in zip(optimizers[0].param_groups, self._muon_param_groups):
+                print(group["update_buffer"] == loaded_group["update_buffer"])
+                group["update_buffer"] = loaded_group["update_buffer"]
+                group["update_buffer_views"] = [
+                    tensor.to(self.device) for tensor in loaded_group["update_buffer_views"]
+                ]
+                    
+            #if hasattr(self, "_muon_param_groups"):
+                #Im not 100% sure this is correct
+            #    print(self._optimizers[0].param_groups)
+            #    self._optimizers[0].param_groups = self._muon_param_groups
+            
             return (
                 self._optimizers,
                 [
