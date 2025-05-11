@@ -345,7 +345,7 @@ class DiffusionModule(LightningModule):
                 group["update_buffer_views"] = [
                     group["update_buffer"].to(self.device) for tensor in group["update_buffer_views"]
                 ]
-        self.flag = False
+            self.flag = False
         
         #optimizers = self.optimizers()
         #for group in optimizers[0].optimizer.param_groups:
