@@ -102,7 +102,7 @@ class DiffusionModule(LightningModule):
         self.time_sampler = time_sampler
         #hack to make it so you can continue a training run with a different sampler
         if not hasattr(self.time_sampler, "_logits"):
-            self.time_sampler._logits = nn.Parameter(torch.ones(100))
+            self.time_sampler._logits = nn.Parameter(torch.ones(100), requires_grad=False)
         self.model = diffusion
         self.max_steps = total_steps
         self.mask_padding = mask_padding
