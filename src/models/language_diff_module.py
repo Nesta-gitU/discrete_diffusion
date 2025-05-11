@@ -98,6 +98,9 @@ class DiffusionModule(LightningModule):
             print("use_full_elbo_in_is is set to False because time_sampler is not a TimeSampler")
 
         self.time_sampler = time_sampler
+        #hack to make it so you can continue a training run with a different sampler
+        if not hasattr(self.time_sampler, "_logits"):
+            self.time_sampler._logits = None
         self.model = diffusion
         self.max_steps = total_steps
         self.mask_padding = mask_padding
@@ -111,6 +114,7 @@ class DiffusionModule(LightningModule):
         self.clip_warmup = 6000 if self.use_muon else 3000
         print(self.model)
         print(self.model.pred)
+
         #self.ema = copy.deepcopy(self.model)
         #self.ema.to("cpu")
         #for p in self.ema.parameters():
