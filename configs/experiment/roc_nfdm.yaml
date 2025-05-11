@@ -59,7 +59,7 @@ model:
   total_steps: ${trainer.max_steps}
   mask_padding: false
   grad_clipping_type: "warmup"
-  grad_clip: 2 # 1cc
+  grad_clip: 1 # 1cc
   switch_to_rescaled: 300000000
   diffusion:
     diff_loss_type: "elbo" #options are elbo, half_elbo, x_0_prediction
@@ -78,7 +78,7 @@ model:
   use_muon: true
   muon_params:
     use_muon: true
-    muon_lr: 0.02
+    muon_lr: 0.002
     muon_momentum: 0.95
     muon_ns_steps: 5
     muon_weight_decay: 0.01
