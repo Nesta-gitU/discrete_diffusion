@@ -2,6 +2,7 @@ from typing import Any, Dict, Tuple
 
 import torch
 from lightning import LightningModule
+from torch._C import device
 from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy
 import inspect
@@ -100,7 +101,7 @@ class DiffusionModule(LightningModule):
         self.time_sampler = time_sampler
         #hack to make it so you can continue a training run with a different sampler
         if not hasattr(self.time_sampler, "_logits"):
-            self.time_sampler._logits = torch.ones(100)
+            self.time_sampler._logits = torch.nn.parameter(torch.ones(100))
         self.model = diffusion
         self.max_steps = total_steps
         self.mask_padding = mask_padding
