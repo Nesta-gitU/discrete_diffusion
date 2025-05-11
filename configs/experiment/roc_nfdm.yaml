@@ -72,8 +72,8 @@ model:
   optimizer:
     lr: 1e-4
         #hidden_dim: 512
-  time_sampler:
-    _target_: src.models.time_samplers.time_samplers.UniformBucketSampler #####below this add stabilization parameters like learning rate warmup and muon 
+  #time_sampler:
+  #  _target_: src.models.time_samplers.time_samplers.UniformBucketSampler #####below this add stabilization parameters like learning rate warmup and muon 
   do_lr_warmup: true
   use_muon: true
   muon_params:
