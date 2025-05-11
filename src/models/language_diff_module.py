@@ -16,6 +16,7 @@ from src.models.time_samplers.time_samplers import TimeSampler, UniformBucketSam
 import math
 #from muon import Muon 
 from src.utils.utils import MuonLightning
+from torch import nn
 #from src.likelihoods.compute_nll import get_likelihood_fn
 
 
@@ -101,7 +102,7 @@ class DiffusionModule(LightningModule):
         self.time_sampler = time_sampler
         #hack to make it so you can continue a training run with a different sampler
         if not hasattr(self.time_sampler, "_logits"):
-            self.time_sampler._logits = torch.nn.parameter(torch.ones(100))
+            self.time_sampler._logits = nn.Parameter(torch.ones(100))
         self.model = diffusion
         self.max_steps = total_steps
         self.mask_padding = mask_padding
