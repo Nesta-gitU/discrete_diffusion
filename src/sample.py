@@ -190,10 +190,13 @@ def sample_here(args, model, modality, datamodule):
         print("running eval loop!")
 
         #old perplexity computation
+        all_texts_list, human_references, human_references_train = file_to_list(out_path2, datamodule, datamodule.tokenizer, args.setting)
+
         custom_args = {
                 "model":model,
                 "model_name_or_path": model_name_path,
                 "input_text": out_path2,
+                "text_samples": all_texts_list,
                 "mode": "eval",
                 "modality": modality,
                 "experiment": "random",
@@ -212,7 +215,7 @@ def sample_here(args, model, modality, datamodule):
         # new metric computation
         # first get the generated samples to a list 
         #file_to_list(text_path, datamodule, tokenizer, setting):
-        all_texts_list, human_references, human_references_train = file_to_list(out_path2, datamodule, datamodule.tokenizer, args.setting)
+        
         # compute metrics using metric_to_std
         if "mauve" in args.metrics_list:
             mean_mauve, std_mauve = metric_to_std(all_texts_list, human_references, print_mauve, args.std_split, args.num_samples)
@@ -363,9 +366,9 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         args.num_samples = 5000
         args.batch_size = 5000
     elif args.setting == 'reference_mode':
-        args.std_split = 5
-        args.num_samples = 5000
-        args.batch_size = 2500
+        args.std_split = 1
+        args.num_samples = 100 #5000
+        args.batch_size = 100#2500
         #but this on will be used later to generate by sampling from the dataset instead of the model
         args.decode_theirs = False
         args.model_base_name = args.modality + "." + "reference_mode"

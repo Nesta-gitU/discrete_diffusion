@@ -47,7 +47,7 @@ def main(args):
             for line in f:
                 text_samples.append(line.strip().split())
     """
-    text_samples, human_references, human_references_train = file_to_list(out_path2, datamodule, datamodule.tokenizer, args.setting)
+    text_samples = args.text_samples
 
     #do the below process for n_splits of the n_samples
     n_samples = len(text_samples)
@@ -57,6 +57,7 @@ def main(args):
     text_samples_og = text_samples.copy()
     mean_loss_list = []
     for i in range(args.std_split):
+        token_count = 0
 
         start_idx = int(i * n_samples_per_split)
         end_idx = int((i + 1) * n_samples_per_split)
@@ -74,20 +75,24 @@ def main(args):
                 continue
             tokenized_x = torch.LongTensor(tokenized_x).cuda()
             labels = tokenized_x.clone()
-            labels[labels == tokenizer.encode('PAD')[0]] = -100
+            #labels[labels == tokenizer.encode('PAD')[0]] = -100
+            labels[0] = -100 #ignore the start token 
             model_output = model(tokenized_x, labels=labels)
             loss = model_output.loss.item()
-            agg_loss.append(loss * tokenized_x.numel())  # accumulate total NLL
-            token_count += tokenized_x.numel()
+            #agg_loss.append(loss * tokenized_x.numel())  # accumulate total NLL
+            #token_count += tokenized_x.numel()
+            ppl_story   = math.exp(loss)
+            agg_loss.append(ppl_story)                    # store per-text PPL
     
-        mean_loss = torch.exp(torch.tensor(agg_loss).mean()).item() if agg_loss else float('nan')
-        mean_loss_list.append(mean_loss)
-        
-    total_nll   = sum(agg_loss)
-    total_tok   = token_count
-    mean_loss   = total_nll / total_tok                   # corpus-wide mean NLL
-    perp        = math.exp(mean_loss)
-    mean_loss_list.append(perp)
+        #total_nll   = sum(agg_loss)
+        #total_tok   = token_count
+        #mean_loss   = total_nll / total_tok                   # corpus-wide mean NLL
+        #perp        = math.exp(mean_loss)
+        #mean_loss_list.append(perp)
+        ppl_split = sum(agg_loss) / len(agg_loss)        # arithmetic mean
+        mean_loss_list.append(ppl_split)
+    
+    mean_loss = np.mean(mean_loss_list)
     std_loss = np.std(mean_loss_list)
 
     
