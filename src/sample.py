@@ -293,10 +293,14 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     model.eval()
     if not hasattr(model, "context"):
         model.context = NoneContext(None)
-    if not hasattr(model, "gamma"):
-        model.gamma = None
-    if not hasattr(model.gamma, "around_reference"):
-        model.gamma.around_reference = False
+
+    if not hasattr(model, "transform"):
+        pass
+    else:
+        if not hasattr(model, "gamma"):
+            model.gamma = None
+        if not hasattr(model.gamma, "around_reference"):
+            model.gamma.around_reference = False
     
     print("---------------------------------model_device---------------------------------")
 
