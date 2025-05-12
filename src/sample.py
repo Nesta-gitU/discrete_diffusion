@@ -203,18 +203,34 @@ def sample_here(args, model, modality, datamodule):
         
         custom_args = DotDict(custom_args)
         print("starting ppl")
-        perplexity_mean, perplexity_std = main_ppl(custom_args)
-        print("ending old ppl with mean and std", perplexity_mean, perplexity_std)
+        if "ppl" in args.metrics_list:
+            perplexity_mean, perplexity_std = main_ppl(custom_args)
+            print("ending old ppl with mean and std", perplexity_mean, perplexity_std)
+        else:
+            perplexity_mean, perplexity_std = 0, 0
 
         # new metric computation
         # first get the generated samples to a list 
         #file_to_list(text_path, datamodule, tokenizer, setting):
         all_texts_list, human_references, human_references_train = file_to_list(out_path2, datamodule, datamodule.tokenizer, args.setting)
         # compute metrics using metric_to_std
-        mean_mauve, std_mauve = metric_to_std(all_texts_list, human_references, print_mauve, args.std_split, args.num_samples)
-        mean_diversity, std_diversity = metric_to_std(all_texts_list, human_references_train, compute_diversity, args.std_split, args.num_samples)
-        mean_memorization, std_memorization = metric_to_std(all_texts_list, human_references_train, compute_memorization, args.std_split, args.num_samples)
-        mean_ppl, std_ppl = metric_to_std(all_texts_list, human_references, compute_perplexity, args.std_split, args.num_samples)
+        if "mauve" in args.metrics_list:
+            mean_mauve, std_mauve = metric_to_std(all_texts_list, human_references, print_mauve, args.std_split, args.num_samples)
+        else:
+            mean_mauve, std_mauve = 0, 0
+        if "diversity" in args.metrics_list:
+            mean_diversity, std_diversity = metric_to_std(all_texts_list, human_references_train, compute_diversity, args.std_split, args.num_samples)
+        else:
+            mean_diversity, std_diversity = 0, 0
+        if "memorization" in args.metrics_list:
+            mean_memorization, std_memorization = metric_to_std(all_texts_list, human_references_train, compute_memorization, args.std_split, args.num_samples)
+        else:
+            mean_memorization, std_memorization = 0, 0
+        
+        if "ppl" in args.metrics_list:
+            mean_ppl, std_ppl = metric_to_std(all_texts_list, human_references, compute_perplexity, args.std_split, args.num_samples)
+        else:
+            mean_ppl, std_ppl = 0, 0
 
         #store a json file in the output directory with the results of entropy and perplexity
         results = {
@@ -330,6 +346,8 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     print("setting is ", args.setting)
     args.modality = cfg.get("dataset", "roc")
     args.plot_time_and_loss = cfg.get("plot_time_and_loss", False)
+    args.metrics_list = cfg.get("metrics_list", ["mauve", "diversity", "memorization", "ppl"])
+
 
     #get model name by checkpoint so that it includes the epoch at which it was taken 
     args.model_base_name = os.path.basename(os.path.split(cfg.ckpt_path)[0]) + f'.{os.path.split(cfg.ckpt_path)[1]}' + '.' + args.modality + f'.{cfg.model_name}'

@@ -7,7 +7,8 @@ import numpy as np
 import torch as th
 import torch.distributed as dist
 from transformers import set_seed
-
+import math
+from src.metrics.utils import get_preprocessed_data, file_to_list
 
 def main(args):
     set_seed(108)
@@ -29,9 +30,7 @@ def main(args):
     #instead load the tokenizer from gpt2-large? this is bad because 
     from transformers import GPT2Tokenizer
     tokenizer = GPT2Tokenizer.from_pretrained("gpt2-large")
-    tokenizer.add_tokens("PAD")	
-    model.resize_token_embeddings(len(tokenizer))
-    
+    """
     text_samples = []
     if input_file.endswith('sde.json') or input_file.endswith('ode.json'):
         with open(input_file, 'r') as f:
@@ -47,6 +46,8 @@ def main(args):
         with open(input_file, 'r') as f:
             for line in f:
                 text_samples.append(line.strip().split())
+    """
+    text_samples, human_references, human_references_train = file_to_list(out_path2, datamodule, datamodule.tokenizer, args.setting)
 
     #do the below process for n_splits of the n_samples
     n_samples = len(text_samples)
@@ -76,13 +77,20 @@ def main(args):
             labels[labels == tokenizer.encode('PAD')[0]] = -100
             model_output = model(tokenized_x, labels=labels)
             loss = model_output.loss.item()
-            agg_loss.append(loss)
+            agg_loss.append(loss * tokenized_x.numel())  # accumulate total NLL
+            token_count += tokenized_x.numel()
     
-        mean_loss = torch.tensor(agg_loss).mean().item() if agg_loss else float('nan')
+        mean_loss = torch.exp(torch.tensor(agg_loss).mean()).item() if agg_loss else float('nan')
         mean_loss_list.append(mean_loss)
         
-    mean_loss = np.mean(mean_loss_list)
+    total_nll   = sum(agg_loss)
+    total_tok   = token_count
+    mean_loss   = total_nll / total_tok                   # corpus-wide mean NLL
+    perp        = math.exp(mean_loss)
+    mean_loss_list.append(perp)
     std_loss = np.std(mean_loss_list)
+
+    
     print(f'\nThe mean loss is {mean_loss} for {input_file}')
     print(f'The standard deviation is {std_loss} for {input_file}')
     print('-' * 50)
