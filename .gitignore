@@ -27,6 +27,8 @@ share/python-wheels/
 *.egg
 *.json
 *.png
+*.ttf
+*.mp4
 
 MANIFEST
 

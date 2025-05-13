@@ -109,7 +109,8 @@ def generate_samples_mine(args, model, datamodule, batch_size, out_dir):
                         temperature=args.temperature, 
                         compute_ani=args.compute_ani, 
                         debug=True, 
-                        num_samples=args.num_samples)
+                        num_samples=args.num_samples,
+                        animate=args.animate)
 
         entropy_list.append(entropy)
 
@@ -354,6 +355,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     args.modality = cfg.get("dataset", "roc")
     args.plot_time_and_loss = cfg.get("plot_time_and_loss", False)
     args.metrics_list = cfg.get("metrics_list", ["mauve", "diversity", "memorization", "ppl"])
+    args.animate = cfg.get("animate", False)
 
 
     #get model name by checkpoint so that it includes the epoch at which it was taken 
@@ -366,6 +368,9 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         args.num_samples = 64
         args.batch_size = 64
     elif args.setting == 'full_mode':
+        if args.animate == True: 
+            print("--------------------------------------not animating on full gen jobs---------------------------------------")
+            args.animate = False
         args.std_split = 5
         args.num_samples = 5000
         args.batch_size = 5000

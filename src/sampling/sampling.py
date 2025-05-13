@@ -12,6 +12,7 @@ from src.metrics.entropy import get_per_token_entropy
 from src.metrics.entropy import get_per_token_entropy
 from src.models.nfdm.components.forward_process import Sqrt
 from src.models.ndm.components.gamma import GammaVDM
+from src.sampling.animation import make_video
 
 import os
 
@@ -58,7 +59,8 @@ def sample_code(model,
                 p, 
                 temperature, 
                 compute_ani,
-                num_samples): #add clamping as an option, also add sampling instead of argmax as an option later, 
+                num_samples,
+                animate): #add clamping as an option, also add sampling instead of argmax as an option later, 
 
         if True:
             ani(model)
@@ -85,6 +87,21 @@ def sample_code(model,
                 #visualize the path somehow
                 print("visualizing path")
                 visualize_path(model, path, tokenizer, mode=sampling_mode)
+            
+            if animate:
+                #visualize the path with an animation 
+                print("visualizing path with animation")
+                # okay so the trace holds a list of matrices for each of the
+                trace_words = []
+
+                for i in range(path.shape[0]):
+                    decoded = model.pred.model.get_logits(path[i][0])
+                    decoded = decoded.argmax(dim=-1).squeeze(-1)
+                    tokens = tokenizer.decode(decoded)
+                    trace_words.append(tokens.split())
+                print(trace_words, "trace words")
+                make_video(trace_words, fps=6, path=os.path.join(out_dir, f"{model_base_name}.samples_{sampling_mode}.mp4"), tween=1)
+
 
 
             if latent is not None:

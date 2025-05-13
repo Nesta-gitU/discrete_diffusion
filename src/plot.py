@@ -71,6 +71,24 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
+from math import nan
+import torch
+from tqdm import tqdm
+from src.models.nfdm.nfdm import t_dir
+from src.their_utils.test_util import denoised_fn_round
+from src.models.ndm.components.context import VaeContext
+from src.models.ndm.components.gamma import GammaTheirs, GammaLinear
+import torch
+from torch import nn
+from types import SimpleNamespace
+from torch import Tensor
+import torch as th
+
+from contextlib import contextmanager
+from src.models.nfdm.components.forward_process import NFDM_gaussian
+
+from src.sampling.differential_equations import solve_de, discrete_sampling
+
 def plot_gamma_snr_with_colormap(
     model, z, T=300, outpath=".", device="cuda:0", cmap_name="viridis"
 ):
@@ -158,6 +176,88 @@ def plot_gamma_snr_with_colormap(
         print("  • snr_var.png          (var  SNR)")
         print("  • colormap_legend.png  (index→color mapping)")
 
+def sample_loop(z, context, ts, tf, n_steps, model, mode, clamping = False):
+    with torch.no_grad():
+        if mode == 'sde':
+            return solve_de(z, ts, tf, n_steps, model, mode, clamping, context)
+        elif mode == 'ode':
+            return solve_de(z, ts, tf, n_steps, model, mode, clamping, context)
+        elif mode == 'marginal':
+            return discrete_sampling(z, ts, tf, n_steps, model, mode, clamping, context)
+        elif mode == 'star':
+            return discrete_sampling(z, ts, tf, n_steps, model, mode, clamping, context)
+        else:
+            raise ValueError("mode must be either 'sde', 'ode', 'marginal', or 'star'")
+
+def idx_to_words(index, tokenizer) -> list:
+    decoded_texts = []
+    for sequence in index:
+        try:
+            tokens = tokenizer.decode(sequence)
+        except Exception as e:
+            print(f"Error decoding tokens: {e}")
+            tokens = "error"
+        decoded_texts.append(tokens)
+    print('--------final text--------------------')
+    print(decoded_texts[0])
+    return decoded_texts
+
+def find_dependence_on_context(model, tokenizer, outpath, n_steps=2000):
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    
+    # Create a list of 10 contexts
+    Cs = []
+    for i in range(3):
+        context = torch.randn(4, 128).to(device)
+        Cs.append(context)
+        Cs.append(context)
+        #append the same context twice to the list
+    print(len(Cs))
+    #exit()
+
+    outs = []
+    z_list = []
+
+    i = 0
+    seed = 42
+
+    for c in Cs:
+        with torch.random.fork_rng(devices=["cpu", "cuda"]):
+            torch.manual_seed(seed)
+            z = torch.randn(4, 64, 128).to(device)
+            z_list.append(z)
+            if i > 0 and (not torch.all(z == z_list[i-1])):
+                raise ValueError("z should be the same for all contexts")
+
+            solved, path = sample_loop(z, c, 1, 0, n_steps, model, mode='marginal', clamping=True)
+            #turn the solved tensor into words that can be added to a list by decoding
+            logits = model.pred.model.get_logits(solved)
+            indices = logits.argmax(dim=-1).squeeze(-1) # shape [batch_size, block_size]
+            words = idx_to_words(indices, tokenizer)
+            
+        i += 1	
+        outs.append(words)
+    
+    #Now nicely output the reuslts to some sort of file, I guess I can push it to the same folder as the gamma plots 
+    #I think it would be reasonable to output the context with its two outputs to a json file
+    records = []
+    # we know Cs has each context twice in a row
+    for j in range(0, len(Cs), 2):
+        context = Cs[j].cpu().numpy().tolist()
+        run1, run2 = outs[j], outs[j+1]
+        records.append({
+            "context_id": j // 2,
+            "context": context,
+            "outputs": [run1, run2]
+        })
+
+    # wrap in a top-level dict
+    data = {"contexts": records}
+
+    with open(os.path.join(outpath, "context_dependence.json"), "w") as f:
+        json.dump(data, f, indent=4)
+
+    print(f"Saved context dependence results to {outpath}/context_dependence.json")
 
 @task_wrapper
 def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
@@ -181,6 +281,8 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     log.info(f"Instantiating datamodule <{cfg.data._target_}>")
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.data)
+    datamodule.setup(stage="fit")
+    tokenizer = datamodule.tokenizer
 
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model_lightning = DiffusionModule.load_from_checkpoint(cfg.ckpt_path)
@@ -192,7 +294,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     if not hasattr(model.gamma, "around_reference"):
         model.gamma.around_reference = False
-    datamodule.setup(stage="fit")
+   
 
     log.info("Instantiating loggers...")
     logger: List[Logger] = instantiate_loggers(cfg.get("logger"))
@@ -238,6 +340,8 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     #although the fact that for a different t at each time we get a bunch of smooth lines seems like a really bad sign to me, means z has almost no effect?
    
     plot_gamma_snr_with_colormap(model, z, T=T, outpath=outpath, device="cuda")
+
+    find_dependence_on_context(model, tokenizer, outpath=outpath)
 
        
 
