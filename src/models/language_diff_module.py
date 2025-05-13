@@ -162,7 +162,7 @@ class DiffusionModule(LightningModule):
 
 
         
-        if self.switch_to_rescaled is not None and (self.global_step >= self.switch_to_rescaled or self.switch_to_rescaled == "now"):
+        if self.switch_to_rescaled is not None and (self.switch_to_rescaled == "now" or self.global_step >= self.switch_to_rescaled):
             if (self.switch_to_rescaled == self.global_step) or (self.switch_to_rescaled=="now"):
                 self.switch_to_rescaled = 0
                 #turn of gradients on all but the predictor 
