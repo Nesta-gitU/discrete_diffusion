@@ -164,7 +164,7 @@ class DiffusionModule(LightningModule):
         
         if self.switch_to_rescaled is not None and (self.global_step >= self.switch_to_rescaled or self.switch_to_rescaled == "now"):
             if (self.switch_to_rescaled == self.global_step) or (self.switch_to_rescaled=="now"):
-                self.switch_to_rescaled = 0
+                self.switch_to_rescaled = 10000000000
                 #turn of gradients on all but the predictor 
                 print("switching to rescaled")
                 if hasattr(self.model, "affine"):
