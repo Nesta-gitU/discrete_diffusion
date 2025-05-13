@@ -432,7 +432,6 @@ class DiffusionModule(LightningModule):
             self._manual_optim_state = checkpoint["optimizer_states"]
             #self._muon_param_groups = checkpoint["muon_param_groups"]
             #print(self._muon_param_groups)
-        self.switch_to_rescaled = 30000
 
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
