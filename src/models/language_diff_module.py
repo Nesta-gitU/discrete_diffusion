@@ -163,15 +163,6 @@ class DiffusionModule(LightningModule):
 
         
         if self.switch_to_rescaled is not None and (self.switch_to_rescaled == "now" or self.global_step >= self.switch_to_rescaled):
-            if (self.switch_to_rescaled == self.global_step) or (self.switch_to_rescaled=="now"):
-                self.switch_to_rescaled = 0
-                #turn of gradients on all but the predictor 
-                print("switching to rescaled")
-                if hasattr(self.model, "affine"):
-                    noise_params = list(self.model.affine.parameters()) + list(self.model.vol.parameters())
-                else:
-                    noise_params = list(self.model.transform.parameters()) + list(self.model.gamma.parameters()) + list(self.model.vol_eta.parameters()) + list(self.model.context.parameters())
-                for p in noise_params: p.requires_grad_(False)
             diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.model.get_losses(x, t, 
                                                                                 None, 
                                                                                 compute_prior_loss, 
@@ -443,6 +434,16 @@ class DiffusionModule(LightningModule):
             self._manual_optim_state = checkpoint["optimizer_states"]
             #self._muon_param_groups = checkpoint["muon_param_groups"]
             #print(self._muon_param_groups)
+
+        if (self.switch_to_rescaled == self.global_step) or (self.switch_to_rescaled=="now"):
+            self.switch_to_rescaled = 0
+            #turn of gradients on all but the predictor 
+            print("switching to rescaled")
+            if hasattr(self.model, "affine"):
+                noise_params = list(self.model.affine.parameters()) + list(self.model.vol.parameters())
+            else:
+                noise_params = list(self.model.transform.parameters()) + list(self.model.gamma.parameters()) + list(self.model.vol_eta.parameters()) + list(self.model.context.parameters())
+            for p in noise_params: p.requires_grad_(False)
 
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
