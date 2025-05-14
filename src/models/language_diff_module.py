@@ -453,32 +453,35 @@ class DiffusionModule(LightningModule):
             for p in noise_params:
                 p.requires_grad_(False)
 
-            # (3) Now filter optimizer_states so only live params survive
             trainable_ids = {id(p) for p in self.parameters() if p.requires_grad}
-            new_opt_states = []
 
+            new_opt_states = []
             for opt_state in checkpoint.get("optimizer_states", []):
-                # keep only state entries for trainable params
+                # 1) Filter out any state entries for frozen params
                 filtered_state = {
                     pid: buf
                     for pid, buf in opt_state["state"].items()
                     if pid in trainable_ids
                 }
-                # keep only param_groups entries that refer to trainable params
+
+                # 2) Rebuild only the non-empty param_groups
                 filtered_groups = []
                 for group in opt_state["param_groups"]:
-                    fg = dict(group)
-                    fg["params"] = [pid for pid in group["params"] if pid in trainable_ids]
-                    filtered_groups.append(fg)
+                    kept = [pid for pid in group["params"] if pid in trainable_ids]
+                    if not kept:
+                        continue  # drop this group entirely
+                    new_group = dict(group)
+                    new_group["params"] = kept
+                    filtered_groups.append(new_group)
 
                 new_opt_states.append({
-                    "state": filtered_state,
+                    "state":        filtered_state,
                     "param_groups": filtered_groups
                 })
 
             checkpoint["optimizer_states"] = new_opt_states
             # you can still drop schedulers entirely if you prefer to rebuild them:
-            checkpoint["lr_schedulers"] = []
+            #checkpoint["lr_schedulers"] = []
 
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
