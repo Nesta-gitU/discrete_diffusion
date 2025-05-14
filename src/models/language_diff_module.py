@@ -408,7 +408,6 @@ class DiffusionModule(LightningModule):
             # Save the current gradient norm to the checkpoint
             checkpoint['current_grad_norm'] = self.current_grad_norm
 
-        
             
 
         if self.use_muon:
@@ -443,6 +442,10 @@ class DiffusionModule(LightningModule):
             self._manual_optim_state = checkpoint["optimizer_states"]
             #self._muon_param_groups = checkpoint["muon_param_groups"]
             #print(self._muon_param_groups)
+
+        if self.switch_to_rescaled == "now":
+            checkpoint["optimizer_states"] = []
+
 
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
