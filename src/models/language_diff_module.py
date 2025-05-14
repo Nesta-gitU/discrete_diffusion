@@ -172,7 +172,7 @@ class DiffusionModule(LightningModule):
                 else:
                     noise_params = list(self.model.transform.parameters()) + list(self.model.gamma.parameters()) + list(self.model.vol_eta.parameters()) + list(self.model.context.parameters())
                 for p in noise_params: p.requires_grad_(False)
-                self.model.pred.word_embedding.requires_grad_(False)
+                self.model.pred.model.word_embedding.requires_grad_(False)
             diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.model.get_losses(x, t, 
                                                                                 None, 
                                                                                 compute_prior_loss, 
