@@ -439,6 +439,7 @@ class DiffusionModule(LightningModule):
         if (self.switch_to_rescaled == self.global_step) or (self.switch_to_rescaled == "now"):
             self.switch_to_rescaled = 0
             print("switching to rescaled")
+            del self._manual_optim_state
 
             # Freeze all but the predictor
             if hasattr(self.model, "affine"):
@@ -453,33 +454,7 @@ class DiffusionModule(LightningModule):
             for p in noise_params:
                 p.requires_grad_(False)
 
-            trainable_ids = {id(p) for p in self.parameters() if p.requires_grad}
-
-            new_opt_states = []
-            for opt_state in checkpoint.get("optimizer_states", []):
-                # 1) Filter out any state entries for frozen params
-                filtered_state = {
-                    pid: buf
-                    for pid, buf in opt_state["state"].items()
-                    if pid in trainable_ids
-                }
-
-                # 2) Rebuild only the non-empty param_groups
-                filtered_groups = []
-                for group in opt_state["param_groups"]:
-                    kept = [pid for pid in group["params"] if pid in trainable_ids]
-                    if not kept:
-                        continue  # drop this group entirely
-                    new_group = dict(group)
-                    new_group["params"] = kept
-                    filtered_groups.append(new_group)
-
-                new_opt_states.append({
-                    "state":        filtered_state,
-                    "param_groups": filtered_groups
-                })
-
-            checkpoint["optimizer_states"] = new_opt_states
+            checkpoint["optimizer_states"] = []
             # you can still drop schedulers entirely if you prefer to rebuild them:
             #checkpoint["lr_schedulers"] = []
 
