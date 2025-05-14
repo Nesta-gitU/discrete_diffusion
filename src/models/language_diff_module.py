@@ -338,6 +338,11 @@ class DiffusionModule(LightningModule):
         return elbo
     
     def on_after_backward(self) -> None:
+        for name, param in self.named_parameters():
+            if param.requires_grad and param.grad is None:
+                # this parameter didn’t get a gradient
+                print(f"[UNUSED] {name}")
+
         #print("I dont think we are calling this function at all ")
         if self.flag:
             optimizers = self.optimizers()
