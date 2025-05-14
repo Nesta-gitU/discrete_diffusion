@@ -40,7 +40,7 @@ callbacks:
 #one epoch has 12556 batches
 #one val epoch has 1396 batches on batch size 256
 trainer:
-  max_steps: 800000
+  max_steps: 1600000
   max_epochs: null
   check_val_every_n_epoch: null
   val_check_interval: 50000
