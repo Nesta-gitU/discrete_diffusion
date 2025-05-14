@@ -186,10 +186,9 @@ class DiffusionModule(LightningModule):
                         raw,
                         device_ids=wrapped.device_ids if hasattr(wrapped, "device_ids") else None,
                         output_device=wrapped.output_device if hasattr(wrapped, "output_device") else None,
-                        find_unused_parameters=True,
+                        find_unused_parameters=False,
                         broadcast_buffers=wrapped.broadcast_buffers,
-                        bucket_cap_mb=wrapped.bucket_cap_mb,
-                        check_reduction=wrapped.check_reduction,
+                        bucket_cap_mb=None
                     )
 
                     # 4) attach back to the trainer so Lightning uses it
