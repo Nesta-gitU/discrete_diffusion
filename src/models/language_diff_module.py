@@ -321,7 +321,15 @@ class DiffusionModule(LightningModule):
 
         #print("I do think we are getting here?")
         self.manual_backward(elbo) #-> manual backward should call on_after_backward, but clearly it doesnt 
+        print("----------------wegothere--------------------------------")
+        for name, param in self.named_parameters():
+            if param.requires_grad and param.grad is None:
+                # this parameter didn’t get a gradient
+                print(f"[UNUSED] {name}")
+                
         self.on_after_backward()
+
+        
 
         #print(optimizers[0].optimizer.param_groups)
 
@@ -338,10 +346,7 @@ class DiffusionModule(LightningModule):
         return elbo
     
     def on_after_backward(self) -> None:
-        for name, param in self.named_parameters():
-            if param.requires_grad and param.grad is None:
-                # this parameter didn’t get a gradient
-                print(f"[UNUSED] {name}")
+        
 
         #print("I dont think we are calling this function at all ")
         if self.flag:
