@@ -47,7 +47,7 @@ trainer:
   accumulate_grad_batches: 1
   log_every_n_steps: 50
   devices: 1
-  strategy: ddp_find_unused_parameters_true
+  strategy: ddp
 
 model:      
   compute_diffusion_loss: x_0
