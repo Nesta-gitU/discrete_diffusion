@@ -436,22 +436,49 @@ class DiffusionModule(LightningModule):
             #self._muon_param_groups = checkpoint["muon_param_groups"]
             #print(self._muon_param_groups)
         
-        if (self.switch_to_rescaled == self.global_step) or (self.switch_to_rescaled=="now"):
-                
-                self.switch_to_rescaled = 0
-                #turn of gradients on all but the predictor 
-                print("switching to rescaled")
-                if hasattr(self.model, "affine"):
-                    noise_params = list(self.model.affine.parameters()) + list(self.model.vol.parameters())
-                else:
-                    noise_params = list(self.model.transform.parameters()) + list(self.model.gamma.parameters()) + list(self.model.vol_eta.parameters()) + list(self.model.context.parameters())
-                for p in noise_params: p.requires_grad_(False)
+        if (self.switch_to_rescaled == self.global_step) or (self.switch_to_rescaled == "now"):
+            self.switch_to_rescaled = 0
+            print("switching to rescaled")
 
-                #delete the self.manual_optim_state atribute
-                del self._manual_optim_state
+            # Freeze all but the predictor
+            if hasattr(self.model, "affine"):
+                noise_params = list(self.model.affine.parameters()) + list(self.model.vol.parameters())
+            else:
+                noise_params = (
+                    list(self.model.transform.parameters())
+                    + list(self.model.gamma.parameters())
+                    + list(self.model.vol_eta.parameters())
+                    + list(self.model.context.parameters())
+                )
+            for p in noise_params:
+                p.requires_grad_(False)
 
-                checkpoint["optimizer_states"] = []
-                checkpoint["lr_schedulers"]    = []
+            # (3) Now filter optimizer_states so only live params survive
+            trainable_ids = {id(p) for p in self.parameters() if p.requires_grad}
+            new_opt_states = []
+
+            for opt_state in checkpoint.get("optimizer_states", []):
+                # keep only state entries for trainable params
+                filtered_state = {
+                    pid: buf
+                    for pid, buf in opt_state["state"].items()
+                    if pid in trainable_ids
+                }
+                # keep only param_groups entries that refer to trainable params
+                filtered_groups = []
+                for group in opt_state["param_groups"]:
+                    fg = dict(group)
+                    fg["params"] = [pid for pid in group["params"] if pid in trainable_ids]
+                    filtered_groups.append(fg)
+
+                new_opt_states.append({
+                    "state": filtered_state,
+                    "param_groups": filtered_groups
+                })
+
+            checkpoint["optimizer_states"] = new_opt_states
+            # you can still drop schedulers entirely if you prefer to rebuild them:
+            #checkpoint["lr_schedulers"] = []
 
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
