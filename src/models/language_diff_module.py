@@ -323,10 +323,10 @@ class DiffusionModule(LightningModule):
         self.manual_backward(elbo) #-> manual backward should call on_after_backward, but clearly it doesnt 
         print("----------------wegothere--------------------------------")
         for name, param in self.named_parameters():
-            if param.requires_grad and param.grad is None:
+            if param.requires_grad: # and param.grad is None:
                 # this parameter didn’t get a gradient
                 print(f"[UNUSED] {name}")
-                
+
         self.on_after_backward()
 
         
