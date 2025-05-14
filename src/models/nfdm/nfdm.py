@@ -115,7 +115,7 @@ class NeuralDiffusion(nn.Module):
             #if do the loss below I replicate their loss precisely, but is this actually what diff loss for me does?
             #
             #now clearly this loss is not an ELBO (or its optimizable part), so lets add back the removed terms to see if it still works.
-            embeddings_ = self.pred(z.detach(), t, **model_kwargs) # z is not neccerily a word embedding here.
+            embeddings_ = self.pred(z, t, **model_kwargs) # z is not neccerily a word embedding here.
             diffusion_loss = (embeddings - embeddings_) ** 2
 
             #doing x_0 prediction with elbo and continuous time seems hard so maybe test it instead in their code. 
