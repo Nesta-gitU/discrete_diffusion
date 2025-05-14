@@ -478,7 +478,7 @@ class DiffusionModule(LightningModule):
 
             checkpoint["optimizer_states"] = new_opt_states
             # you can still drop schedulers entirely if you prefer to rebuild them:
-            #checkpoint["lr_schedulers"] = []
+            checkpoint["lr_schedulers"] = []
 
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
