@@ -127,7 +127,10 @@ class NeuralDiffusion(nn.Module):
                 diffusion_loss1 = self.diffusion_loss(alpha, alpha_prime, f_s, f_dm, f_ds, eps, g2, embeddings_ , x, z, t, f)
                 diffusion_loss2 = (embeddings - embeddings_) ** 2
 
-                coefficient = 1 - (self.n_steps_interpolated / self.linear_interpolate_steps)
+                device = x.device
+                ratio = torch.tensor(self.n_steps_interpolated / self.linear_interpolate_steps,
+                                    dtype=torch.float32, device=device)
+                coefficient = torch.clamp(1.0 - ratio, min=0.0, max=1.0)
                 diffusion_loss = coefficient * diffusion_loss1 + (1 - coefficient) * diffusion_loss2
                 self.n_steps_interpolated += 1
             
