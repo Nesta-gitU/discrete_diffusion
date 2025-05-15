@@ -264,12 +264,12 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             if isinstance(model.affine, NFDM_gaussian):
                 #gamma_ref = GammaTheirs()
                 eta     = 1.0
-                gamma_0 = torch.tensor(-10.0, device=t.device)
+                gamma_0 = torch.tensor(-10.0, device=t.device, dtype=f_m.dtype)
                 N       = 100
                 bs = t.shape[0]
 
                 # 1) build a uniform grid from 0 to t
-                zero_to_t = torch.linspace(0.0, t[0,0,0], N, device=t.device)         # shape (N,)
+                zero_to_t = torch.linspace(0.0, t[0,0,0], N, device=t.device,  dtype=f_m.dtype)         # shape (N,)
                 dt        = zero_to_t[1] - zero_to_t[0]                       # scalar
 
                 # 2) approximate the integral G(t) = ∫0^t g(s)^2 ds
@@ -324,12 +324,12 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             if isinstance(model.affine, NFDM_gaussian):
                 #gamma_ref = GammaTheirs()
                 eta     = 1.0
-                gamma_0 = torch.tensor(-10.0, device=t.device)
+                gamma_0 = torch.tensor(-10.0, device=t.device, dtype=f_m_s.dtype)
                 N       = 100
                 bs = t.shape[0]
 
                 # 1) build a uniform grid from 0 to t
-                zero_to_t = torch.linspace(0.0, s[0,0,0], N, device=t.device)         # shape (N,)
+                zero_to_t = torch.linspace(0.0, s[0,0,0], N, device=t.device, dtype=f_m_s.dtype)         # shape (N,)
                 
                 dt        = zero_to_t[1] - zero_to_t[0]                       # scalar
 
