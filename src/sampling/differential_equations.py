@@ -270,13 +270,12 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
 
                 # 1) build a uniform grid from 0 to t
                 zero_to_t = torch.linspace(0.0, t[0,0,0], N, device=t.device)         # shape (N,)
-                zero_to_t = zero_to_t.expand(bs, -1, -1)
                 dt        = zero_to_t[1] - zero_to_t[0]                       # scalar
 
                 # 2) approximate the integral G(t) = ∫0^t g(s)^2 ds
                 g_vals       = model.vol(zero_to_t)                            # shape (N,)
                 g2_cumsum    = torch.cumsum(g_vals**2, dim=0) * dt             # shape (N,)
-                G_t_approx   = g2_cumsum[-1]                                   # scalar
+                G_t_approx   = g2_cumsum[-1].unsqueeze(-1).unsqueeze(-1)                                   # scalar
 
                 # 3) form the softplus argument
                 sp_arg = (G_t_approx / eta) + torch.nn.functional.softplus(gamma_0)
@@ -331,13 +330,13 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
 
                 # 1) build a uniform grid from 0 to t
                 zero_to_t = torch.linspace(0.0, s[0,0,0], N, device=t.device)         # shape (N,)
-                zero_to_t = zero_to_t.expand(bs, -1, -1)
+                
                 dt        = zero_to_t[1] - zero_to_t[0]                       # scalar
 
                 # 2) approximate the integral G(t) = ∫0^t g(s)^2 ds
                 g_vals       = model.vol(zero_to_t)                            # shape (N,)
                 g2_cumsum    = torch.cumsum(g_vals**2, dim=0) * dt             # shape (N,)
-                G_t_approx   = g2_cumsum[-1]                                   # scalar
+                G_t_approx   = g2_cumsum[-1].unsqueeze(-1).unsqueeze(-1)                             # scalar
 
                 # 3) form the softplus argument
                 sp_arg = (G_t_approx / eta) + torch.nn.functional.softplus(gamma_0)
