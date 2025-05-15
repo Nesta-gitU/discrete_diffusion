@@ -337,7 +337,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     args = SimpleNamespace()
 
     args.sampling_mode = sampling_mode
-    args.n_steps = cfg.get("n_steps", 2000)
+    args.n_steps = cfg.get("n_steps", 50)
     args.clamping = cfg.get("clamping", False)
     args.do_top_k = cfg.get("do_top_k", False)
     args.top_k = cfg.get("top_k", 40)
