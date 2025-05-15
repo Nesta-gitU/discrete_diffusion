@@ -28,14 +28,17 @@ def t_dir(f, t):
     return jvp(f, t, torch.ones_like(t))
 
 class NeuralDiffusion(nn.Module):
-    def __init__(self, affine, pred, vol, diff_loss_type="elbo"):
+    def __init__(self, affine, pred, vol, diff_loss_type="elbo", linear_interpolate_steps=0):
         super().__init__()
         
         self.affine = affine
         self.pred = pred
         self.vol = vol
         self.diff_loss_type = diff_loss_type
+        self.linear_interpolate_steps = linear_interpolate_steps
+
         print("using diff loss type: ", diff_loss_type)
+        self.n_steps_interpolated = 0
 
         #self.encoder = encoder # instead of the encoder it should be like model.get_embedding() or something like that. #TODO
         #self.decoder = decoder #same goes for the decoder here. #TODO
@@ -116,7 +119,19 @@ class NeuralDiffusion(nn.Module):
             #
             #now clearly this loss is not an ELBO (or its optimizable part), so lets add back the removed terms to see if it still works.
             embeddings_ = self.pred(z, t, **model_kwargs) # z is not neccerily a word embedding here.
-            diffusion_loss = (embeddings - embeddings_) ** 2
+
+            if self.n_steps_interpolated < self.linear_interpolate_steps:
+                g2 = self.vol(t) ** 2
+                #print(self.affine(embeddings, t), "affine")
+                (f_m, f_s, alpha), (f_dm, f_ds, alpha_prime) = t_dir(f(embeddings), t)
+                diffusion_loss1 = self.diffusion_loss(alpha, alpha_prime, f_s, f_dm, f_ds, eps, g2, embeddings_ , x, z, t, f)
+                diffusion_loss2 = (embeddings - embeddings_) ** 2
+
+                coefficient = 1 - (self.n_steps_interpolated / self.linear_interpolate_steps)
+                diffusion_loss = coefficient * diffusion_loss1 + (1 - coefficient) * diffusion_loss2
+            
+            else:
+                diffusion_loss = (embeddings - embeddings_) ** 2
 
             #doing x_0 prediction with elbo and continuous time seems hard so maybe test it instead in their code. 
         else:
