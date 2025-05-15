@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/sample.py experiment=roc_nfdm "+sampling_mode=[ode, sde, marginal, star]" 
+srun python src/sample.py experiment=roc_nfdm "+sampling_mode=[ode, sde, marginal, star]" ++model_name=roc_nfdm_rescaled
