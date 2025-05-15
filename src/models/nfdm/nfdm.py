@@ -73,8 +73,8 @@ class NeuralDiffusion(nn.Module):
             if reconstruction_loss_type not in ["diff_anchor", "collapse"]:
                 raise ValueError("Invalid reconstruction loss type")
         
-        if not compute_diffusion_loss and not compute_reconstruction_loss:  
-            raise ValueError("At least one of compute_diffusion_loss or compute_reconstruction_loss must be True")
+        #if not compute_diffusion_loss and not compute_reconstruction_loss:  
+        #    raise ValueError("At least one of compute_diffusion_loss or compute_reconstruction_loss must be True")
         
         #encode the word indices x to embeddings
         #embeddings = self.encoder(x)
