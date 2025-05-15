@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --partition=gpu_a100
+#SBATCH --partition=gpu_mig
 #SBATCH --gpus=1
 #SBATCH --job-name=basic_diff
 #SBATCH --ntasks=1
