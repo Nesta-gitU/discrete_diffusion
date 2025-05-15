@@ -129,6 +129,7 @@ class NeuralDiffusion(nn.Module):
 
                 coefficient = 1 - (self.n_steps_interpolated / self.linear_interpolate_steps)
                 diffusion_loss = coefficient * diffusion_loss1 + (1 - coefficient) * diffusion_loss2
+                self.n_steps_interpolated += 1
             
             else:
                 diffusion_loss = (embeddings - embeddings_) ** 2
