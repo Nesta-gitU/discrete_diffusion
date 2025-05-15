@@ -266,9 +266,11 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
                 eta     = 1.0
                 gamma_0 = torch.tensor(-10.0, device=t.device)
                 N       = 100
+                bs = t.shape[0]
 
                 # 1) build a uniform grid from 0 to t
-                zero_to_t = torch.linspace(0.0, t, N, device=t.device)         # shape (N,)
+                zero_to_t = torch.linspace(0.0, t[0,0,0], N, device=t.device)         # shape (N,)
+                zero_to_t = zero_to_t.expand(bs, -1, -1)
                 dt        = zero_to_t[1] - zero_to_t[0]                       # scalar
 
                 # 2) approximate the integral G(t) = ∫0^t g(s)^2 ds
@@ -325,9 +327,11 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
                 eta     = 1.0
                 gamma_0 = torch.tensor(-10.0, device=t.device)
                 N       = 100
+                bs = t.shape[0]
 
                 # 1) build a uniform grid from 0 to t
-                zero_to_t = torch.linspace(0.0, s, N, device=t.device)         # shape (N,)
+                zero_to_t = torch.linspace(0.0, s[0,0,0], N, device=t.device)         # shape (N,)
+                zero_to_t = zero_to_t.expand(bs, -1, -1)
                 dt        = zero_to_t[1] - zero_to_t[0]                       # scalar
 
                 # 2) approximate the integral G(t) = ∫0^t g(s)^2 ds
