@@ -124,7 +124,7 @@ class NeuralDiffusion(nn.Module):
         
         # compute the reconstruction loss
         if compute_reconstruction_loss:
-            if reconstruction_loss_type == "diff_anchor":
+            if reconstruction_loss_type == "":
                 reconstruction_loss = self.reconstruction_loss(x, t, embeddings_, token_discrete_loss)
             elif reconstruction_loss_type == "collapse":
                 reconstruction_loss = self.reconstruction_loss(x, t, embeddings, token_discrete_loss)
