@@ -166,9 +166,9 @@ class DiffusionModule(LightningModule):
             
             diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.model.get_losses(x, t, 
                                                                                 None, 
-                                                                                compute_prior_loss, 
-                                                                                compute_reconstruction_loss, 
-                                                                                reconstruction_loss_type,
+                                                                                compute_prior_loss=False, 
+                                                                                compute_reconstruction_loss=False, 
+                                                                                reconstruction_loss_type="collapse",
                                                                                 compute_their_loss=True)  
         else:
             diffusion_loss, context_loss, diffusion_loss_full_elbo, reconstruction_loss, prior_loss = self.model.get_losses(x, t, 
@@ -446,6 +446,7 @@ class DiffusionModule(LightningModule):
                 else:
                     noise_params = list(self.model.transform.parameters()) + list(self.model.gamma.parameters()) + list(self.model.vol_eta.parameters()) + list(self.model.context.parameters())
                 for p in noise_params: p.requires_grad_(False)
+                self.model.pred.word_embeddings.requires_grad_(True)
 
                 #delete the self.manual_optim_state atribute
                 if hasattr(self, "_manual_optim_state"):
@@ -464,6 +465,7 @@ class DiffusionModule(LightningModule):
                 else:
                     noise_params = list(self.model.transform.parameters()) + list(self.model.gamma.parameters()) + list(self.model.vol_eta.parameters()) + list(self.model.context.parameters())
                 for p in noise_params: p.requires_grad_(False)
+                self.model.pred.word_embeddings.requires_grad_(True)
 
                 #delete the self.manual_optim_state atribute
                 if hasattr(self, "_manual_optim_state"):
@@ -622,7 +624,8 @@ class DiffusionModule(LightningModule):
 
             def linear_anneal_lambda(step, total_steps):
                 if self.do_lr_warmup:
-                    warmup_steps = 10000
+                    
+                    warmup_steps = self.global_step + 10000
                     if step < warmup_steps:
                         return step / warmup_steps
                 return 1 - (step / total_steps)
@@ -689,7 +692,7 @@ class DiffusionModule(LightningModule):
             # 3) Create a shared LR schedule with warmup + cosine decay
             def linear_anneal_lambda(step, total_steps):
                 if self.do_lr_warmup:
-                    warmup_steps = 10000
+                    warmup_steps = self.global_step + 10000
                     if step < warmup_steps:
                         return step / warmup_steps
                 return 1 - (step / total_steps)
