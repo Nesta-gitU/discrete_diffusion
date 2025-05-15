@@ -446,6 +446,7 @@ class DiffusionModule(LightningModule):
 
         if self.switch_to_rescaled == "now":
             checkpoint["optimizer_states"] = []
+            del self._manual_optim_state
 
 
 
