@@ -466,7 +466,8 @@ class DiffusionModule(LightningModule):
                 for p in noise_params: p.requires_grad_(False)
 
                 #delete the self.manual_optim_state atribute
-                del self._manual_optim_state
+                if hasattr(self, "_manual_optim_state"):
+                    del self._manual_optim_state
 
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
