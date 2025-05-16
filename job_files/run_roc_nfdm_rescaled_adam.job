@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/train.py experiment=roc_nfdm ++restart_from_checkpoint=True ++model_name="roc_nfdm_rescaled" ++model.switch_to_rescaled="now" ++model.use_muon=False ++trainer.strategy="auto" ++model.reconstruction_loss_type="collapse" +model.diffusion.linear_interpolate_steps=10000 ++model_name=roc_nfdm_rescaled_adam ++model.time_sampler._target_="src.models.time_samplers.time_samplers.ContSampler" +specific_run="/gpfs/home4/nmidavaine1/discrete_diffusion/logs/diffusion_logs/roc_nfdm_rescaled_adam/somenamesforathing/checkpoint_3197-1100000.ckpt"
+srun python src/train.py experiment=roc_nfdm ++restart_from_checkpoint=True ++model_name="roc_nfdm_rescaled" ++model.switch_to_rescaled="now" ++model.use_muon=False ++trainer.strategy="auto" ++model.reconstruction_loss_type="collapse" +model.diffusion.linear_interpolate_steps=10000 ++model_name=roc_nfdm_rescaled_adam ++model.time_sampler._target_="src.models.time_samplers.time_samplers.ContSampler"
