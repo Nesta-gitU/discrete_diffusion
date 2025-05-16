@@ -347,7 +347,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     args.pattern_ = cfg.get("pattern_", "ema")
     args.get_mauve = cfg.get("get_mauve", True)
     args.num_samples = cfg.get("num_samples", 128)
-    args.batch_size = cfg.get("batch_size", 41)
+    args.batch_size = cfg.get("batch_size", 65)
     args.compute_ani = cfg.get("compute_ani", False)
     args.rerun = cfg.get("rerun", True)
     args.setting = cfg.get("setting", "test_mode")
