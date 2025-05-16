@@ -19,4 +19,4 @@ source activate fomo
 # Run your code
 srun python src/sample.py experiment=roc_mulan_adaptive.yaml ++restart_from_checkpoint=True "++model.diffusion.gamma.gamma_shape=[64, 1]" ++model.diffusion.diff_loss_type=x_0_prediction \
     +model.use_full_elbo_in_is=False ++model_name=roc_mulan_adaptive_rescaled ++model.grad_clip=1.5 +model.diffusion.gamma.around_reference=True \
-    +model.diffusion.gamma.gamma_min=-4.6002 +model.diffusion.gamma.gamma_max=13.8023 +model.beta_vae_anneal=50000 +setting=test_mode "+sampling_mode=[marginal, star, sde, ode]"
+    +model.diffusion.gamma.gamma_min=-4.6002 +model.diffusion.gamma.gamma_max=13.8023 +model.beta_vae_anneal=50000 +setting=test_mode "+sampling_mode=[marginal, star]"
