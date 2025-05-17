@@ -692,12 +692,12 @@ class DiffusionModule(LightningModule):
             # 3) Create a shared LR schedule with warmup + cosine decay
             def linear_anneal_lambda(step, total_steps):
                 if self.do_lr_warmup:
-                    warmup_steps = self.global_step
+                    warmup_steps = 10000
                     if step < warmup_steps:
                         return step / warmup_steps
                 return 1 - (step / total_steps)
 
-            total_steps = self.max_steps  # Replace with your total annealing steps
+            total_steps = self.max_steps/2  # Replace with your total annealing steps
             scheduler_muon = LambdaLR(optim_muon, lr_lambda=lambda step: linear_anneal_lambda(step, total_steps))
             scheduler_adamw = LambdaLR(optim_adamw,  lr_lambda=lambda step: linear_anneal_lambda(step, total_steps))
 
