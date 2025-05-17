@@ -692,7 +692,7 @@ class DiffusionModule(LightningModule):
             # 3) Create a shared LR schedule with warmup + cosine decay
             def linear_anneal_lambda(step, total_steps):
                 if self.do_lr_warmup:
-                    warmup_steps = self.global_step + 10000
+                    warmup_steps = self.global_step
                     if step < warmup_steps:
                         return step / warmup_steps
                 return 1 - (step / total_steps)
