@@ -697,7 +697,7 @@ class DiffusionModule(LightningModule):
                         return step / warmup_steps
                 return 1 - (step / total_steps)
 
-            total_steps = self.max_steps/2  # Replace with your total annealing steps
+            total_steps = self.max_steps  # Replace with your total annealing steps
             scheduler_muon = LambdaLR(optim_muon, lr_lambda=lambda step: linear_anneal_lambda(step, total_steps))
             scheduler_adamw = LambdaLR(optim_adamw,  lr_lambda=lambda step: linear_anneal_lambda(step, total_steps))
 
