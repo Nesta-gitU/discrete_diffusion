@@ -74,7 +74,7 @@ def sample_code(model,
         for i in range(batches_needed):
             latent, words, path = sample_from_diffusion(model = model, batch_size=batch_size, block_size=block_size, \
                 hidden_size = hidden_size, _n_steps = n_steps, clamping=clamping, do_top_k=do_top_k, k=k,
-                do_top_p= do_top_p, p =p, temperature = temperature, sampling_mode=sampling_mode)
+                do_top_p= do_top_p, p =p, temperature = temperature, sampling_mode=sampling_mode, tokenizer=tokenizer)
 
             #print(latent_sde.shape, "sde this should have the shape [batch_size, block_size, hidden_size]")
             #print(latent_ode.shape, "ode this should have the shape [batch_size, block_size, hidden_size]")
@@ -130,7 +130,7 @@ def sample_code(model,
 
         return total_entropy/batches_needed
 
-def sample_from_diffusion(model, batch_size, block_size, hidden_size, _n_steps=100, clamping=False, do_top_k=False, k=10, do_top_p=False, p=0.9, temperature=1.0, sampling_mode='marginals'):
+def sample_from_diffusion(model, batch_size, block_size, hidden_size, _n_steps=100, clamping=False, do_top_k=False, k=10, do_top_p=False, p=0.9, temperature=1.0, sampling_mode='marginals', tokenizer=None):
     assert top_k != top_p, "top_k and top_p cannot be used together"
     # sample batch size random z's, these must have the shape equal to our datapoints so that is [batch_size, block_size, n_embed]
 
@@ -146,11 +146,11 @@ def sample_from_diffusion(model, batch_size, block_size, hidden_size, _n_steps=1
     
     
     if do_top_k:
-        indices = top_k(logits, k, temperature)
+        indices = top_k(logits, k, temperature, tokenizer, remove_unk=False)
     elif do_top_p:
-        indices = top_p(logits, p, temperature)
+        indices = top_p(logits, p, temperature, tokenizer, remove_unk=False)
     else:
-        indices = argmax_sample(logits)
+        indices = argmax_sample(logits, tokenizer, remove_unk=False)
 
     return solved, indices, path
 

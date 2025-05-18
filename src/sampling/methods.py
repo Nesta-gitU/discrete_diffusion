@@ -1,7 +1,7 @@
 import torch 
 import torch.nn.functional as F
 
-def top_k(logits, k, temperature=1.0):
+def top_k(logits, k, temperature=1.0, tokenizer=None, remove_unk=False):
     """
     top_k sampling
     :param logits: tensor of shape [batch_size, block_size, vocab_size]
@@ -26,7 +26,7 @@ def top_k(logits, k, temperature=1.0):
     return idx
     
 
-def top_p(logits, p, temperature=1.0):
+def top_p(logits, p, temperature=1.0, tokenizer=None, remove_unk=False):
     """
     top_p sampling
     :param logits: tensor of shape [batch_size, block_size, vocab_size]
@@ -36,9 +36,16 @@ def top_p(logits, p, temperature=1.0):
     logits = logits / temperature
     probs = F.softmax(logits, dim=-1)
 
-def argmax_sample(logits):
+def argmax_sample(logits, tokenizer=None, remove_unk=False):
     """
     argmax sampling
     :param logits: tensor of shape [batch_size, block_size, vocab_size]
     """
+    if remove_unk:
+        # use the tokenizer to find the unk token
+        unk_token = tokenizer.encode(["UNK"]) #2
+        print(unk_token, "unk_token")
+        #exit()
+        # set the logits of the unk token to -inf
+        logits[:, :, unk_token[0]] = -float("inf")
     return logits.argmax(dim=-1).squeeze(-1) # shape [batch_size, block_size]

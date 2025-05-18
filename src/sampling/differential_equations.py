@@ -58,7 +58,7 @@ def sample_loop(z, ts, tf, n_steps, model, mode, clamping = False):
 # utility Functions
 ####
 
-def clamp(model, x):
+def clamp(model, x, t):
     #create a namespace called args
     args = SimpleNamespace(model_arch='iygyjgiy')
     t = "an-un-used-variable"
@@ -137,7 +137,20 @@ def discrete_sampling(
         denoised_fn = clamp
     else:
         print("no clamping ---------------------------------------")
+        def unk_remover(model, x, t):
+            #the idea is to clamp find the indexes that are currently defined as unk tokens -> unk token index is 2
+            # x gives the current word embeddings of this step of the diffusion language model 
+            #clamp the x to the word embeddings
+            if torch.all(t>0.9):
+                all_embeddings = model.pred.model.word_embedding.weight
+                clamped = torch.argmax(x @ all_embeddings.T, dim=-1)
+
+                randn = torch.randn_like(x)
+                x = torch.where(clamped.unsqueeze(-1) == 2, randn, x)
+            return x
+
         denoised_fn = None
+
 
     print(bs, "bs")
     if bs > 64:
@@ -172,7 +185,7 @@ def get_next_star(x, t, model, denoised_fn=None, context=None):
     def process_xstart(x):
         if denoised_fn is not None:
             # print(denoised_fn)
-            x = denoised_fn(model, x)
+            x = denoised_fn(model, x, t)
         if False:# clip_denoised:
             return x.clamp(-1, 1)
         return x
@@ -231,7 +244,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
         def process_xstart(x):
             if denoised_fn is not None:
                 # print(denoised_fn)
-                x = denoised_fn(model, x)
+                x = denoised_fn(model, x, t)
             if False:# clip_denoised:
                 return x.clamp(-1, 1)
             return x
@@ -263,8 +276,8 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             f_m, sigma, alpha = model.affine(x_start, t)
             if isinstance(model.affine, NFDM_gaussian):
                 gamma_ref = GammaTheirs()
-                gmm = gamma_ref.get_gamma(t)
-                if False:
+                #gmm = gamma_ref.get_gamma(t)
+                if True:
                     eta     = 1.0
                     gamma_0 = torch.tensor(-10.0, device=t.device, dtype=f_m.dtype)
                     N       = 100
@@ -325,8 +338,8 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             f_m_s, sigma_s, alpha_s = model.affine(x_start, s)
             if isinstance(model.affine, NFDM_gaussian):
                 gamma_ref = GammaTheirs()
-                gmm_s = gamma_ref.get_gamma(s)
-                if False:
+                #gmm_s = gamma_ref.get_gamma(s)
+                if True:
                     eta     = 1.0
                     gamma_0 = torch.tensor(-10.0, device=t.device, dtype=f_m_s.dtype)
                     N       = 100
@@ -414,6 +427,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             sigma2_tilde_s_t = torch.clamp(sigma2_tilde_s_t, 0, 1)
             #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
 
+        #sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.8 -> this works quite well it did a mauve of 0.99
         epsilon_tilde_s_t = torch.sqrt(1 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t.sqrt()) * noise
 
         #print("snr_t", snr_t[0])

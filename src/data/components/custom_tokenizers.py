@@ -42,7 +42,7 @@ class TokenizerFromDict:
         self.string_to_index = vocab_dict
     
     def encode(self, string: str) -> torch.Tensor | list[int]:
-        out = [self.string_to_index[ch] for ch in list_of_tokens]
+        out = [self.string_to_index[ch] for ch in string]
         return out
 
     def decode(self, indices: torch.Tensor | list[int]) -> str:

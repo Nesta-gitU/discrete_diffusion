@@ -63,7 +63,7 @@ from src.metrics.diversity import compute_diversity, compute_memorization
 from src.metrics.hf_ppl_under_ar import compute_perplexity
 from src.models.ndm.components.context import NoneContext
 import numpy as np
-
+import time
 
 
 def generate_samples_mine(args, model, datamodule, batch_size, out_dir):
@@ -155,9 +155,14 @@ def generate_samples_test_set(args, datamodule, tokenizer, num_samples, out_dir)
 
 def sample_here(args, model, modality, datamodule):
     out_dir = 'generation_outputs'   
+    # add a timestamp to the outdir
+    timestamp = str(int(np.floor(time.time())))
+    out_dir = os.path.join(out_dir, f"{args.model_base_name}_{timestamp}")
 
     model_base_name = args.model_base_name 
     
+    
+
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
@@ -183,7 +188,6 @@ def sample_here(args, model, modality, datamodule):
     if args.setting == 'reference_mode':
         args.sampling_mode = ["reference_mode"]
 
-    
     for i in range(len(out_path_list)):
         name = args.sampling_mode[i]
         out_path2 = out_path_list[i]
@@ -256,7 +260,6 @@ def sample_here(args, model, modality, datamodule):
             "sampling_mode": name,
         }
 
-        
 
         with open(os.path.join(out_dir, f"{model_base_name}.sample_results_{name}.json"), 'w') as f:
             print("writing results to ", os.path.join(out_dir, f"{model_base_name}.sample_results_{name}.json"))
@@ -337,7 +340,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     args = SimpleNamespace()
 
     args.sampling_mode = sampling_mode
-    args.n_steps = cfg.get("n_steps", 50)
+    args.n_steps = cfg.get("n_steps", 2000)
     args.clamping = cfg.get("clamping", False)
     args.do_top_k = cfg.get("do_top_k", False)
     args.top_k = cfg.get("top_k", 40)
@@ -402,6 +405,9 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         print(batch.device)
         batch = batch.to(model_lightning.device)
         plot_lossdist(model_lightning, batch, out_dir)
+
+
+
 
     with torch.no_grad():
         sample_here(args, model, args.modality, datamodule)
