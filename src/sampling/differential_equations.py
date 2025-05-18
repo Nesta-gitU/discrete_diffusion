@@ -141,7 +141,7 @@ def discrete_sampling(
             #the idea is to clamp find the indexes that are currently defined as unk tokens -> unk token index is 2
             # x gives the current word embeddings of this step of the diffusion language model 
             #clamp the x to the word embeddings
-            if torch.all(t>0.9):
+            if torch.all(t>0.1):
                 all_embeddings = model.pred.model.word_embedding.weight
                 clamped = torch.argmax(x @ all_embeddings.T, dim=-1)
 
@@ -276,8 +276,8 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             f_m, sigma, alpha = model.affine(x_start, t)
             if isinstance(model.affine, NFDM_gaussian):
                 gamma_ref = GammaTheirs()
-                #gmm = gamma_ref.get_gamma(t)
-                if True:
+                gmm = gamma_ref.get_gamma(t)
+                if False:
                     eta     = 1.0
                     gamma_0 = torch.tensor(-10.0, device=t.device, dtype=f_m.dtype)
                     N       = 100
@@ -338,8 +338,8 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             f_m_s, sigma_s, alpha_s = model.affine(x_start, s)
             if isinstance(model.affine, NFDM_gaussian):
                 gamma_ref = GammaTheirs()
-                #gmm_s = gamma_ref.get_gamma(s)
-                if True:
+                gmm_s = gamma_ref.get_gamma(s)
+                if False:
                     eta     = 1.0
                     gamma_0 = torch.tensor(-10.0, device=t.device, dtype=f_m_s.dtype)
                     N       = 100
