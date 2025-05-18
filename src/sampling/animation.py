@@ -124,7 +124,11 @@ def make_video(trace,
         raise ValueError("trace is empty")
     for i, step in enumerate(trace):
         if len(step) != 64:
-            raise ValueError(f"step {i} has {len(step)} tokens (need 64)")
+
+            print(f"step {i} has {len(step)} tokens (need 64)")
+            step = step[:64] + [""]*(64-len(step))
+            trace[i] = step
+            print(f"truncated to 64 tokens")
 
     # • open the encoder once
     import imageio   # ← v2 API
