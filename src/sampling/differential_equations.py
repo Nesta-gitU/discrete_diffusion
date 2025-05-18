@@ -262,31 +262,33 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
         else:
             f_m, sigma, alpha = model.affine(x_start, t)
             if isinstance(model.affine, NFDM_gaussian):
-                #gamma_ref = GammaTheirs()
-                eta     = 1.0
-                gamma_0 = torch.tensor(-10.0, device=t.device, dtype=f_m.dtype)
-                N       = 100
-                bs = t.shape[0]
+                gamma_ref = GammaTheirs()
+                gmm = gamma_ref.get_gamma(t)
+                if False:
+                    eta     = 1.0
+                    gamma_0 = torch.tensor(-10.0, device=t.device, dtype=f_m.dtype)
+                    N       = 100
+                    bs = t.shape[0]
 
-                # 1) build a uniform grid from 0 to t
-                zero_to_t = torch.linspace(0.0, t[0,0,0], N, device=t.device,  dtype=f_m.dtype).unsqueeze(-1)        # shape (N,)
-                dt        = zero_to_t[1] - zero_to_t[0]                       # scalar
+                    # 1) build a uniform grid from 0 to t
+                    zero_to_t = torch.linspace(0.0, t[0,0,0], N, device=t.device,  dtype=f_m.dtype).unsqueeze(-1)        # shape (N,)
+                    dt        = zero_to_t[1] - zero_to_t[0]                       # scalar
 
-                # 2) approximate the integral G(t) = ∫0^t g(s)^2 ds
-                g_vals       = model.vol(zero_to_t)                            # shape (N,)
-                g2_cumsum    = torch.cumsum(g_vals**2, dim=0) * dt             # shape (N,)
-                G_t_approx   = g2_cumsum[-1].unsqueeze(-1)                                   # scalar
+                    # 2) approximate the integral G(t) = ∫0^t g(s)^2 ds
+                    g_vals       = model.vol(zero_to_t)                            # shape (N,)
+                    g2_cumsum    = torch.cumsum(g_vals**2, dim=0) * dt             # shape (N,)
+                    G_t_approx   = g2_cumsum[-1].unsqueeze(-1)                                   # scalar
 
-                # 3) form the softplus argument
-                sp_arg = (G_t_approx / eta) + torch.nn.functional.softplus(gamma_0)
+                    # 3) form the softplus argument
+                    sp_arg = (G_t_approx / eta) + torch.nn.functional.softplus(gamma_0)
 
-                # 4) invert softplus in a numerically stable way
-                threshold = 20.0
-                gmm = torch.where(
-                    sp_arg > threshold,
-                    sp_arg,
-                    torch.log(torch.expm1(sp_arg))
-                )  # this is your γ(t)
+                    # 4) invert softplus in a numerically stable way
+                    threshold = 20.0
+                    gmm = torch.where(
+                        sp_arg > threshold,
+                        sp_arg,
+                        torch.log(torch.expm1(sp_arg))
+                    )  # this is your γ(t)
 
                 # 5) now plug into your GammaLinear
                 gamma_ref = GammaLinear()
@@ -322,34 +324,36 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
         else:
             f_m_s, sigma_s, alpha_s = model.affine(x_start, s)
             if isinstance(model.affine, NFDM_gaussian):
-                #gamma_ref = GammaTheirs()
-                eta     = 1.0
-                gamma_0 = torch.tensor(-10.0, device=t.device, dtype=f_m_s.dtype)
-                N       = 100
-                bs = t.shape[0]
+                gamma_ref = GammaTheirs()
+                gmm_s = gamma_ref.get_gamma(s)
+                if False:
+                    eta     = 1.0
+                    gamma_0 = torch.tensor(-10.0, device=t.device, dtype=f_m_s.dtype)
+                    N       = 100
+                    bs = t.shape[0]
 
-                # 1) build a uniform grid from 0 to t
-                zero_to_t = torch.linspace(0.0, s[0,0,0], N, device=t.device, dtype=f_m_s.dtype).unsqueeze(-1)        # shape (N,)
-                
-                dt        = zero_to_t[1] - zero_to_t[0]                       # scalar
+                    # 1) build a uniform grid from 0 to t
+                    zero_to_t = torch.linspace(0.0, s[0,0,0], N, device=t.device, dtype=f_m_s.dtype).unsqueeze(-1)        # shape (N,)
+                    
+                    dt        = zero_to_t[1] - zero_to_t[0]                       # scalar
 
-                # 2) approximate the integral G(t) = ∫0^t g(s)^2 ds
-                g_vals       = model.vol(zero_to_t)                            # shape (N,)
-                g2_cumsum    = torch.cumsum(g_vals**2, dim=0) * dt             # shape (N,)
-                G_t_approx   = g2_cumsum[-1].unsqueeze(-1)                            # scalar
+                    # 2) approximate the integral G(t) = ∫0^t g(s)^2 ds
+                    g_vals       = model.vol(zero_to_t)                            # shape (N,)
+                    g2_cumsum    = torch.cumsum(g_vals**2, dim=0) * dt             # shape (N,)
+                    G_t_approx   = g2_cumsum[-1].unsqueeze(-1)                            # scalar
 
-                # 3) form the softplus argument
-                sp_arg = (G_t_approx / eta) + torch.nn.functional.softplus(gamma_0)
+                    # 3) form the softplus argument
+                    sp_arg = (G_t_approx / eta) + torch.nn.functional.softplus(gamma_0)
 
-                # 4) invert softplus in a numerically stable way
-                threshold = 20.0
-                gmm_s = torch.where(
-                    sp_arg > threshold,
-                    sp_arg,
-                    torch.log(torch.expm1(sp_arg))
-                )  # this is your γ(t)
+                    # 4) invert softplus in a numerically stable way
+                    threshold = 20.0
+                    gmm_s = torch.where(
+                        sp_arg > threshold,
+                        sp_arg,
+                        torch.log(torch.expm1(sp_arg))
+                    )  # this is your γ(t)
 
-                gamma_ref = GammaLinear()
+                    gamma_ref = GammaLinear()
                 alpha2_s = gamma_ref.alpha_2(gmm_s)
                 sigma2_s = gamma_ref.sigma_2(gmm_s)
             else:
