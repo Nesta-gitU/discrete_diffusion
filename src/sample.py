@@ -291,7 +291,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.data)
 
     log.info(f"Instantiating model <{cfg.model._target_}>")
-    model_lightning = DiffusionModule.load_from_checkpoint(cfg.ckpt_path)
+    model_lightning = DiffusionModule.load_from_checkpoint(cfg.ckpt_path, strict=False)
     model = model_lightning.ema.module #EMA model is the one we want to sample from
     #model: LightningModule = hydra.utils.instantiate(cfg.model)
     model.eval()
