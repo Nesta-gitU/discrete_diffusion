@@ -141,12 +141,12 @@ def discrete_sampling(
             #the idea is to clamp find the indexes that are currently defined as unk tokens -> unk token index is 2
             # x gives the current word embeddings of this step of the diffusion language model 
             #clamp the x to the word embeddings
-            if torch.all(t>0.1):
+            if True: #torch.all(t<0.1):
                 all_embeddings = model.pred.model.word_embedding.weight
                 clamped = torch.argmax(x @ all_embeddings.T, dim=-1)
 
                 randn = torch.randn_like(x)
-                x = torch.where(clamped.unsqueeze(-1) == 2, randn, x)
+                x = torch.where((clamped == 2).unsqueeze(-1), randn, x)
             return x
 
         denoised_fn = None
@@ -163,6 +163,7 @@ def discrete_sampling(
         t = t.expand(bs, 1, 1)
         
         #I understand I am doing 2x-1 the number of needed forward pass through gamma now, Ill fix that before putting it into the actual code.
+        #print(t+dt, "should be 0.99 somthing to 0 or I guess until dt")
         if mode == 'marginal': 
             if all(t == 0):
                 continue       
@@ -401,7 +402,9 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
                 gmm_r   = ref_t.expand_as(gmm)
                 sigma2_tilde_s_t = -torch.expm1(gmm_s_r - gmm_r)
             else:
-                sigma2_tilde_s_t = -torch.expm1(gmm_s - gmm) #-(torch.exp(gmm_s - gmm)-1) = 1-torch.exp(gmm_s - gmm) => gmm > gmm_s so quantity should be positive
+                #sigma2_tilde_s_t = -torch.expm1(gmm_s - gmm) #-(torch.exp(gmm_s - gmm)-1) = 1-torch.exp(gmm_s - gmm) => gmm > gmm_s so quantity should be positive
+                sigma2_tilde_s_t = 1+torch.exp(gmm_s - gmm)
+                #the plus 1 is the fix 
             #print(sigma2_tilde_s_t, "sigma2_tilde_s_t, before clamp")
             #print(torch.all(gmm == gmm_s), "gmm == gmm_s")
             #print(gmm_s, "gmm_s")
@@ -422,12 +425,14 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
                 print("sigma2_tilde_s_t is None", sigma2_tilde_s_t[sigma2_tilde_s_t == nan])
                 raise ValueError("sigma2_tilde_s_t is None")
         else:
-            sigma2_tilde_s_t = (1 - (snr_t / snr_s)).float()
+            sigma2_tilde_s_t = (snr_t/snr_s).float() #(1 - (snr_t / snr_s)).float()
+            if torch.all(s < 0.1):
+                sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.3
             print(sigma2_tilde_s_t, "sigma2_tilde_s_t, before clamp")
             sigma2_tilde_s_t = torch.clamp(sigma2_tilde_s_t, 0, 1)
             #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
 
-        #sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.8 -> this works quite well it did a mauve of 0.99
+        sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.8  # -> this works quite well it did a mauve of 0.99
         epsilon_tilde_s_t = torch.sqrt(1 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t.sqrt()) * noise
 
         #print("snr_t", snr_t[0])

@@ -377,6 +377,10 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         args.std_split = 5
         args.num_samples = 5000
         args.batch_size = 5000
+    elif args.setting == "half_mode":
+        args.std_split = 1
+        args.num_samples = 1000
+        args.batch_size = 1000
     elif args.setting == 'reference_mode':
         args.std_split = 1
         args.num_samples = 100 #5000
