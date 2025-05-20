@@ -72,6 +72,56 @@ def clamp(model, x, t):
 ###
 #functions that run the outer loop
 ###
+def corrector_step(
+    z: torch.Tensor,
+    t: torch.Tensor,
+    model,
+    snr: float = 0.2,
+    n_steps: int = 1,
+    clamp_fn: callable = None,
+    context=None,
+):
+    """
+    One or more Langevin‐corrector steps at time t.
+
+    Args:
+        z         (bs×…): current latent
+        t         (bs×1×1): current time
+        model          : your score model with `.pred(z,t)` and `.affine(x,tt)`
+        snr            : signal‐to‐noise ratio for step‐size
+        n_steps        : how many MCMC updates to do
+        clamp_fn       : optional clamp(x) to keep predictions in‐bounds
+        context        : if your sde_drift needs extra context
+
+    Returns:
+        z_new   (bs×…): updated latent after corrector steps
+    """
+    bs = z.shape[0]
+
+    for _ in range(n_steps):
+        # 1) Predict x_t = E[x|z,t]
+        x = model.pred(z, t)
+        if clamp_fn is not None:
+            x = clamp_fn(x)
+
+        # 2) Get (m,s) from your affine decoder via t_dir
+        #    assuming you have already imported t_dir
+        (m, s, _), _ = t_dir(lambda tt: model.affine(x, tt), t)
+
+        # 3) Compute the score: ∇ log p_t(z) ≈ (m – z) / s²
+        score = (m - z) / (s * s)
+
+        # 4) Compute step‐size α via SNR heuristic
+        #    ‖ξ‖ and ‖score‖ averaged over the batch
+        noise = torch.randn_like(z)
+        grad_norm  = torch.norm(score.view(bs, -1),  dim=-1).mean()
+        noise_norm = torch.norm(noise.view(bs, -1),  dim=-1).mean()
+        alpha = (snr * noise_norm / grad_norm)**2 * 2
+
+        # 5) Langevin update: z ← z + α score + √(2α) ξ
+        z = z + alpha * score + torch.sqrt(2 * alpha) * noise
+
+    return z
 
 @torch.no_grad()
 def solve_de(z, ts, tf, n_steps, model, mode, clamping = False, context=None):
@@ -105,6 +155,9 @@ def solve_de(z, ts, tf, n_steps, model, mode, clamping = False, context=None):
 
         w = torch.randn_like(z)
         z = z + f * dt + g * w * dt_2
+
+        #langevin corrector step
+        corrector_step(z, t, model, n_steps=4, clamp_fn=None, context=context)
 
         if path is not None:
             path.append(z)
@@ -476,6 +529,7 @@ def sde_drift(z, t, model, clamping):
 
     (m, s, _), (dm, ds, _) = t_dir(f, t)
 
+ 
     g = model.vol(t)
     g2 = g ** 2
 
