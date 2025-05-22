@@ -477,11 +477,11 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
                 pass
                 
             if torch.any(sigma2_tilde_s_t == nan):
-                print("sigma2_tilde_s_t is None", sigma2_tilde_s_t[sigma2_tilde_s_t == nan])
+                #print("sigma2_tilde_s_t is None", sigma2_tilde_s_t[sigma2_tilde_s_t == nan])
                 raise ValueError("sigma2_tilde_s_t is None")
         else:
             sigma2_tilde_s_t = (snr_t/snr_s).float() #(1 - (snr_t / snr_s)).float()
-            print(sigma2_tilde_s_t, "sigma2_tilde_s_t, before clamp")
+            #print(sigma2_tilde_s_t, "sigma2_tilde_s_t, before clamp")
             sigma2_tilde_s_t = torch.clamp(sigma2_tilde_s_t, 0, 1)
             #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
 
