@@ -213,7 +213,7 @@ def visualize_path(model, path, tokenizer, mode):
         pass
     else:
         for i in range(path.shape[0]):
-            #print("type", path[i][0])
+            print("type", path[i][0])
             #also print the corersponding word
             #decoded = #pl_module.model.decoder(sde_path[i][0], pl_module.model.encoder.embedding.weight)
             decoded = model.pred.model.get_logits(path[i][0])

@@ -159,12 +159,26 @@ def sample_here(args, model, modality, datamodule):
     timestamp = str(int(np.floor(time.time())))
     out_dir = os.path.join(out_dir, f"{args.model_base_name}_{timestamp}")
 
+    word_embs = model.pred.model.word_embedding.weight
+    word_embs = word_embs.cpu().numpy()
+    #put these in a dict with the word as the key and the embedding as the value
+    word_embs_dict = {}
+    for i in range(word_embs.shape[0]):
+        word_i = datamodule.tokenizer.decode([i])
+        word_embs_dict[word_i] = word_embs[i].tolist()
+    #save this dict to a json file
+    
+    
+
     model_base_name = args.model_base_name 
     
     
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
+
+    with open(os.path.join(out_dir, f"{args.model_base_name}.word_embs.json"), 'w') as f:
+        json.dump(word_embs_dict, f)
 
     if args.setting == 'reference_mode':
         print("generating in reference mode")
@@ -265,6 +279,7 @@ def sample_here(args, model, modality, datamodule):
             print("writing results to ", os.path.join(out_dir, f"{model_base_name}.sample_results_{name}.json"))
             json.dump(results, f)
     
+
 
 
 @task_wrapper
@@ -410,6 +425,8 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         batch = batch.to(model_lightning.device)
         plot_lossdist(model_lightning, batch, out_dir)
 
+    #save the true word embeddings and corresponding words to a file
+    
 
 
 

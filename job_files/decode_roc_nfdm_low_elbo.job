@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/sample.py experiment=roc_nfdm "+sampling_mode=[sde]" +n_steps=2000 +setting=half_mode ++ckpt_path="/gpfs/home4/nmidavaine1/discrete_diffusion/logs/diffusion_logs/roc_nfdm/20250510_115304/checkpoint_2325-800000.ckpt"
+srun python src/sample.py experiment=roc_nfdm "+sampling_mode=[marginal]" +n_steps=2000 +setting=half_mode ++ckpt_path="/gpfs/home4/nmidavaine1/discrete_diffusion/logs/diffusion_logs/roc_nfdm/20250510_115304/checkpoint_2325-800000.ckpt"

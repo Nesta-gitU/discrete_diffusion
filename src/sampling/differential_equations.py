@@ -222,12 +222,12 @@ def discrete_sampling(
         if mode == 'marginal': 
             if all(t == 0):
                 continue       
-            z = get_next_marginal(prev_sample=z, t=t, s=t+dt, model=model, denoised_fn=denoised_fn, context=context)
+            z, z_mean = get_next_marginal(prev_sample=z, t=t, s=t+dt, model=model, denoised_fn=denoised_fn, context=context)
         elif mode == 'star':
             z = get_next_star(x=z, t=t, model=model, denoised_fn=denoised_fn, context=context)
 
         if path is not None:
-            path.append(z)
+            path.append(z_mean)
 
 
     ret_path = torch.stack(path) if path is not None else None
@@ -500,6 +500,11 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
         #    print("last step ")
         #    sample = alpha_s * m_s + sigma_s * torch.sqrt(1 - sigma2_tilde_s_t) * eps 
         #else:
+        if hasattr(model, "gamma"):
+            mean = alpha_s * m_s
+        else:
+            mean = f_m_s
+
         if all(s == 0):
             if hasattr(model, "gamma"):
                 sample = alpha_s * m_s
@@ -514,7 +519,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
     
         #if we want to match appendix 1 of ndm paper I think it should instead be
         #sample = alpha_s * m_s +  torch.sqrt(sigma2 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t ** 0.5) * noise
-    return sample
+    return sample, mean
 
 import torch
 import torchsde
