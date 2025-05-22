@@ -44,6 +44,8 @@ def sample_loop(z, ts, tf, n_steps, model, mode, clamping = False):
 
         if mode == 'sde':
             return solve_de(z, ts, tf, n_steps, model, mode, clamping, context)
+        if mode == "better_sde":
+            return better_solve_de(z, ts, tf, n_steps, model, mode, clamping, context)
         elif mode == 'ode':
             return solve_de(z, ts, tf, n_steps, model, mode, clamping, context)
         elif mode == 'marginal':
@@ -514,11 +516,92 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
         #sample = alpha_s * m_s +  torch.sqrt(sigma2 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t ** 0.5) * noise
     return sample
 
+import torch
+import torchsde
+from torchsde import BrownianInterval
+
+class ReverseSDE(torch.nn.Module):
+
+    def __init__(self, model, drift_fn, drift_shape, clamping=False, context=None):
+        super().__init__()
+        self.model = model
+        self.drift_fn = drift_fn
+        self.clamping = clamping
+        self.context = context
+        self.noise_type = "diagonal"   # or "diagonal" if you ever switch back
+        self.sde_type   = "ito"
+        self.drift_shape = drift_shape
+
+    def f(self, u, y):
+        # u goes from 0 → 1, so t goes from 1 → 0
+        t = 1.0 - u
+        #print(t==1)
+        t_ = t.expand(y.shape[0]).unsqueeze(-1)
+        # sde_drift returns the _reverse_ drift already:
+        #print("y", y.shape)
+        #print(t_)
+        
+        #unflatten last dim so it fits into the model
+        y = y.view(self.drift_shape)
+
+        drift, _ = self.drift_fn(y, t_, model=self.model, clamping=self.clamping, context=self.context)
+        #this drift has shape bs, seqlen, hidden_dim -> should be bs,  state_size ----> flatten the last dim 
+        drift = drift.flatten(start_dim=1)
+
+        return -drift
+
+    def g(self, u, y):
+        bs, D = y.shape
+        t = 1.0 - u
+        t_ = t.expand(y.shape[0]).unsqueeze(-1)
+        # model.vol(t_) is your learned scalar volatility
+        g_val = self.model.vol(t_)
+        
+        return g_val.view(bs, 1).expand(bs, D)
+
+def better_solve_de(z, ts, tf, n_steps, model, mode, clamping = False, context=None):	
+    if mode == 'sde':
+        if hasattr(model, 'vol_eta'):
+            drift_fn = sde_drift_ndm
+        else:
+            drift_fn = sde_drift
+    else:
+        if hasattr(model, 'vol_eta'):
+            drift_fn = ode_drift_ndm
+        else:
+            drift_fn = ode_drift
+
+    sde  = ReverseSDE(model=model, drift_fn=drift_fn, drift_shape = z.shape, clamping=clamping, context=context)
+    us   = torch.linspace(0.0, 1.0, 40, device=z.device)
+
+    print(us[0], us[1], us[-1])
+    dt   = 1.0 / n_steps
+    print(dt)
+    print(dt == us[1])
+    z_old = z
+    z = z.flatten(start_dim=1)
+
+    # z0 should be pure noise at u=0
+    with torch.no_grad():
+        z_path = torchsde.sdeint(
+            sde=sde,
+            y0=z, #this z has shape bs, seqlen, hidden_dim -> should be bs,  state_size ----> flatten the last dim and then unflatten
+            ts=us,
+            method="euler",    # or milstein, srk, etc.
+            dt=dt
+        )
+    
+    print(z_path.shape, "z_path shape")
+    z_path = z_path.view(-1, z_old.shape[0], z_old.shape[1], z_old.shape[2])
+
+    
+    return z_path[-1], z_path
+
 ###
 #drift functions for DE's
 ###
 
-def sde_drift(z, t, model, clamping):
+def sde_drift(z, t, model, clamping, context=None):
     x = model.pred(z, t)
 
     if clamping: # and (t > 0.7).all():
@@ -539,7 +622,7 @@ def sde_drift(z, t, model, clamping):
 
     return drift, g
 
-def ode_drift(z, t, model, clamping):
+def ode_drift(z, t, model, clamping, context=None):
     x = model.pred(z, t)
     #print(x, "x")
     if clamping: # and (t > 0.7).all():
