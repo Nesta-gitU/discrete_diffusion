@@ -46,14 +46,14 @@ class NFDM_gaussian(nn.Module):
         #if torch.all(t == torch.ones_like(t)):
         #    m = torch.zeros_like(x)
         #    ls = torch.zeros_like(x)
-
-        if torch.all(t == torch.zeros_like(t)):
+        #print("using this code------------------------------------------------------------")
+        if False: #torch.all(t == torch.zeros_like(t)):
             m = x
-            ls = (1 - t) * small_value# * torch.ones_like(x)
+            ls = (1 - t) * small_value      # * torch.ones_like(x)
         else:
             m_ls = self.net(x, t.squeeze(-1).squeeze(-1)) 
-            m, ls = m_ls.chunk(2, dim=2)#why was this 1 before 
-            ls = ls.clamp(min=-20, max=10) #clamping
+            m, ls = m_ls.chunk(2, dim=2)    #why was this 1 before 
+            ls = ls.clamp(min=-20, max=10)  #clamping
 
             #make the variance tokenwise instead of dimensionwise
             ls = self.linear_layer(ls)
@@ -62,7 +62,6 @@ class NFDM_gaussian(nn.Module):
             #print("hello", ls.shape)
 
             m = (1 - t) * x + t * (1 - t) * m   #m is mu_hat -> (1 - t) * x = z - t * (1 - t) * x  -> x = 1/(1-t) * z - t * x
-            #m = (1-t) * m * x
             ls = (1 - t) * small_value + t * (1 - t) * ls  #ls is log(sigma_hat) so the final expresion is log sigma. 
         #0.01 is delta, so delta^2 = 0.0001 like in the paper
         

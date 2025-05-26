@@ -106,6 +106,7 @@ class NeuralDiffusion(nn.Module):
         z = f_m + f_s * eps # function evaluation of F(e(x), t, eps)
         
         if compute_diffusion_loss == "x_0":         #self, f_dm, f_ds, f_s, eps, g2, x_,           x, z, t
+            #print("we are here")
             embeddings_ = self.pred(z, t, **model_kwargs) # z is not neccerily a word embedding here.
             #print(embeddings, "embeddings")
             #print(embeddings_, "embeddings_")
@@ -159,6 +160,7 @@ class NeuralDiffusion(nn.Module):
         return diffusion_loss, None, None, reconstruction_loss, prior_loss
 
     def diffusion_loss(self, alpha, alpha_prime, f_s, f_dm, f_ds, eps, g2, x_, x, z, t, f):
+        #print(self.diff_loss_type, "diff loss type")
         # compute the drift term of the forward process based on eps
         # f_drift is what is then used in the loss and is the forward process drift.
         f_dz = f_dm + f_ds * eps  # ODE drift ---> this works because gaussians are nice and linear so the derivative of F(x, t, eps) can be written like this. 
@@ -194,6 +196,7 @@ class NeuralDiffusion(nn.Module):
 
         if self.diff_loss_type == "elbo":
             loss = 0.5 * (f_drift - r_drift) ** 2 / g2
+            #print("we are here")
         
         elif self.diff_loss_type == "x_0_prediction":
             snr_prime = (-1/2) * ((0.9999*t + 0.000099) ** (-3/2)) * 0.9999

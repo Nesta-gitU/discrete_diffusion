@@ -60,7 +60,8 @@ def sample_code(model,
                 temperature, 
                 compute_ani,
                 num_samples,
-                animate): #add clamping as an option, also add sampling instead of argmax as an option later, 
+                animate,
+                time_sampler_args): #add clamping as an option, also add sampling instead of argmax as an option later, 
 
         if True:
             ani(model)
@@ -74,7 +75,7 @@ def sample_code(model,
         for i in range(batches_needed):
             latent, words, path = sample_from_diffusion(model = model, batch_size=batch_size, block_size=block_size, \
                 hidden_size = hidden_size, _n_steps = n_steps, clamping=clamping, do_top_k=do_top_k, k=k,
-                do_top_p= do_top_p, p =p, temperature = temperature, sampling_mode=sampling_mode, tokenizer=tokenizer)
+                do_top_p= do_top_p, p =p, temperature = temperature, sampling_mode=sampling_mode, tokenizer=tokenizer, time_sampler_args=time_sampler_args)
 
             #print(latent_sde.shape, "sde this should have the shape [batch_size, block_size, hidden_size]")
             #print(latent_ode.shape, "ode this should have the shape [batch_size, block_size, hidden_size]")
@@ -130,7 +131,8 @@ def sample_code(model,
 
         return total_entropy/batches_needed
 
-def sample_from_diffusion(model, batch_size, block_size, hidden_size, _n_steps=100, clamping=False, do_top_k=False, k=10, do_top_p=False, p=0.9, temperature=1.0, sampling_mode='marginals', tokenizer=None):
+def sample_from_diffusion(model, batch_size, block_size, hidden_size, _n_steps=100, clamping=False, do_top_k=False, 
+                        k=10, do_top_p=False, p=0.9, temperature=1.0, sampling_mode='marginals', tokenizer=None, time_sampler_args=None):
     assert top_k != top_p, "top_k and top_p cannot be used together"
     # sample batch size random z's, these must have the shape equal to our datapoints so that is [batch_size, block_size, n_embed]
 
@@ -140,7 +142,7 @@ def sample_from_diffusion(model, batch_size, block_size, hidden_size, _n_steps=1
     z = z.to(device)
     model.to(device)
    
-    solved, path = sample_loop(z, 1, 0, _n_steps, model, sampling_mode, clamping)
+    solved, path = sample_loop(z, 1, 0, _n_steps, model, sampling_mode, time_sampler_args,  clamping)
     #decode the sde solve back into words 
     logits = model.pred.model.get_logits(solved)
     

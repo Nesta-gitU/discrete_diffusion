@@ -110,7 +110,8 @@ def generate_samples_mine(args, model, datamodule, batch_size, out_dir):
                         compute_ani=args.compute_ani, 
                         debug=True, 
                         num_samples=args.num_samples,
-                        animate=args.animate)
+                        animate=args.animate
+                        time_sampler_args=args.time_sampler_args)
 
         entropy_list.append(entropy)
 
@@ -209,7 +210,7 @@ def sample_here(args, model, modality, datamodule):
         print("running eval loop!")
 
         #old perplexity computation
-        all_texts_list, human_references, human_references_train = file_to_list(out_path2, datamodule, datamodule.tokenizer, args.setting)
+        all_texts_list, human_references, human_references_train, unk, pad = file_to_list(out_path2, datamodule, datamodule.tokenizer, args.setting)
 
         custom_args = {
                 "model":model,
@@ -272,6 +273,8 @@ def sample_here(args, model, modality, datamodule):
             "clamp": args.clamping,
             "n_steps": args.n_steps,
             "sampling_mode": name,
+            "avg_unk": unk,
+            "avg_pad": pad
         }
 
 
@@ -404,26 +407,32 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         args.decode_theirs = False
         args.model_base_name = args.modality + "." + "reference_mode"
 
+    args.time_sampler_args = SimpleNamespace(
+        uniform=False,
+        time_sampler = model_lightning.time_sampler
+    )
+
     #if args.plot_time_and_loss:
-    if False:
-        out_dir="output"
-        model_base_name = args.model_base_name
-        out_dir = os.path.join(out_dir, model_base_name)
+    if True:
+        with torch.no_grad():
+            out_dir="output"
+            model_base_name = args.model_base_name
+            out_dir = os.path.join(out_dir, model_base_name)
 
-        time_sampler = model_lightning.time_sampler.to(model_lightning.device)
-        print(time_sampler.device)
-        print(model_lightning.device)
-        time_sampler.device = model_lightning.device
+            time_sampler = model_lightning.time_sampler.to(model_lightning.device)
+            print(time_sampler.device)
+            print(model_lightning.device)
+            time_sampler.device = model_lightning.device
 
-        plot_timedist(time_sampler, out_dir, model_lightning.device)
-        
+            plot_timedist(time_sampler, out_dir, model_lightning.device)
+            
 
-        #then plot loss dist
-        batch = next(iter(datamodule.train_dataloader()))
-        print(batch.shape)
-        print(batch.device)
-        batch = batch.to(model_lightning.device)
-        plot_lossdist(model_lightning, batch, out_dir)
+            #then plot loss dist
+            batch = next(iter(datamodule.train_dataloader()))
+            print(batch.shape)
+            print(batch.device)
+            batch = batch.to(model_lightning.device)
+            plot_lossdist(model_lightning, batch, out_dir)
 
     #save the true word embeddings and corresponding words to a file
     

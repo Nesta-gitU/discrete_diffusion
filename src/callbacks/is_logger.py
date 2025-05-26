@@ -36,14 +36,54 @@ def plot_timedist(sampler, out_dir, device, num_points=1000):
         plt.title("Learned Probability Density Function")
         plt.legend()
         plt.grid(True)
-        plt.show()
 
+        os.makedirs(out_dir, exist_ok=True)  # Create directory if it doesn't exist
+        plt.savefig(os.path.join(out_dir, "timedist.png"))
+        plt.close()
 
+def plot_lossdist_nfdm(model, batch, out_dir):
+     #dont always use full batch, need only like a hundred points
+    length = batch.shape[0] if batch.shape[0] < 100 else 100
+    #print(batch.shape)
+    batch = batch[:length, :]
+
+    losses = []
+    their_losses = []
+    t_points = torch.linspace(0, 1, 100).to(batch.device)
+    for t in t_points:
+        t = t.expand(batch.shape[0], 1, 1)
+        #print(t.shape)
+        diffusion_loss, _, _, _, _ = model.model.get_losses(batch, t, compute_diffusion_loss="x_0")
+        their_loss, _, _, _, _ = model.model.get_losses(batch, t, compute_their_loss=True)
+        avg_loss = diffusion_loss.mean()
+        their_avg_loss = their_loss.mean()
+
+        losses.append(avg_loss.item())
+        their_losses.append(their_avg_loss.item())
+    
+    # Convert lists to tensors
+    their_losses = torch.tensor(their_losses)
+    loss = torch.tensor(losses)
+    plt.plot(t_points.detach().cpu().numpy(), loss.detach().cpu().numpy())
+    path = os.path.join(out_dir, "losses.png")
+    plt.title("diffusion loss of ELBO over time")
+    plt.xlabel("t")
+    os.makedirs(out_dir, exist_ok=True)  # Create directory if it doesn't exist
+    plt.savefig(path)
+    plt.close()
+
+    #also plot their loss over time
+    plt.plot(t_points.detach().cpu().numpy(), their_losses.detach().cpu().numpy())
+    path = os.path.join(out_dir, "their_losses.png")
+    plt.title("MSE over time")
+    plt.xlabel("t")
+    plt.savefig(path)
+    plt.close()
 
 
 def plot_lossdist(model, batch, out_dir):
     if not hasattr(model.model, "gamma"):
-        return
+        return plot_lossdist_nfdm(model, batch, out_dir)
     with torch.no_grad():
         #dont always use full batch, need only like a hundred points
         length = batch.shape[0] if batch.shape[0] < 100 else 100

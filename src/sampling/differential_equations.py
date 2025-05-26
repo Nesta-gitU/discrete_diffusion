@@ -33,7 +33,7 @@ def double_precision():
 ###
 from src.models.ndm.components.context import NoneContext
 
-def sample_loop(z, ts, tf, n_steps, model, mode, clamping = False):
+def sample_loop(z, ts, tf, n_steps, model, mode, time_sampler_args, clamping = False):
     with torch.no_grad():
         if not hasattr(model, 'context'):
             model.context = NoneContext(None)
@@ -49,9 +49,9 @@ def sample_loop(z, ts, tf, n_steps, model, mode, clamping = False):
         elif mode == 'ode':
             return solve_de(z, ts, tf, n_steps, model, mode, clamping, context)
         elif mode == 'marginal':
-            return discrete_sampling(z, ts, tf, n_steps, model, mode, clamping, context)
+            return discrete_sampling(z, ts, tf, n_steps, model, mode, clamping, context, time_sampler_args)
         elif mode == 'star':
-            return discrete_sampling(z, ts, tf, n_steps, model, mode, clamping, context)
+            return discrete_sampling(z, ts, tf, n_steps, model, mode, clamping, context, time_sampler_args)
         else:
             raise ValueError("mode must be either 'sde', 'ode', 'marginal', or 'star'")
     
@@ -167,6 +167,79 @@ def solve_de(z, ts, tf, n_steps, model, mode, clamping = False, context=None):
     ret_path = torch.stack(path) if path is not None else None
     return z, ret_path
 
+def nonuniform_time_grid(ts: float,
+                         tf: float,
+                         logits: torch.Tensor,
+                         N: int,
+                         device: str,
+                         M: int = 0
+                        ) -> torch.Tensor:
+    """
+    ts: start time (scalar)
+    tf: final time (scalar)
+    logits: 1D tensor of length B giving unnormalized bucket scores
+    N:    total number of time-steps you want
+    returns: 1D tensor of length N with nonuniformly spaced times ∈ [ts, tf]
+    """
+    B = logits.numel()
+    assert N >= B, "Need at least one step per bucket, so N >= number of buckets"
+
+    # 1) convert logits → probabilities
+    probs = torch.softmax(logits, dim=0)    # shape (B,)
+    # 100 probabilities that for sampling 0->1
+
+    # 2) give each bucket 1 mandatory step, then distribute the remaining N-B
+    base = torch.ones(B, dtype=torch.long, device=device) + M # everyone gets ≥1
+    remains = N - torch.sum(base)
+    
+
+    # split remains proportionally, via floor + largest-residual tie-breaker:
+    raw = probs * remains
+    # 100 buckets saying how many steps 0->1 should have 
+
+    floors = raw.floor().long()             # initial extra steps
+    residuals = (raw - floors)              # what’s left over
+
+    k = base + floors                       # preliminary counts
+    #print(k)
+    short = N - k.sum().item()              # how many “1-step top-ups” we still need
+
+    if short > 0:
+        # give +1 to the `short` buckets with largest residuals
+        _, idx = torch.sort(residuals, descending=True)
+        for i in idx[:short]:
+            k[i] += 1
+
+    #print("k2", k)
+    #k = k[::-1]
+    k = k.flip(0)
+    #100 buckets saying how many steps 1->0 should have
+    print(k)
+
+    # 3) compute bucket edges linearly (shared boundaries)
+    B = logits.shape[0]
+    edges = torch.linspace(ts, tf, steps=B+1, device=device)            # shape (B+1,)
+    #since ts is 1 and tf is 0, this is also a decreasing sequence from 1->0
+    #print("edges", edges)
+
+    # 4) build each bucket’s local grid, drop the left endpoint if not the first bucket
+    parts = []
+    for i in range(B):
+        start, end = edges[i], edges[i+1]
+        count = int(k[i].item())
+        # since edges and k are now both for decreasing time the count now matches the start and end.
+        
+        # if this isn’t the very first bucket, we drop its first point
+        pts = torch.linspace(start, end, steps=count + (0 if i == 0 else 1))
+        if i > 0:
+            pts = pts[1:]
+        parts.append(pts)
+
+    # 5) concatenate all buckets
+    t_steps = torch.cat(parts, dim=0)
+    return t_steps
+
+
 @torch.no_grad()
 def discrete_sampling(
         z: Tensor,
@@ -176,12 +249,22 @@ def discrete_sampling(
         model: nn.Module,
         mode: str,
         clamping: bool,
-        context = None
+        context = None,
+        time_sampler_args: SimpleNamespace = None
 ):
     bs = z.shape[0]
 
     if mode == 'marginal':
-        t_steps =  torch.linspace(ts, tf, n_steps + 1).to(z.device)[:-1]
+        #t_steps =  torch.linspace(ts, tf, n_steps + 1).to(z.device)[:-1]
+        if time_sampler_args.uniform:
+            #uniform time sampler
+            t_steps = torch.linspace(ts, tf, n_steps + 1).to(z.device)
+        time_sampler = time_sampler_args.time_sampler
+        t_steps = nonuniform_time_grid(ts, tf, time_sampler._logits, n_steps+1, device=z.device).to(z.device)
+        print("t_steps", t_steps)
+        #exit()
+
+        #addapt the number of steps based on the logits from the time sampler, 
     if mode == 'star':
         t_steps = torch.linspace(ts, tf, n_steps + 1).to(z.device)[1:]
     dt = (tf - ts) / n_steps
@@ -196,7 +279,7 @@ def discrete_sampling(
             #the idea is to clamp find the indexes that are currently defined as unk tokens -> unk token index is 2
             # x gives the current word embeddings of this step of the diffusion language model 
             #clamp the x to the word embeddings
-            if True: #torch.all(t<0.1):
+            if torch.all(t<0.1):
                 all_embeddings = model.pred.model.word_embedding.weight
                 clamped = torch.argmax(x @ all_embeddings.T, dim=-1)
 
@@ -214,20 +297,24 @@ def discrete_sampling(
         path = [z]
     print("path", path)
     pbar = tqdm
-    for t in pbar(t_steps):
+    for i in pbar(range(len(t_steps)-1)):
+        t = t_steps[i]
+        s = t_steps[i+1]
+
         t = t.expand(bs, 1, 1)
+        s = s.expand(bs, 1, 1)
         
         #I understand I am doing 2x-1 the number of needed forward pass through gamma now, Ill fix that before putting it into the actual code.
         #print(t+dt, "should be 0.99 somthing to 0 or I guess until dt")
         if mode == 'marginal': 
             if all(t == 0):
                 continue       
-            z, z_mean = get_next_marginal(prev_sample=z, t=t, s=t+dt, model=model, denoised_fn=denoised_fn, context=context)
+            z, z_mean = get_next_marginal(prev_sample=z, t=t, s=s, model=model, denoised_fn=denoised_fn, context=context)
         elif mode == 'star':
             z = get_next_star(x=z, t=t, model=model, denoised_fn=denoised_fn, context=context)
 
         if path is not None:
-            path.append(z_mean)
+            path.append(z)
 
 
     ret_path = torch.stack(path) if path is not None else None
@@ -457,8 +544,8 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
                 gmm_r   = ref_t.expand_as(gmm)
                 sigma2_tilde_s_t = -torch.expm1(gmm_s_r - gmm_r)
             else:
-                #sigma2_tilde_s_t = -torch.expm1(gmm_s - gmm) #-(torch.exp(gmm_s - gmm)-1) = 1-torch.exp(gmm_s - gmm) => gmm > gmm_s so quantity should be positive
-                sigma2_tilde_s_t = 1+torch.exp(gmm_s - gmm)
+                sigma2_tilde_s_t = -torch.expm1(gmm_s - gmm) #-(torch.exp(gmm_s - gmm)-1) = 1-torch.exp(gmm_s - gmm) => gmm > gmm_s so quantity should be positive
+                #sigma2_tilde_s_t = 1+torch.exp(gmm_s - gmm)
                 #the plus 1 is the fix 
             #print(sigma2_tilde_s_t, "sigma2_tilde_s_t, before clamp")
             #print(torch.all(gmm == gmm_s), "gmm == gmm_s")
@@ -480,14 +567,16 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
                 #print("sigma2_tilde_s_t is None", sigma2_tilde_s_t[sigma2_tilde_s_t == nan])
                 raise ValueError("sigma2_tilde_s_t is None")
         else:
-            sigma2_tilde_s_t = (snr_t/snr_s).float() #(1 - (snr_t / snr_s)).float()
-            #print(sigma2_tilde_s_t, "sigma2_tilde_s_t, before clamp")
+            sigma2_tilde_s_t = (1 - (snr_t / snr_s)).float()
+            print(sigma2_tilde_s_t, "sigma2_tilde_s_t, before clamp")
             sigma2_tilde_s_t = torch.clamp(sigma2_tilde_s_t, 0, 1)
             #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
 
-        sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.8  # -> this works quite well it did a mauve of 0.99
-        if torch.all(s < 0.1):
-                sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.3
+        #sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.8  # -> this works quite well it did a mauve of 0.99
+        #if torch.all(s < 0.1):
+        #        sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.3
+
+
         epsilon_tilde_s_t = torch.sqrt(1 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t.sqrt()) * noise
 
         #print("snr_t", snr_t[0])
@@ -592,8 +681,9 @@ def better_solve_de(z, ts, tf, n_steps, model, mode, clamping = False, context=N
             sde=sde,
             y0=z, #this z has shape bs, seqlen, hidden_dim -> should be bs,  state_size ----> flatten the last dim and then unflatten
             ts=us,
-            method="euler",    # or milstein, srk, etc.
-            dt=dt
+            method="srk",    # or milstein, srk, etc.
+            dt=dt,
+            adaptive=True
         )
     
     print(z_path.shape, "z_path shape")
