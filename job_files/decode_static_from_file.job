@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu_mig
+#SBATCH --gpus=1
+#SBATCH --job-name=static_from_file
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=9
+#SBATCH --time=10:00:00
+#SBATCH --output=$HOME/discrete_diffusion/slurm_outputs/slurm_output_%A.out
+
+module purge
+module load 2023
+module load Anaconda3/2023.07-2
+
+# Your job starts in the directory where you call sbatch
+cd $HOME/discrete_diffusion
+# Activate your environment
+source activate fomo
+# Run your code
+srun python src/sample.py experiment=roc_mulan_adaptive.yaml +setting=reference_mode +use_files="/gpfs/home4/nmidavaine1/discrete_diffusion/generation_outputs/20250502_192340.last.ckpt.roc.roc_mulan_adaptive.samples_marginal.json"
