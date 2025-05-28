@@ -407,8 +407,8 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         args.batch_size = 1000
     elif args.setting == 'reference_mode':
         args.std_split = 1
-        args.num_samples = 100 #5000
-        args.batch_size = 100#2500
+        args.num_samples = 5000
+        args.batch_size = 2500
         #but this on will be used later to generate by sampling from the dataset instead of the model
         args.decode_theirs = False
         args.model_base_name = args.modality + "." + "reference_mode"
