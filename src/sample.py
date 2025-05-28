@@ -79,6 +79,8 @@ def generate_samples_mine(args, model, datamodule, batch_size, out_dir):
     #    **training_args
     #)
     
+    if args.use_files:
+        return [0], [args.use_files]
 
     #run the sampling code in a loop and return entropy and other metric lists 
     entropy_list = []
@@ -88,6 +90,7 @@ def generate_samples_mine(args, model, datamodule, batch_size, out_dir):
         outpath_list.append(outpath)
         output_cands = glob.glob(outpath)
 
+    
         if len(output_cands) > 0 and not args.rerun:
             print("not generating samples, already exist")
             entropy = None
@@ -110,7 +113,7 @@ def generate_samples_mine(args, model, datamodule, batch_size, out_dir):
                         compute_ani=args.compute_ani, 
                         debug=True, 
                         num_samples=args.num_samples,
-                        animate=args.animate
+                        animate=args.animate,
                         time_sampler_args=args.time_sampler_args)
 
         entropy_list.append(entropy)
@@ -160,13 +163,13 @@ def sample_here(args, model, modality, datamodule):
     timestamp = str(int(np.floor(time.time())))
     out_dir = os.path.join(out_dir, f"{args.model_base_name}_{timestamp}")
 
-    word_embs = model.pred.model.word_embedding.weight
-    word_embs = word_embs.cpu().numpy()
+    #word_embs = model.pred.model.word_embedding.weight
+    #word_embs = word_embs.cpu().numpy()
     #put these in a dict with the word as the key and the embedding as the value
-    word_embs_dict = {}
-    for i in range(word_embs.shape[0]):
-        word_i = datamodule.tokenizer.decode([i])
-        word_embs_dict[word_i] = word_embs[i].tolist()
+    #word_embs_dict = {}
+    #for i in range(word_embs.shape[0]):
+    #    word_i = datamodule.tokenizer.decode([i])
+    #    word_embs_dict[word_i] = word_embs[i].tolist()
     #save this dict to a json file
     
     
@@ -178,8 +181,8 @@ def sample_here(args, model, modality, datamodule):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    with open(os.path.join(out_dir, f"{args.model_base_name}.word_embs.json"), 'w') as f:
-        json.dump(word_embs_dict, f)
+    #with open(os.path.join(out_dir, f"{args.model_base_name}.word_embs.json"), 'w') as f:
+    #    json.dump(word_embs_dict, f)
 
     if args.setting == 'reference_mode':
         print("generating in reference mode")
@@ -377,6 +380,9 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     args.plot_time_and_loss = cfg.get("plot_time_and_loss", False)
     args.metrics_list = cfg.get("metrics_list", ["mauve", "diversity", "memorization", "ppl"])
     args.animate = cfg.get("animate", False)
+    args.use_files = cfg.get("use_files", False)
+    args.use_default_nfdm = cfg.get("use_default_nfdm", False)
+    args.use_uniform = cfg.get("use_uniform", False)
 
 
     #get model name by checkpoint so that it includes the epoch at which it was taken 
@@ -386,8 +392,8 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     #set the arguments for the different mode's
     if args.setting == 'test_mode':
         args.std_split = 1
-        args.num_samples = 64
-        args.batch_size = 64
+        args.num_samples = 62
+        args.batch_size = 62
     elif args.setting == 'full_mode':
         if args.animate == True: 
             print("--------------------------------------not animating on full gen jobs---------------------------------------")
@@ -408,12 +414,13 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         args.model_base_name = args.modality + "." + "reference_mode"
 
     args.time_sampler_args = SimpleNamespace(
-        uniform=False,
+        uniform=args.use_uniform,
+        use_default_nfdm=args.use_default_nfdm,
         time_sampler = model_lightning.time_sampler
     )
 
     #if args.plot_time_and_loss:
-    if True:
+    if False:
         with torch.no_grad():
             out_dir="output"
             model_base_name = args.model_base_name

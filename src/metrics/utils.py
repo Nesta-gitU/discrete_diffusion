@@ -69,6 +69,8 @@ def file_to_list(text_path, datamodule, tokenizer, setting):
             s = re.sub(r"\s+([.,!?;:])", r"\1", s)
             # 3) Remove spaces around apostrophes
             s = re.sub(r"\s*'\s*", r"'", s)
+            s = re.sub(r"\b(\w+)\s+n['’]t\b", r"\1n't", s)
+
             # 4) Strip any remaining leading/trailing whitespace
             return s.strip()
         
@@ -156,6 +158,7 @@ def metric_to_std(all_texts_list, human_references, metric_function, std_split, 
         metric_list.append(metric)
     
     if isinstance(metric_list[0], dict):
+        print(metric_list[0], "should have 4 not 3 things")
         mean_metric = []
         std_metric = []
         for key in metric_list[0].keys():

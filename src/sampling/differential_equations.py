@@ -1,10 +1,12 @@
 from math import nan
+from re import U
 import torch
+from torch.cuda import temperature
 from tqdm import tqdm
 from src.models.nfdm.nfdm import t_dir
 from src.their_utils.test_util import denoised_fn_round
 from src.models.ndm.components.context import VaeContext
-from src.models.ndm.components.gamma import GammaTheirs, GammaLinear
+from src.models.ndm.components.gamma import Gamma, GammaTheirs, GammaLinear
 import torch
 from torch import nn
 from types import SimpleNamespace
@@ -159,7 +161,7 @@ def solve_de(z, ts, tf, n_steps, model, mode, clamping = False, context=None):
         z = z + f * dt + g * w * dt_2
 
         #langevin corrector step
-        corrector_step(z, t, model, n_steps=4, clamp_fn=None, context=context)
+        #corrector_step(z, t, model, n_steps=4, clamp_fn=None, context=context)
 
         if path is not None:
             path.append(z)
@@ -182,14 +184,17 @@ def nonuniform_time_grid(ts: float,
     returns: 1D tensor of length N with nonuniformly spaced times ∈ [ts, tf]
     """
     B = logits.numel()
+    print("n-buckets", B)
     assert N >= B, "Need at least one step per bucket, so N >= number of buckets"
 
     # 1) convert logits → probabilities
-    probs = torch.softmax(logits, dim=0)    # shape (B,)
+    temperature = 0.8 #-> scale up so that the really steep points get much more I suppose on problem is this doesnt just measure steepness
+    probs = torch.softmax(logits/temperature, dim=0)    # shape (B,)
     # 100 probabilities that for sampling 0->1
 
     # 2) give each bucket 1 mandatory step, then distribute the remaining N-B
     base = torch.ones(B, dtype=torch.long, device=device) + M # everyone gets ≥1
+    print("base", base)
     remains = N - torch.sum(base)
     
 
@@ -226,11 +231,14 @@ def nonuniform_time_grid(ts: float,
     parts = []
     for i in range(B):
         start, end = edges[i], edges[i+1]
+        print(start, end)
         count = int(k[i].item())
+        print(count)
         # since edges and k are now both for decreasing time the count now matches the start and end.
         
         # if this isn’t the very first bucket, we drop its first point
-        pts = torch.linspace(start, end, steps=count + (0 if i == 0 else 1))
+        pts = torch.linspace(start, end, steps=count + (0 if i == B else 1))
+        print(pts)
         if i > 0:
             pts = pts[1:]
         parts.append(pts)
@@ -259,9 +267,16 @@ def discrete_sampling(
         if time_sampler_args.uniform:
             #uniform time sampler
             t_steps = torch.linspace(ts, tf, n_steps + 1).to(z.device)
-        time_sampler = time_sampler_args.time_sampler
-        t_steps = nonuniform_time_grid(ts, tf, time_sampler._logits, n_steps+1, device=z.device).to(z.device)
-        print("t_steps", t_steps)
+        elif time_sampler_args.use_default_nfdm:
+            #load the nfdm schedule from a file called nfdm_schedule.pt
+            t_steps = torch.load("time_sampler_schedules/nfdm_schedule.pt").to(z.device)
+            print(t_steps, "t_steps from nfdm_schedule.pt")
+        else:
+            time_sampler = time_sampler_args.time_sampler
+            t_steps = nonuniform_time_grid(ts, tf, time_sampler._logits, n_steps, device=z.device).to(z.device)
+        #save t_steps to a folder called time_sampler_schedules, with the name nfdm_schedule
+            print("t_steps", t_steps)
+            print(t_steps[0], t_steps[-1])
         #exit()
 
         #addapt the number of steps based on the logits from the time sampler, 
@@ -460,8 +475,6 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
         noise = torch.randn_like(prev_sample)
 
         if hasattr(model, "gamma"):
-            if context is None:
-                context = model.context.sample_context(x_)
                 #This is wrong!!!!! it should never resample context ever only the first time
                 #wait maybe im wrong
             #TODO, in case of NN = a,b,c context this is currently incorrect wrong x_. cause hmm actually does that mean also m_s is incorrect?
@@ -529,7 +542,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             if torch.any(gmm_s > gmm):
                 pass
             #    print(t, s)
-            if model.gamma.around_reference:
+            if False: #model.gamma.around_reference:
                 # get reference gammas of shape [bs]
                 ref_s = model.gamma.get_reference_gamma(s)
                 ref_t = model.gamma.get_reference_gamma(t)
@@ -568,13 +581,13 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
                 raise ValueError("sigma2_tilde_s_t is None")
         else:
             sigma2_tilde_s_t = (1 - (snr_t / snr_s)).float()
-            print(sigma2_tilde_s_t, "sigma2_tilde_s_t, before clamp")
+            print(sigma2_tilde_s_t[0], "sigma2_tilde_s_t, before clamp")
             sigma2_tilde_s_t = torch.clamp(sigma2_tilde_s_t, 0, 1)
             #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
 
-        #sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.8  # -> this works quite well it did a mauve of 0.99
+        sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.8  # -> this works quite well it did a mauve of 0.99
         #if torch.all(s < 0.1):
-        #        sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.3
+        #    sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.3
 
 
         epsilon_tilde_s_t = torch.sqrt(1 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t.sqrt()) * noise
@@ -625,51 +638,93 @@ class ReverseSDE(torch.nn.Module):
         self.noise_type = "diagonal"   # or "diagonal" if you ever switch back
         self.sde_type   = "ito"
         self.drift_shape = drift_shape
+        self.prev_u = None
+        self.n_steps = 0
+
 
     def f(self, u, y):
         # u goes from 0 → 1, so t goes from 1 → 0
+        self.n_steps += 1
+        if self.n_steps % 100 == 0:
+            print("f called with u", u, "at n_steps", self.n_steps)
+        #print(u)
         t = 1.0 - u
         #print(t==1)
-        t_ = t.expand(y.shape[0]).unsqueeze(-1)
+        t_ = t.expand(y.shape[0]).unsqueeze(-1).unsqueeze(-1)
         # sde_drift returns the _reverse_ drift already:
         #print("y", y.shape)
         #print(t_)
         
         #unflatten last dim so it fits into the model
+        assert y.shape[1] == self.drift_shape[1] * self.drift_shape[2], \
+          f"Incompatible reshape: got {y.shape[1]} but expected {self.drift_shape[1]}*{self.drift_shape[2]}"
+
         y = y.view(self.drift_shape)
+        #print(y.shape, "y shape in f")
 
         drift, _ = self.drift_fn(y, t_, model=self.model, clamping=self.clamping, context=self.context)
         #this drift has shape bs, seqlen, hidden_dim -> should be bs,  state_size ----> flatten the last dim 
         drift = drift.flatten(start_dim=1)
+        
+        #print(drift.shape, "drift shape in f")
 
         return -drift
 
+    """
     def g(self, u, y):
         bs, D = y.shape
         t = 1.0 - u
-        t_ = t.expand(y.shape[0]).unsqueeze(-1)
-        # model.vol(t_) is your learned scalar volatility
-        g_val = self.model.vol(t_)
+        t_ = t.expand(y.shape[0]).unsqueeze(-1).unsqueeze(-1)
         
-        return g_val.view(bs, 1).expand(bs, D)
+        assert t_.shape == (bs, 1, 1), "t_ should have shape (bs, 1, 1), got {}".format(t_.shape)
+
+        # model.vol(t_) is your learned scalar volatility
+
+        g_val = self.model.vol(t_)
+        assert g_val.shape == (bs, 1, 1), "g_val should have shape (bs, 1, 1), got {}".format(g_val.shape)
+    """
+
+    def g(self, u, y):
+        # u goes from 0 → 1, so t goes from 1 → 0
+        self.n_steps += 1
+        if self.n_steps % 100 == 0:
+            print("f called with u", u, "at n_steps", self.n_steps)
+        #print(u)
+        bs, D = y.shape
+        t = 1.0 - u
+        #print(t==1)
+        t_ = t.expand(y.shape[0]).unsqueeze(-1).unsqueeze(-1)
+        # sde_drift returns the _reverse_ drift already:
+        #print("y", y.shape)
+        #print(t_)
+        
+        #unflatten last dim so it fits into the model
+        assert y.shape[1] == self.drift_shape[1] * self.drift_shape[2], \
+          f"Incompatible reshape: got {y.shape[1]} but expected {self.drift_shape[1]}*{self.drift_shape[2]}"
+
+        y = y.view(self.drift_shape)
+        #print(y.shape, "y shape in f")
+
+        drift, g = self.drift_fn(y, t_, model=self.model, clamping=self.clamping, context=self.context)
+        #this drift has shape bs, seqlen, hidden_dim -> should be bs,  state_size ----> flatten the last dim 
+        drift = drift.flatten(start_dim=1)
+        #print(g.shape)
+        #g is bs, 64, 1 -> then I want to repeat each of the 64 values 128 times for the hidden dim so that its bs, 64, 128
+        
+        
+        return g.expand(bs, self.drift_shape[1], self.drift_shape[2]).flatten(start_dim=1)
 
 def better_solve_de(z, ts, tf, n_steps, model, mode, clamping = False, context=None):	
-    if mode == 'sde':
-        if hasattr(model, 'vol_eta'):
-            drift_fn = sde_drift_ndm
-        else:
-            drift_fn = sde_drift
+    if hasattr(model, 'vol_eta'):
+        drift_fn = sde_drift_ndm
     else:
-        if hasattr(model, 'vol_eta'):
-            drift_fn = ode_drift_ndm
-        else:
-            drift_fn = ode_drift
-
+        drift_fn = sde_drift
+    print(z.shape, "z shape in better_solve_de")
     sde  = ReverseSDE(model=model, drift_fn=drift_fn, drift_shape = z.shape, clamping=clamping, context=context)
-    us   = torch.linspace(0.0, 1.0, 40, device=z.device)
+    us   = torch.linspace(0.0, 1.0, 50, device=z.device)
 
     print(us[0], us[1], us[-1])
-    dt   = 1.0 / n_steps
+    dt   = 1.0 / (n_steps-1)
     print(dt)
     print(dt == us[1])
     z_old = z
@@ -681,13 +736,16 @@ def better_solve_de(z, ts, tf, n_steps, model, mode, clamping = False, context=N
             sde=sde,
             y0=z, #this z has shape bs, seqlen, hidden_dim -> should be bs,  state_size ----> flatten the last dim and then unflatten
             ts=us,
-            method="srk",    # or milstein, srk, etc.
+            method="milstein",    # or milstein, srk, etc.
             dt=dt,
-            adaptive=True
+            adaptive = True,
+            #rtol = 1e-6,          # still tight, but not extreme
+            #atol = 1e-8,
+            dt_min = 2e-4        # to prevent stalling; default is fine, but you can raise to 1e-4 if needed
         )
     
     print(z_path.shape, "z_path shape")
-    z_path = z_path.view(-1, z_old.shape[0], z_old.shape[1], z_old.shape[2])
+    z_path = z_path.view(len(us), z_old.shape[0], z_old.shape[1], z_old.shape[2])
 
     
     return z_path[-1], z_path
@@ -733,18 +791,22 @@ def ode_drift(z, t, model, clamping, context=None):
     return dz, 0
 
 def sde_drift_ndm(z_in, t_in, model, clamping, context):
-    x_ = model.pred(z_in, t_in)
-    if context is None:
+    x_ = model.pred(z_in, t_in, context=context)
+    #print(x_.shape, "shape of x")
+    if torch.all(t_in < 0.5):
+        print("not doing this!")
         context = model.context.sample_context(x_)
 
     if context is None:
         gmm, d_gmm = model.gamma(t_in)
     else:
+        #print("should be using context")
         gmm, d_gmm = model.gamma(t_in, context)
 
     alpha_2 = model.gamma.alpha_2(gmm)
     sigma_2 = model.gamma.sigma_2(gmm)
     alpha = alpha_2 ** 0.5
+    sigma = sigma_2 ** 0.5
 
     eta = model.vol_eta(t_in)
 
@@ -756,14 +818,25 @@ def sde_drift_ndm(z_in, t_in, model, clamping, context):
 
     (m_, _), (d_m_, _) = model.transform(x_, t_in)
 
-    drift = -alpha * d_gmm * (1 + eta) / 2 * m_ + \
+    driftojh = -alpha * d_gmm * (1 + eta) / 2 * m_ + \
             alpha * d_m_ + \
             0.5 * d_gmm * (alpha_2 + eta) * z_in
+    
+    eps = (z_in - alpha * m_) / sigma
+    alpha_prime = - d_gmm * 0.5 * alpha * (1- alpha_2) 
+    sigma_prime = 0.5 * d_gmm * sigma * (1 - sigma_2)
+    #dz = -alpha * d_gmm + alpha * d_m_ + sigma * d_gmm * eps
+    dz = alpha_prime * m_ + alpha * d_m_ + sigma_prime * eps
+    drift = dz - 0.5 * (g**2) * (alpha * m_ - z_in)/ (sigma ** 2)
+    
+    #print(drift == drift_old, "drift == drift")
+
+    #print(drift.shape, "drift shape in sde_drift_ndm")
 
     return drift, g
 
 def ode_drift_ndm(z_in, t_in, model, clamping, context):
-    x_ = model.pred(z_in, t_in)
+    x_ = model.pred(z_in, t_in, context=context)
 
     if context is None:
         context = model.context.sample_context(x_)
@@ -778,7 +851,7 @@ def ode_drift_ndm(z_in, t_in, model, clamping, context):
     alpha = alpha_2 ** 0.5
     sigma = sigma_2 ** 0.5
 
-    x_ = model.pred(z_in, t_in)
+    #x_ = model.pred(z_in, t_in)
 
     if clamping: # and (t_in > 0.7).all():
         x_ = clamp(model, x_)

@@ -9,4 +9,4 @@ def print_mauve(all_texts_list, human_references):
     mauve_score_star = out.mauve_star
     mauve_frontier_integral_star = out.frontier_integral_star
 
-    return {"1": mauve_score, "2":mauve_score_star, "2":mauve_frontier_integral, "4":mauve_frontier_integral_star}
+    return {"1": mauve_score, "2":mauve_score_star, "3":mauve_frontier_integral, "4":mauve_frontier_integral_star}
