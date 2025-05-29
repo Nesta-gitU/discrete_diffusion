@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/sample.py experiment=roc_mulan_adaptive.yaml +setting=reference_mode +use_files="/gpfs/home4/nmidavaine1/discrete_diffusion/generation_outputs/20250502_192340.last.ckpt.roc.roc_mulan_adaptive.samples_marginal.json"
+srun python src/sample.py experiment=roc_static.yaml +setting=full_mode +use_files="/gpfs/home4/nmidavaine1/discrete_diffusion/generation_outputs/20250502_192340.last.ckpt.roc.roc_mulan_adaptive.samples_marginal.json"

@@ -344,11 +344,15 @@ class NeuralDiffusion(nn.Module):
         f_ = d_alpha * m_ + d_sigma * epsilon_
         #f_ = d_alpha * m_ + alpha * d_m_ + d_sigma * epsilon_
         f_B_ = f_ - (g2 / 2) * s_
+        #print(d_m_)
 
         #compute the loss
         elbo =(1/(2*g2)) * (f_B - f_B_) ** 2
 
-        return elbo, context_loss.mean(dim=-1)
+        #print(((f_B - f_B_)**2).mean(), "mean")
+        #print((1/(2*g2)), "g2")
+
+        return elbo, context_loss.sum(dim=-1)
     
     def get_elbo_reconstruction_loss(self, x, t):
         #this is also just cross entropy so it can call the same function as the reconstruction loss.

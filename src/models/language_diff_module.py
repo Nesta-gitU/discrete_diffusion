@@ -547,7 +547,11 @@ class DiffusionModule(LightningModule):
                 ctx_loss = torch.zeros_like(prior_loss)
 
             diff_per_ex  = diff_loss.flatten(1).sum(1)    # (B,)
+            #print(ctx_loss.shape)
             ctx_per_ex   = ctx_loss                       # already (B,)
+
+            #print(recon_loss.shape)
+            #print(prior_loss.shape)
 
             elbo_samples[k] = diff_per_ex + recon_loss + prior_loss + ctx_per_ex
             diff_samples[k] = diff_per_ex
