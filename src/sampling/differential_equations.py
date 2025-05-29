@@ -670,7 +670,7 @@ class ReverseSDE(torch.nn.Module):
 
         return -drift
 
-    """
+
     def g(self, u, y):
         bs, D = y.shape
         t = 1.0 - u
@@ -682,8 +682,8 @@ class ReverseSDE(torch.nn.Module):
 
         g_val = self.model.vol(t_)
         assert g_val.shape == (bs, 1, 1), "g_val should have shape (bs, 1, 1), got {}".format(g_val.shape)
-    """
 
+    """
     def g(self, u, y):
         # u goes from 0 → 1, so t goes from 1 → 0
         self.n_steps += 1
@@ -713,6 +713,7 @@ class ReverseSDE(torch.nn.Module):
         
         
         return g.expand(bs, self.drift_shape[1], self.drift_shape[2]).flatten(start_dim=1)
+    """
 
 def better_solve_de(z, ts, tf, n_steps, model, mode, clamping = False, context=None):	
     if hasattr(model, 'vol_eta'):
