@@ -683,6 +683,8 @@ class ReverseSDE(torch.nn.Module):
         g_val = self.model.vol(t_)
         assert g_val.shape == (bs, 1, 1), "g_val should have shape (bs, 1, 1), got {}".format(g_val.shape)
 
+        return g_val.view(bs, 1).expand(bs, D)
+
     """
     def g(self, u, y):
         # u goes from 0 → 1, so t goes from 1 → 0
