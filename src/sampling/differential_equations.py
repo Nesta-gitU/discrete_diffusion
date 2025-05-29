@@ -542,7 +542,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             if torch.any(gmm_s > gmm):
                 pass
             #    print(t, s)
-            if False: #model.gamma.around_reference:
+            if model.gamma.around_reference:
                 # get reference gammas of shape [bs]
                 ref_s = model.gamma.get_reference_gamma(s)
                 ref_t = model.gamma.get_reference_gamma(t)
@@ -585,7 +585,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             sigma2_tilde_s_t = torch.clamp(sigma2_tilde_s_t, 0, 1)
             #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
 
-        sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.8  # -> this works quite well it did a mauve of 0.99
+        #sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.8  # -> this works quite well it did a mauve of 0.99
         #if torch.all(s < 0.1):
         #    sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.3
 
