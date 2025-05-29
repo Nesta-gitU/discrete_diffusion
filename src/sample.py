@@ -285,6 +285,41 @@ def sample_here(args, model, modality, datamodule):
             print("writing results to ", os.path.join(out_dir, f"{model_base_name}.sample_results_{name}.json"))
             json.dump(results, f)
     
+import numpy as np
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
+
+import matplotlib.pyplot as plt
+
+def plot_nfdm_transformation(batch, model, outdir):
+    embeddings = model.pred.get_embeds(batch)
+
+    def plot_and_save_embeddings(embeddings, outdir, t):
+        #take only the first five embeddings (if bs larger 5), shape is BS, seqlen, hidden_size
+        #save the progression of each of the 5 in a different folder 
+
+        os.makedirs(outdir, exist_ok=True)
+        n_progression = 5 if not embeddings.shape[0] < 5 else embeddings.shape[0]
+        for i in range(n_progression):
+            os.makedirs(os.path.join(outdir, f"progression_{i}"), exist_ok=True)
+
+        for i in range(n_progression):
+            embedding = embeddings[i].cpu().numpy()  # Convert to numpy for plotting
+            # Plot the embedding, -> using t-sne 
+
+            
+
+    plot_and_save_embeddings(embeddings, out_dir, 0)
+    
+    for t in [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]:
+        
+        m_ls = model.affine.net(embeddings, t.squeeze(-1).squeeze(-1)) 
+        m, _ = m_ls.chunk(2, dim=2)    #why was this 1 before 
+        
+        #make the variance tokenwise instead of dimensionwise
+        m = model.affine.linear_layer2(m)
+        #m = (1 - t) * x + t * (1 - t) * m 
+
 
 
 
@@ -442,6 +477,25 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
             plot_lossdist(model_lightning, batch, out_dir)
 
     #save the true word embeddings and corresponding words to a file
+
+    if True:
+        with torch.no_grad():
+            out_dir="output"
+            model_base_name = args.model_base_name
+            out_dir = os.path.join(out_dir, model_base_name)
+
+            time_sampler = model_lightning.time_sampler.to(model_lightning.device)
+            print(time_sampler.device)
+            print(model_lightning.device)
+            time_sampler.device = model_lightning.device
+
+            #then plot loss dist
+            batch = next(iter(datamodule.train_dataloader()))
+            print(batch.shape)
+            print(batch.device)
+            batch = batch.to(model_lightning.device)
+
+            plot_nfdm_transformation(batch, model, out_dir)
     
 
 
