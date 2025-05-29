@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --partition=gpu_h100
+#SBATCH --partition=gpu_a100
 #SBATCH --gpus=1
 #SBATCH --job-name=basic_diff
 #SBATCH --ntasks=1
@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/sample.py experiment=roc_nfdm "+sampling_mode=[better_sde]" +n_steps=2000 +setting=full_mode
+srun python src/sample.py experiment=roc_nfdm "+sampling_mode=[sde]" +n_steps=2000 +setting=full_mode
