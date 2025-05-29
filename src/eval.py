@@ -64,7 +64,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.data)
 
     log.info(f"Instantiating model <{cfg.model._target_}>")
-    model = DiffusionModule.load_from_checkpoint(cfg.ckpt_path)
+    model = DiffusionModule.load_from_checkpoint(cfg.ckpt_path, strict=False)
 
     model.eval()
     if not hasattr(model.model, "context"):
