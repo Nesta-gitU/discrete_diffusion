@@ -635,7 +635,7 @@ class ReverseSDE(torch.nn.Module):
         self.drift_fn = drift_fn
         self.clamping = clamping
         self.context = context
-        self.noise_type = "diagonal"   # or "diagonal" if you ever switch back
+        self.noise_type = "scalar"   # or "diagonal" if you ever switch back
         self.sde_type   = "ito"
         self.drift_shape = drift_shape
         self.prev_u = None
