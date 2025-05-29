@@ -635,7 +635,7 @@ class ReverseSDE(torch.nn.Module):
         self.drift_fn = drift_fn
         self.clamping = clamping
         self.context = context
-        self.noise_type = "scalar"   # or "diagonal" if you ever switch back
+        self.noise_type = "diagonal"   # or "diagonal" if you ever switch back
         self.sde_type   = "ito"
         self.drift_shape = drift_shape
         self.prev_u = None
@@ -722,6 +722,7 @@ def better_solve_de(z, ts, tf, n_steps, model, mode, clamping = False, context=N
         drift_fn = sde_drift_ndm
     else:
         drift_fn = sde_drift
+
     print(z.shape, "z shape in better_solve_de")
     sde  = ReverseSDE(model=model, drift_fn=drift_fn, drift_shape = z.shape, clamping=clamping, context=context)
     us   = torch.linspace(0.0, 1.0, 50, device=z.device)
