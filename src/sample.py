@@ -291,34 +291,176 @@ from sklearn.decomposition import PCA
 
 import matplotlib.pyplot as plt
 
-def plot_nfdm_transformation(batch, model, outdir):
-    embeddings = model.pred.get_embeds(batch)
+def plot_nfdm_transformation(batch, model, outdir, change_basis_over_time=False):
+    outdir = os.path.join(outdir, "nfdm_transformation", str(change_basis_over_time))
+    pca = PCA(n_components=2)
 
-    def plot_and_save_embeddings(embeddings, outdir, t):
+    #fit PCA first
+
+    n_progression = 5 if not batch.shape[0] < 5 else batch.shape[0] # Number of progressions to visualize
+    batch = batch[:n_progression]  # Take only the first n_progression samples
+
+    embeddings = model.pred.model.get_embeds(batch)
+
+
+    all_embs = model.pred.model.word_embedding.weight
+    print(all_embs.cpu().numpy().reshape(-1, embeddings.shape[-1]).shape, "all embs shape")
+    pca.fit(all_embs.cpu().numpy().reshape(-1, embeddings.shape[-1]))
+
+    def plot_and_save_embeddings(embeddings, outdir, t, pca_fun):
         #take only the first five embeddings (if bs larger 5), shape is BS, seqlen, hidden_size
         #save the progression of each of the 5 in a different folder 
 
         os.makedirs(outdir, exist_ok=True)
-        n_progression = 5 if not embeddings.shape[0] < 5 else embeddings.shape[0]
+        n_progression = len(embeddings)
         for i in range(n_progression):
             os.makedirs(os.path.join(outdir, f"progression_{i}"), exist_ok=True)
 
         for i in range(n_progression):
             embedding = embeddings[i].cpu().numpy()  # Convert to numpy for plotting
-            # Plot the embedding, -> using t-sne 
+            #print(embedding.shape)
+            # Apply PCA or t-SNE
+            transformed = pca_fun(embedding)
 
-            
-
-    plot_and_save_embeddings(embeddings, out_dir, 0)
+            plt.figure(figsize=(8, 6))
+            plt.scatter(transformed[:, 0], transformed[:, 1], alpha=0.5)
+            plt.title(f"Embeddings at t={t} (Progression {i})")
+            plt.xlabel("PCA Component 1")
+            plt.ylabel("PCA Component 2")
+            plt.grid(True)
+            if isinstance(t, torch.Tensor):
+                t = t[0].item()
+            plt.savefig(os.path.join(outdir, f"progression_{i}", f"embeddings_t_{t}.png"))
+            #print(f"Saved embeddings plot for progression {i} to {outdir}/progression_{i}/embeddings_t_{t}.png")
+            plt.close()
     
-    for t in [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]:
-        
+    plot_and_save_embeddings(embeddings, outdir, 0, pca_fun=pca.transform)
+    
+    ms = []
+    ms.append(embeddings)
+    for t in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]:
+
+        t = torch.tensor([t]).unsqueeze(-1).unsqueeze(-1)
+        t = t.expand(batch.shape[0], -1, -1).to(embeddings.device)  # Shape: (BS, 1, 1)
         m_ls = model.affine.net(embeddings, t.squeeze(-1).squeeze(-1)) 
         m, _ = m_ls.chunk(2, dim=2)    #why was this 1 before 
         
         #make the variance tokenwise instead of dimensionwise
         m = model.affine.linear_layer2(m)
+        #print(m.shape)
+        print(m)
         #m = (1 - t) * x + t * (1 - t) * m 
+        
+        if change_basis_over_time:
+            plot_and_save_embeddings(m, outdir, t, pca_fun=pca.fit_transform)
+        else:
+            plot_and_save_embeddings(m, outdir, t, pca_fun=pca.transform)
+
+
+import os
+import torch
+import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
+import numpy as np
+import torch.nn.functional as F
+
+def plot_nfdm_transformation_tsne(batch, model, outdir, change_basis_over_time=False):
+    outdir = os.path.join(outdir, "nfdm_transformation_tsne", str(change_basis_over_time))
+
+    # Use full batch for statistics
+    full_batch = batch
+    embeddings = model.pred.model.get_embeds(full_batch)  # shape [B, L, D]
+    device = embeddings.device
+    B, L, D = embeddings.shape
+
+    norms = []
+    cosine_drifts = []
+    embeddings_over_time = [embeddings]  # save original
+
+    # track t=0 norm
+    norms.append(embeddings.norm(dim=-1).mean().item())
+
+    # Subsample only for visualization
+    n_progression = min(5, B)
+    small_batch = full_batch[:n_progression]
+    small_embeddings = embeddings[:n_progression]
+
+    # fit t-SNE on t=0
+    emb_flat = small_embeddings.cpu().numpy().reshape(-1, D)
+    tsne = TSNE(n_components=2, perplexity=30, init='random', random_state=42)
+    emb_2d_flat = tsne.fit_transform(emb_flat)
+    emb_2d = emb_2d_flat.reshape(n_progression, L, 2)
+
+    def plot_and_save_embeddings(emb_2d, outdir, t):
+        os.makedirs(outdir, exist_ok=True)
+        for i in range(emb_2d.shape[0]):
+            subdir = os.path.join(outdir, f"progression_{i}")
+            os.makedirs(subdir, exist_ok=True)
+
+            plt.figure(figsize=(8, 6))
+            plt.scatter(emb_2d[i, :, 0], emb_2d[i, :, 1], alpha=0.5)
+            if isinstance(t, torch.Tensor):
+                t = t[0].item()
+            plt.title(f"t-SNE at t={t:.1f} (Progression {i})")
+            plt.xlabel("Dim 1")
+            plt.ylabel("Dim 2")
+            plt.grid(True)
+            plt.savefig(os.path.join(subdir, f"embeddings_t_{t:.1f}.png"))
+            plt.close()
+
+    plot_and_save_embeddings(emb_2d, outdir, t=0)
+    prev_2d_flat = emb_2d_flat
+    prev_embeddings = embeddings
+
+    for t_val in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]:
+        t = torch.tensor([t_val]).unsqueeze(-1).unsqueeze(-1).expand(B, 1, 1).to(device)
+        m_ls = model.affine.net(embeddings, t.squeeze(-1).squeeze(-1))
+        m, _ = m_ls.chunk(2, dim=2)
+        m = model.affine.linear_layer2(m)
+        embeddings_over_time.append(m)
+
+        # norm
+        norms.append(m.norm(dim=-1).mean().item())
+
+        # cosine drift
+        drift = F.cosine_similarity(prev_embeddings.reshape(-1, D), m.reshape(-1, D), dim=-1)
+        cosine_drifts.append(1 - drift.mean().item())
+
+        # t-SNE visualization on first n samples
+        small_m = m[:n_progression]
+        m_flat = small_m.cpu().numpy().reshape(-1, D)
+
+        if change_basis_over_time:
+            tsne = TSNE(n_components=2, perplexity=30, init='random', random_state=42)
+        else:
+            tsne = TSNE(n_components=2, perplexity=30, init=prev_2d_flat, random_state=42)
+
+        m_2d_flat = tsne.fit_transform(m_flat)
+        m_2d = m_2d_flat.reshape(n_progression, L, 2)
+        plot_and_save_embeddings(m_2d, outdir, t=t_val)
+        prev_2d_flat = m_2d_flat
+        prev_embeddings = m
+
+    # === Plot Average Norms ===
+    plt.figure(figsize=(8, 4))
+    ts = [0.0] + [round(x, 1) for x in np.arange(0.1, 1.1, 0.1)]
+    plt.plot(ts, norms, marker='o')
+    plt.title("Average Embedding Norm Over Time")
+    plt.xlabel("t")
+    plt.ylabel("Avg ||x||")
+    plt.grid(True)
+    plt.savefig(os.path.join(outdir, "embedding_norm_over_time.png"))
+    plt.close()
+
+    # === Plot Cosine Drift ===
+    plt.figure(figsize=(8, 4))
+    plt.plot(ts[1:], cosine_drifts, marker='o', color='orange')
+    plt.title("Average Cosine Drift Between Steps")
+    plt.xlabel("t")
+    plt.ylabel("1 - Cosine Similarity")
+    plt.grid(True)
+    plt.savefig(os.path.join(outdir, "cosine_drift_over_time.png"))
+    plt.close()
 
 
 
@@ -478,7 +620,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     #save the true word embeddings and corresponding words to a file
 
-    if False:
+    if True:
         with torch.no_grad():
             out_dir="output"
             model_base_name = args.model_base_name
@@ -495,7 +637,8 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
             print(batch.device)
             batch = batch.to(model_lightning.device)
 
-            plot_nfdm_transformation(batch, model, out_dir)
+            #plot_nfdm_transformation(batch, model, out_dir, change_basis_over_time=True)
+            plot_nfdm_transformation_tsne(batch, model, out_dir, change_basis_over_time=True)
     
 
 
