@@ -8,7 +8,7 @@ import torch.nn as nn
 from torch.nn.attention import sdpa_kernel, SDPBackend
 from src.their_utils.nn import timestep_embedding           # ← your helper
 
-import torch, torch.nn as nn, torch.nn.functional as F
+import torch.nn.functional as F
 
 class TwoLayerFiLMHead(nn.Module):
     """
