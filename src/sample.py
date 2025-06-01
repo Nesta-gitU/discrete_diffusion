@@ -365,27 +365,29 @@ import numpy as np
 import torch.nn.functional as F
 
 def plot_nfdm_transformation_tsne(batch, model, outdir, change_basis_over_time=False):
-    outdir = os.path.join(outdir, "nfdm_transformation_tsne", str(change_basis_over_time))
+    outdir = os.path.join(outdir, "nfdm_transformation_tsne_new", str(change_basis_over_time))
 
-    # Use full batch for statistics
     full_batch = batch
     embeddings = model.pred.model.get_embeds(full_batch)  # shape [B, L, D]
     device = embeddings.device
     B, L, D = embeddings.shape
 
-    norms = []
-    cosine_drifts = []
-    embeddings_over_time = [embeddings]  # save original
+    # Stat containers
+    mean_norms = []
+    std_norms = []
+    mean_cosines = [1.0]  # cosine similarity to self at t=0
+    std_cosines = [0.0]
 
-    # track t=0 norm
-    norms.append(embeddings.norm(dim=-1).mean().item())
+    # Compute initial norm stats
+    norm_0 = embeddings.norm(dim=-1).view(-1)
+    mean_norms.append(norm_0.mean().item())
+    std_norms.append(norm_0.std().item())
 
-    # Subsample only for visualization
+    # Subsample only for t-SNE visualization
     n_progression = min(5, B)
-    small_batch = full_batch[:n_progression]
     small_embeddings = embeddings[:n_progression]
 
-    # fit t-SNE on t=0
+    # t-SNE @ t=0
     emb_flat = small_embeddings.cpu().numpy().reshape(-1, D)
     tsne = TSNE(n_components=2, perplexity=30, init='random', random_state=42)
     emb_2d_flat = tsne.fit_transform(emb_flat)
@@ -408,25 +410,45 @@ def plot_nfdm_transformation_tsne(batch, model, outdir, change_basis_over_time=F
             plt.savefig(os.path.join(subdir, f"embeddings_t_{t:.1f}.png"))
             plt.close()
 
+    #t = torch.tensor([0.1]).unsqueeze(-1).unsqueeze(-1).expand(B, 1, 1).to(device)
+    #m_ls = model.affine.net(embeddings, t.squeeze(-1).squeeze(-1))
+    #m1, _ = m_ls.chunk(2, dim=2)
+
+    #t = torch.tensor([0.9]).unsqueeze(-1).unsqueeze(-1).expand(B, 1, 1).to(device)
+    #m_ls = model.affine.net(embeddings, t.squeeze(-1).squeeze(-1))
+    #m2, _ = m_ls.chunk(2, dim=2)
+
+    #print(torch.allclose(m1, m2, atol=0.1), "m1 and m2 are close")
+
+
     plot_and_save_embeddings(emb_2d, outdir, t=0)
     prev_2d_flat = emb_2d_flat
     prev_embeddings = embeddings
 
+    t_values = np.linspace(0.1, 1.0, 100)  # t values from 0.1 to 1.0
+
     for t_val in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]:
+        print(f"Processing t={t_val:.1f}...")
         t = torch.tensor([t_val]).unsqueeze(-1).unsqueeze(-1).expand(B, 1, 1).to(device)
         m_ls = model.affine.net(embeddings, t.squeeze(-1).squeeze(-1))
         m, _ = m_ls.chunk(2, dim=2)
-        m = model.affine.linear_layer2(m)
-        embeddings_over_time.append(m)
+        if hasattr(model.affine, "linear_layer2"):
+            m = model.affine.linear_layer2(m)
+        #m = torch.randn_like(m)
 
-        # norm
-        norms.append(m.norm(dim=-1).mean().item())
+        # --- Norms ---
+        norm_vals = m.norm(dim=-1)
+        mean_norms.append(norm_vals.mean().item())
+        std_norms.append(norm_vals.std().item())
 
-        # cosine drift
-        drift = F.cosine_similarity(prev_embeddings.reshape(-1, D), m.reshape(-1, D), dim=-1)
-        cosine_drifts.append(1 - drift.mean().item())
+        # --- Cosine similarity ---
+        prev_flat = prev_embeddings.view(-1, D)
+        curr_flat = m.view(-1, D)
+        cosines = F.cosine_similarity(prev_flat, curr_flat, dim=-1)
+        mean_cosines.append(cosines.mean().item())
+        std_cosines.append(cosines.std().item())
 
-        # t-SNE visualization on first n samples
+        # --- t-SNE visualization on first N samples
         small_m = m[:n_progression]
         m_flat = small_m.cpu().numpy().reshape(-1, D)
 
@@ -441,26 +463,28 @@ def plot_nfdm_transformation_tsne(batch, model, outdir, change_basis_over_time=F
         prev_2d_flat = m_2d_flat
         prev_embeddings = m
 
-    # === Plot Average Norms ===
+    # === Plot Norms ===
+    ts = [round(x, 1) for x in np.linspace(0, 1, len(mean_norms))]
     plt.figure(figsize=(8, 4))
-    ts = [0.0] + [round(x, 1) for x in np.arange(0.1, 1.1, 0.1)]
-    plt.plot(ts, norms, marker='o')
+    plt.errorbar(ts, mean_norms, yerr=std_norms, marker='o', capsize=4)
     plt.title("Average Embedding Norm Over Time")
     plt.xlabel("t")
-    plt.ylabel("Avg ||x||")
+    plt.ylabel("Norm ± Std")
     plt.grid(True)
     plt.savefig(os.path.join(outdir, "embedding_norm_over_time.png"))
     plt.close()
 
-    # === Plot Cosine Drift ===
+    # === Plot Cosine Similarity ===
     plt.figure(figsize=(8, 4))
-    plt.plot(ts[1:], cosine_drifts, marker='o', color='orange')
-    plt.title("Average Cosine Drift Between Steps")
+    print(mean_cosines, std_cosines, "mean and std cosines")
+    plt.errorbar(ts, mean_cosines, yerr=std_cosines, marker='o', capsize=4, color='orange')
+    plt.title("Cosine Similarity to Previous Step Over Time")
     plt.xlabel("t")
-    plt.ylabel("1 - Cosine Similarity")
+    plt.ylabel("Cosine Similarity ± Std")
     plt.grid(True)
-    plt.savefig(os.path.join(outdir, "cosine_drift_over_time.png"))
+    plt.savefig(os.path.join(outdir, "cosine_similarity_over_time.png"))
     plt.close()
+    exit()
 
 
 
@@ -638,7 +662,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
             batch = batch.to(model_lightning.device)
 
             #plot_nfdm_transformation(batch, model, out_dir, change_basis_over_time=True)
-            plot_nfdm_transformation_tsne(batch, model, out_dir, change_basis_over_time=True)
+            plot_nfdm_transformation_tsne(batch, model, out_dir, change_basis_over_time=False)
     
 
 

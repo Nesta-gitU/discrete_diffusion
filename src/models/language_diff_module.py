@@ -282,9 +282,11 @@ class DiffusionModule(LightningModule):
         # update and log metrics
         self.log("train/diffusion_loss", diffusion_loss, on_step=True, prog_bar=True, logger=True, sync_dist=True)
         self.log("train/reconstruction_loss", reconstruction_loss, on_step=True, prog_bar=True,logger=True, sync_dist=True)
-        self.log("train/prior_loss", prior_loss, on_step=True, prog_bar=True,logger=True, sync_dist=True)
+        self.log("train/prior_loss", prior_loss, on_step=True, prog_bar=False,logger=True, sync_dist=True)
         self.log("train/elbo", elbo, on_step=True, prog_bar=False,logger=True, sync_dist=True)
         self.log("train/context_loss", context_loss, on_step=True, prog_bar=False,logger=True, sync_dist=True)
+        if hasattr(self.model, "affine"):
+            self.log("train/emb_norm", self.model.affine.net.emb_norm, on_step=True, prog_bar=True, logger=True, sync_dist=True)
 
         '''
         missing = []

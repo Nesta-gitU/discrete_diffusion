@@ -200,6 +200,7 @@ class TransformerNetModel2(nn.Module):
         :param y: an [N] Tensor of labels, if class-conditional.
         :return: an [N x C x ...] Tensor of outputs.
         """
+        timesteps = timesteps - 0.9
         assert (y is not None) == (self.num_classes is not None), \
             "must specify y if and only if the model is class-conditional"
 
@@ -220,6 +221,18 @@ class TransformerNetModel2(nn.Module):
         position_ids = self.position_ids[:, :seq_length]
         emb_inputs = self.position_embeddings(position_ids) + emb_x + emb.unsqueeze(1).expand(-1, seq_length, -1)
         emb_inputs = self.dropout(self.LayerNorm(emb_inputs))
+        #print("it starts here")
+        #print(timesteps)
+        #print(timestep_embedding(timesteps, self.model_channels, self.nfdm))
+        #print(self.nfdm)
+        #print(emb_x[0])
+        #print(emb[0])
+        #print(self.position_embeddings(position_ids)[0])
+        #print(emb_inputs[0])
+        #test =  self.position_embeddings(position_ids) + emb_x
+        #print(test[0])
+        #exit()
+
         if self.conditional_gen:
             input_trans_hidden_states = self.input_transformers(
                 emb_inputs,

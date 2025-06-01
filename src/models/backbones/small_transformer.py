@@ -36,6 +36,8 @@ class TransformerEncoder8M(nn.Module):           #hidden_dim=256
         self.cls_token = nn.Parameter(torch.zeros(1, 1, hidden_dim))
         nn.init.normal_(self.cls_token, std=0.02)
 
+
+
     def forward(self, x, mask=None):
         """
         x: [batch_size, seq_len, input_dim]
@@ -53,7 +55,7 @@ class TransformerEncoder8M(nn.Module):           #hidden_dim=256
         position_ids = torch.arange(seq_len + 1, dtype=torch.long, device=x.device)
         position_embeddings = self.position_embeddings(position_ids).unsqueeze(0)  # [1, seq_len + 1, hidden_dim]
         x = x + position_embeddings
-        x = self.dropout(self.LayerNorm(x))
+        x = self.dropout(self.LayerNorm(x)) #also double layer norm. 
 
         # Adjust mask for CLS token if provided
         if mask is not None:

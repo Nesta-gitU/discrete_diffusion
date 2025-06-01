@@ -13,23 +13,28 @@ class NFDM_gaussian(nn.Module):
     """
 
     def __init__(self,
-                 model: nn.Module):
+                 model: nn.Module,
+                 dont_add_head=False):
         super().__init__()
         
         #the net used to predict the mean and std_bar in the gaussian parameterization, with as input x and t, and as ouput mu and log(sigma)
         self.net = model
         self.output_dim = 128
-        self.linear_layer = nn.Sequential(nn.Linear(self.output_dim, int(self.output_dim * 4)), 
-                                        nn.ReLU(), 
-                                        nn.Linear(int(self.output_dim * 4), int(self.output_dim*4)),
-                                        nn.ReLU(),
-                                        nn.Linear(int(self.output_dim*4), self.output_dim))	
+        self.dont_add_head = dont_add_head
+        if dont_add_head:
+            pass
+        else:
+            self.linear_layer = nn.Sequential(nn.Linear(self.output_dim, int(self.output_dim * 4)), 
+                                            nn.ReLU(), 
+                                            nn.Linear(int(self.output_dim * 4), int(self.output_dim*4)),
+                                            nn.ReLU(),
+                                            nn.Linear(int(self.output_dim*4), self.output_dim))	
 
-        self.linear_layer2 = nn.Sequential(nn.Linear(self.output_dim, int(self.output_dim * 4)), 
-                                        nn.ReLU(), 
-                                        nn.Linear(int(self.output_dim * 4), int(self.output_dim*4)),
-                                        nn.ReLU(),
-                                        nn.Linear(int(self.output_dim*4), self.output_dim))	
+            self.linear_layer2 = nn.Sequential(nn.Linear(self.output_dim, int(self.output_dim * 4)), 
+                                            nn.ReLU(), 
+                                            nn.Linear(int(self.output_dim * 4), int(self.output_dim*4)),
+                                            nn.ReLU(),
+                                            nn.Linear(int(self.output_dim*4), self.output_dim))	
         
     def forward(self, x, t):
         #print("using NFDM-Gaussian")
@@ -56,8 +61,9 @@ class NFDM_gaussian(nn.Module):
             ls = ls.clamp(min=-20, max=10)  #clamping
 
             #make the variance tokenwise instead of dimensionwise
-            ls = self.linear_layer(ls)
-            m = self.linear_layer2(m)
+            if not self.dont_add_head:
+                ls = self.linear_layer(ls)
+                m = self.linear_layer2(m)
             #ls = ls.mean(dim=2, keepdim=True)
             #print("hello", ls.shape)
 

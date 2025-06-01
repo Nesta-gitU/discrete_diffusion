@@ -5,26 +5,26 @@
 
 defaults:
     #choose which components to use for the diffusion model
-  - /model/diffusion@model.diffusion: ndm.yaml
+  - /model/diffusion@model.diffusion: nfdm.yaml
 
   #choose which backbone to use for the predictor and forward process
   - /model/backbone@model.diffusion.pred.model: bert.yaml
-  - /model/backbone@model.diffusion.transform.model: small_transformer_tcond.yaml
+  - /model/backbone@model.diffusion.affine.model: small_transformer_adalnzero.yaml
   
   - override /data: roc
   - override /model: language_diff_module
-  - override /callbacks: default
+  - override /callbacks: default_nfdm
   - override /trainer: gpu
   
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-tags: ["roc", "bert_base", "vdm", "final_run0"]
+tags: ["bert-base", "roc", "nfdm"]
 
 seed: 12345
 #commment
 data:
-  batch_size: 512 #should be 256
+  batch_size: 512 #512
   block_size: 64
   overfit_one_batch: false #should be false normally
 
@@ -40,24 +40,18 @@ callbacks:
 #one epoch has 12556 batches
 #one val epoch has 1396 batches on batch size 256
 trainer:
-  max_steps: 800000
+  max_steps: 1600000
+  max_epochs: null
   check_val_every_n_epoch: null
   val_check_interval: 50000
-  max_epochs: null
+  accumulate_grad_batches: 1
   log_every_n_steps: 50
-  #accumulate_grad_batches: 
-  #devices: 2 #should be 2
-  #strategy:
-  #  _target_: lightning.pytorch.strategies.FSDPStrategy
-  #  use_orig_params: true
-  #  fsdp_config:
-  #    ignore_unused_parameters: true
-  #  auto_wrap_policy: null #ddp is useless when the whole mem issue is the model not the data
-  #precision: bf16-mixed #try to fit the bs in memory. 
+  devices: 1
+  strategy: ddp
 
 model:      
   compute_diffusion_loss: x_0
-  compute_prior_loss: true
+  compute_prior_loss: false #also 0 on gaussian forward
   compute_reconstruction_loss: true
   reconstruction_loss_type: collapse
   enable_matmul_tf32: true
@@ -65,26 +59,42 @@ model:
   total_steps: ${trainer.max_steps}
   mask_padding: false
   grad_clipping_type: "warmup"
-  grad_clip: 0.1
+  grad_clip: 1 # 1cc
+  switch_to_rescaled: 300000000
   diffusion:
-    clamp_max: 10000
-    diff_loss_type: "elbo"
-    gamma_init: false
-    add_pure_x_pred: false
+    diff_loss_type: "elbo" #options are elbo, half_elbo, x_0_prediction
     pred:
       stabilize: true
+    affine:
+      dont_add_head: False
+      model:
+        output_dim: 256
+        #hidden_dim: 256
+  optimizer:
+    lr: 1e-4
+        #hidden_dim: 512
   time_sampler:
-    _target_: src.models.time_samplers.time_samplers.UniformBucketSampler #src.models.time_samplers.time_samplers.ContSampler #the other option is src.models.time_samplers.time_samplers.UniformBucketSampler
+    _target_: src.models.time_samplers.time_samplers.UniformBucketSampler #####below this add stabilization parameters like learning rate warmup and muon 
+  do_lr_warmup: true
+  use_muon: true
+  muon_params:
+    use_muon: true
+    muon_lr: 0.002
+    muon_momentum: 0.95
+    muon_ns_steps: 5
+    muon_weight_decay: 0.01
 
 logger:
   wandb:
     tags: ${tags}
     group: "roc"
-    project: "roc mulan" #if just testing garbage use test
+    project: "roc my code" #if just testing garbage use test
     #mode: "disabled" if you dont want ot log a debug run 
   aim:
     experiment: "text8test"
 
-model_name: "roc_mulan"
+model_name: "roc_nfdm"
 restart_from_checkpoint: true
-float32_type: high #idk if this being high vs medium matters in any way 
+float32_type: high
+
+
