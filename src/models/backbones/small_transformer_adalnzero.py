@@ -198,13 +198,13 @@ class TransformerEncoderAdaLN8M(nn.Module):
             nn.Linear(hidden_dim, output_dim)
         )
 
-        self.mean_head = TwoLayerFiLMHead(hidden_dim, int(hidden_dim/2),
-                                  cond_dim=self.time_embed_dim,
-                                  positive=False)
+        #self.mean_head = TwoLayerFiLMHead(hidden_dim, int(hidden_dim/2),
+        #                          cond_dim=self.time_embed_dim,
+        #                          positive=False)
 
-        self.logvar_head = TwoLayerFiLMHead(hidden_dim, int(hidden_dim/2),
-                                            cond_dim=self.time_embed_dim,
-                                            positive=False)  # log σ already un-clamped
+        #self.logvar_head = TwoLayerFiLMHead(hidden_dim, int(hidden_dim/2),
+        #                                    cond_dim=self.time_embed_dim,
+        #                                    positive=False)  # log σ already un-clamped
 
         # Logging helper
         self.register_buffer("emb_norm", torch.tensor(0.0), persistent=False)
