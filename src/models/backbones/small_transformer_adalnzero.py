@@ -227,7 +227,8 @@ class TransformerEncoderAdaLN8M(nn.Module):
         # 2) time embedding
         t_fourier = timestep_embedding(t, self.input_dim, True)  # (B, 128)
         t_embed   = self.time_embed(t_fourier)                   # (B, 4D)
-        self.emb_norm = t_embed.norm(dim=-1).mean()  # for logging
+        if not torch.all(t==0): #only log if its not the reconloss
+            self.emb_norm = t_embed.norm(dim=-1).mean()  # for logging
 
         # 3) add position + dropout
         pos_ids = torch.arange(x.size(1), device=x.device)

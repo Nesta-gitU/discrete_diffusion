@@ -155,7 +155,7 @@ class NeuralDiffusion(nn.Module):
         if compute_prior_loss:
             prior_loss = self.prior_loss(embeddings, t)
         else:
-            prior_loss = torch.zeros(bs, dtype=embeddings.dtype, device=x.device)
+            prior_loss = torch.zeros_like(embeddings)
 
         return diffusion_loss, None, None, reconstruction_loss, prior_loss
 
@@ -237,11 +237,13 @@ class NeuralDiffusion(nn.Module):
         # compute the prior loss 
         #not implemented error
         #print("then this should also be 0's", x**2)
+        #print("-----------now------------------------")
         mean, _, _ = self.affine(x, torch.ones_like(t))
+
         #print(mean, "mean")
         #print(variance, "variance")
         #print("prior loss, ", mean**2)
-        return mean ** 2
+        return (mean ** 2)
     
     def get_elbo_diffusion_loss(self, x, t):
         #in nfdm case the diffusion loss == elbo diffusion loss since we didnt simplify. so this can just call that. 
