@@ -93,7 +93,7 @@ logger:
   aim:
     experiment: "text8test"
 
-model_name: "roc_nfdm"
+model_name: "roc_nfdm_new"
 restart_from_checkpoint: true
 float32_type: high
 
