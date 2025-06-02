@@ -43,7 +43,7 @@ class BlockTimestepParams(nn.Module):
         if self.use_scale:
             
             beta1, gamma1, beta2, gamma2, alpha1, alpha2 = vec.chunk(6, dim=-1)
-            #gamma1, gamma2 = 1.5 * torch.tanh(gamma1 / 1.5), 1.5 * torch.tanh(gamma2 / 1.5)
+            gamma1, gamma2 = 1.5 * torch.tanh(gamma1 / 1.5), 1.5 * torch.tanh(gamma2 / 1.5)
 
             gamma1, gamma2 = 1.0 + gamma1, 1.0 + gamma2            # γ = 1 + γ̂
         else:
@@ -61,10 +61,11 @@ class EncoderBlockAdaLN(nn.Module):
                  embed_dim: int, use_scale: bool = True):
         super().__init__()
         self.attn = nn.MultiheadAttention(hidden_dim, num_heads,
-                                          dropout=0, batch_first=True)
+                                          dropout=dropout, batch_first=True)
         self.ffn = nn.Sequential(
             nn.Linear(hidden_dim, mlp_dim),
             nn.GELU(),
+            nn.Dropout(dropout),
             nn.Linear(mlp_dim, hidden_dim)
         )
         self.dropout = nn.Dropout(dropout)
@@ -82,12 +83,12 @@ class EncoderBlockAdaLN(nn.Module):
                              attn_mask=attn_mask,
                              key_padding_mask=key_padding_mask,
                              need_weights=False)[0]
-        x = x + α1.unsqueeze(1) * self.dropout(attn_out)
+        x = x + α1.unsqueeze(1) * attn_out
 
         # --- MLP branch ---------------------------------------
         h = self.ada_ln2(x, β2, γ2)
         mlp_out = self.ffn(h)
-        x = x + α2.unsqueeze(1) * self.dropout(mlp_out)
+        x = x + α2.unsqueeze(1) * mlp_out
         return x
 
 # -----------------------------------------------------------
@@ -114,7 +115,7 @@ class TwoLayerFiLMHead(nn.Module):
     def _apply_film(self, h, coeffs, c=1.5):
         if self.use_scale:
             beta, gamma_hat= coeffs.chunk(2, dim=-1)
-            #gamma_hat = c * torch.tanh(gamma_hat / c)
+            gamma_hat = c * torch.tanh(gamma_hat / c)
             return (1+gamma_hat).unsqueeze(1) * h + beta.unsqueeze(1)
         return h + coeffs.unsqueeze(1)
 
