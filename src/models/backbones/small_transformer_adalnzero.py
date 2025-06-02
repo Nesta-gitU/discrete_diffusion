@@ -79,7 +79,7 @@ class EncoderBlockAdaLN(nn.Module):
 
         # --- attention branch ---------------------------------
         h = self.ada_ln1(x, β1, γ1)
-        attn_out = self.attn(h, h, h,
+        attn_out = self.attn(h, x, x,
                              attn_mask=attn_mask,
                              key_padding_mask=key_padding_mask,
                              need_weights=False)[0]
