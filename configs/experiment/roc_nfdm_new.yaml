@@ -51,7 +51,7 @@ trainer:
 
 model:      
   compute_diffusion_loss: x_0
-  compute_prior_loss: true #also 0 on gaussian forward
+  compute_prior_loss: false #also 0 on gaussian forward
   compute_reconstruction_loss: true
   reconstruction_loss_type: collapse
   enable_matmul_tf32: true
