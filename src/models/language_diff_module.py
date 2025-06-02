@@ -113,7 +113,7 @@ class DiffusionModule(LightningModule):
         self.use_muon = use_muon
         self.do_lr_warmup = do_lr_warmup
         self.muon_params = muon_params
-        self.clip_warmup = 6000 if self.use_muon else 3000
+        self.clip_warmup = 40000 if self.use_muon else 3000
         print(self.model)
         print(self.model.pred)
 
