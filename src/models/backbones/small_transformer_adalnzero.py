@@ -83,7 +83,7 @@ class TimestepEmbed(nn.Module):
         """
         out = self.net(t_embed)
         if self.use_scale:
-            shift, scale, shift2, scale2 = out.chunk(2, dim=-1)
+            shift, scale, shift2, scale2 = out.chunk(4, dim=-1)
             
             scale = 1.5 * torch.tanh(scale/1.5)
             scale2 = 1.5 * torch.tanh(scale2/1.5)
