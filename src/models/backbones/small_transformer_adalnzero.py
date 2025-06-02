@@ -43,7 +43,7 @@ class BlockTimestepParams(nn.Module):
         if self.use_scale:
             
             beta1, gamma1, beta2, gamma2, alpha1, alpha2 = vec.chunk(6, dim=-1)
-            gamma1, gamma2 = 1.5 * torch.tanh(gamma1 / 1.5), 1.5 * torch.tanh(gamma2 / 1.5)
+            #gamma1, gamma2 = 1.5 * torch.tanh(gamma1 / 1.5), 1.5 * torch.tanh(gamma2 / 1.5)
 
             gamma1, gamma2 = 1.0 + gamma1, 1.0 + gamma2            # γ = 1 + γ̂
         else:
@@ -114,7 +114,7 @@ class TwoLayerFiLMHead(nn.Module):
     def _apply_film(self, h, coeffs, c=1.5):
         if self.use_scale:
             beta, gamma_hat= coeffs.chunk(2, dim=-1)
-            gamma_hat = c * torch.tanh(gamma_hat / c)
+            #gamma_hat = c * torch.tanh(gamma_hat / c)
             return (1+gamma_hat).unsqueeze(1) * h + beta.unsqueeze(1)
         return h + coeffs.unsqueeze(1)
 
