@@ -66,7 +66,7 @@ model:
     pred:
       stabilize: true
     affine:
-      dont_add_head: False
+      dont_add_head: True
       model:
         output_dim: 256
         #hidden_dim: 256
@@ -93,7 +93,7 @@ logger:
   aim:
     experiment: "text8test"
 
-model_name: "roc_nfdm_new"
+model_name: "roc_nfdm_new2"
 restart_from_checkpoint: true
 float32_type: high
 
