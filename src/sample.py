@@ -484,7 +484,6 @@ def plot_nfdm_transformation_tsne(batch, model, outdir, change_basis_over_time=F
     plt.grid(True)
     plt.savefig(os.path.join(outdir, "cosine_similarity_over_time.png"))
     plt.close()
-    exit()
 
 
 
