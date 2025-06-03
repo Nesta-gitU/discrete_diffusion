@@ -66,7 +66,7 @@ model:
     pred:
       stabilize: true
     affine:
-      dont_add_head: false
+      dont_add_head: true
       model:
         output_dim: 256
         #hidden_dim: 256
@@ -94,7 +94,7 @@ logger:
   aim:
     experiment: "text8test"
 
-model_name: "roc_nfdm_new4"
+model_name: "roc_nfdm_new5" #4 is without film head, 3 is with lower lr
 restart_from_checkpoint: true
 float32_type: high
 
