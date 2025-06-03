@@ -80,7 +80,7 @@ model:
   use_muon: true
   muon_params:
     use_muon: true
-    muon_lr: 0.002
+    muon_lr: 0.02
     muon_momentum: 0.95
     muon_ns_steps: 5
     muon_weight_decay: 0.01
@@ -94,7 +94,7 @@ logger:
   aim:
     experiment: "text8test"
 
-model_name: "roc_nfdm_new5" #4 is without film head, 3 is with lower lr
+model_name: "roc_nfdm_new6" #5 is muon lr 0.002, 4 is without film head, 3 is with lower lr
 restart_from_checkpoint: true
 float32_type: high
 
