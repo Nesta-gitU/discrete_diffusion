@@ -76,7 +76,7 @@ model:
   time_sampler:
     _target_: src.models.time_samplers.time_samplers.UniformBucketSampler #####below this add stabilization parameters like learning rate warmup and muon 
   do_lr_warmup: true
-  use_muon: true
+  use_muon: false
   muon_params:
     use_muon: true
     muon_lr: 0.001
