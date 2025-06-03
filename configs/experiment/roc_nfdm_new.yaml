@@ -71,8 +71,8 @@ model:
         output_dim: 256
         #hidden_dim: 256
   optimizer:
-    lr: 1e-4
-    weight_decay: 0.001
+    lr: 1e-5
+    weight_decay: 0
         #hidden_dim: 512
   time_sampler:
     _target_: src.models.time_samplers.time_samplers.UniformBucketSampler #####below this add stabilization parameters like learning rate warmup and muon 
@@ -80,10 +80,10 @@ model:
   use_muon: true
   muon_params:
     use_muon: true
-    muon_lr: 0.002
+    muon_lr: 0.0002
     muon_momentum: 0.95
     muon_ns_steps: 5
-    muon_weight_decay: 0.01
+    muon_weight_decay: 0
 
 logger:
   wandb:
