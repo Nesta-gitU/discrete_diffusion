@@ -71,7 +71,7 @@ model:
         output_dim: 256
         #hidden_dim: 256
   optimizer:
-    lr: 1e-5
+    lr: 1e-4
     weight_decay: 0.01
         #hidden_dim: 512
   time_sampler:
