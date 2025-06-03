@@ -80,7 +80,7 @@ model:
   use_muon: true
   muon_params:
     use_muon: true
-    muon_lr: 0.0002
+    muon_lr: 0.002
     muon_momentum: 0.95
     muon_ns_steps: 5
     muon_weight_decay: 0
