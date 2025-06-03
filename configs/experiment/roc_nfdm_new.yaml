@@ -80,7 +80,7 @@ model:
   use_muon: true
   muon_params:
     use_muon: true
-    muon_lr: 0.0005
+    muon_lr: 0.002
     muon_momentum: 0.95
     muon_ns_steps: 5
     muon_weight_decay: 0.01
@@ -94,7 +94,7 @@ logger:
   aim:
     experiment: "text8test"
 
-model_name: "roc_nfdm_new3"
+model_name: "roc_nfdm_new4"
 restart_from_checkpoint: true
 float32_type: high
 
