@@ -59,7 +59,7 @@ model:
   total_steps: ${trainer.max_steps}
   mask_padding: false
   grad_clipping_type: "warmup"
-  grad_clip: 0.3 # 1cc
+  grad_clip: 0.1 # 1cc
   switch_to_rescaled: 300000000
   diffusion:
     diff_loss_type: "elbo" #options are elbo, half_elbo, x_0_prediction
@@ -71,7 +71,7 @@ model:
         output_dim: 256
         #hidden_dim: 256
   optimizer:
-    lr: 1e-4
+    lr: 1e-5
         #hidden_dim: 512
   time_sampler:
     _target_: src.models.time_samplers.time_samplers.UniformBucketSampler #####below this add stabilization parameters like learning rate warmup and muon 
@@ -79,7 +79,7 @@ model:
   use_muon: true
   muon_params:
     use_muon: true
-    muon_lr: 0.002
+    muon_lr: 0.001
     muon_momentum: 0.95
     muon_ns_steps: 5
     muon_weight_decay: 0.01
