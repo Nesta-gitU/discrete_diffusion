@@ -85,8 +85,8 @@ class TimestepEmbed(nn.Module):
         if self.use_scale:
             shift, scale, shift2, scale2 = out.chunk(4, dim=-1)
             
-            scale = 1.5 * torch.tanh(scale/1.5)
-            scale2 = 1.5 * torch.tanh(scale2/1.5)
+            #scale = 1.5 * torch.tanh(scale/1.5)
+            #scale2 = 1.5 * torch.tanh(scale2/1.5)
 
             scale = 1.0 + scale        # γ = 1 + Δγ    (stable at init)
             scale2 = 1.0 + scale2      # γ2 = 1 + Δγ2
@@ -198,19 +198,19 @@ class TransformerEncoderAdaLN8M(nn.Module):
         self.layer_norm = nn.LayerNorm(hidden_dim)
 
         # Output head
-        #self.output_proj = nn.Sequential(
-        #    nn.Linear(hidden_dim, hidden_dim),
-        #    nn.GELU(),
-        #    nn.Linear(hidden_dim, output_dim)
-        #)
+        self.output_proj = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, output_dim)
+        )
 
-        self.mean_head = TwoLayerFiLMHead(hidden_dim, int(hidden_dim/2),
-                                  cond_dim=self.time_embed_dim,
-                                  positive=False)
+        #self.mean_head = TwoLayerFiLMHead(hidden_dim, int(hidden_dim/2),
+        #                          cond_dim=self.time_embed_dim,
+        #                          positive=False)
 
-        self.logvar_head = TwoLayerFiLMHead(hidden_dim, int(hidden_dim/2),
-                                            cond_dim=self.time_embed_dim,
-                                            positive=False)  # log σ already un-clamped
+        #self.logvar_head = TwoLayerFiLMHead(hidden_dim, int(hidden_dim/2),
+        #                                    cond_dim=self.time_embed_dim,
+        #                                    positive=False)  # log σ already un-clamped
 
         # Logging helper
         self.register_buffer("emb_norm", torch.tensor(0.0), persistent=False)
@@ -248,10 +248,10 @@ class TransformerEncoderAdaLN8M(nn.Module):
                            key_padding_mask=mask)
 
         # 5) projector head
-        #h = self.output_proj(h) #old verion also worked reasonalby well
-        mu = self.mean_head(h, t_embed)
-        logvar = self.logvar_head(h, t_embed)
+        h = self.output_proj(h) #old verion also worked reasonalby well
+        #mu = self.mean_head(h, t_embed)
+        #logvar = self.logvar_head(h, t_embed)
 
-        h = torch.cat([mu, logvar], dim=-1)
+        #h = torch.cat([mu, logvar], dim=-1)
         return h
         

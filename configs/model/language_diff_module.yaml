@@ -13,7 +13,7 @@ optimizer:
   _partial_: true
   _target_: torch.optim.Adam
   lr: 1e-4
-  weight_decay: 0
+  weight_decay: 
 
 total_steps: 800000
 

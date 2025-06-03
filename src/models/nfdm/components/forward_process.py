@@ -58,7 +58,7 @@ class NFDM_gaussian(nn.Module):
         else:
             m_ls = self.net(x, t.squeeze(-1).squeeze(-1)) 
             m, ls = m_ls.chunk(2, dim=2)    #why was this 1 before 
-            ls = ls.clamp(min=-20, max=10)  #clamping
+            #ls = ls.clamp(min=-20, max=10)  #clamping
 
             #make the variance tokenwise instead of dimensionwise
             if not self.dont_add_head:
