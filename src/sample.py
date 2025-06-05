@@ -582,7 +582,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     args.animate = cfg.get("animate", False)
     args.use_files = cfg.get("use_files", False)
     args.use_default_nfdm = cfg.get("use_default_nfdm", False)
-    args.use_uniform = cfg.get("use_uniform", False)
+    args.use_uniform = cfg.get("use_uniform", True)
 
 
     #get model name by checkpoint so that it includes the epoch at which it was taken 
