@@ -586,8 +586,8 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
 
         sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.8  # -> this works quite well it did a mauve of 0.99
-        if torch.all(s < 0.1):
-            sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.3
+        #if torch.all(s < 0.1):
+        #    sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.3
 
 
         epsilon_tilde_s_t = torch.sqrt(1 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t.sqrt()) * noise
