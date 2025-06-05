@@ -620,7 +620,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     )
 
     #if args.plot_time_and_loss:
-    if True:
+    if False:
         with torch.no_grad():
             out_dir="output"
             model_base_name = args.model_base_name
