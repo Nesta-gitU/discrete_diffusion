@@ -311,7 +311,7 @@ class NeuralDiffusion(nn.Module):
             print("-0----------------------------------------shouldnt happen-----------------------------------------------------")
             gamma, d_gamma = self.gamma(t)
         else:
-            print(context)
+            #print(context)
             gamma, d_gamma = self.gamma(t, context)
 
         alpha2 = self.gamma.alpha_2(gamma)
@@ -326,7 +326,8 @@ class NeuralDiffusion(nn.Module):
 
         z = alpha * m + sigma * eps
 
-        x_ = self.pred(z, t, None).double()
+
+        x_ = self.pred(z, t, context).double()
 
         (m_, _), (d_m_, _) = self.transform(x_, t)
 
@@ -373,8 +374,8 @@ class NeuralDiffusion(nn.Module):
         elbo =(1/(2*g2)) * (f_B - f_B_) ** 2
 
         print(((m - m_)**2).mean(), "mean m")
-        print(((s-s_)**2).mean(), "mean s")
-        print(((f_B - f_B_)**2).mean(), "mean")
+        #print(((s-s_)**2).mean(), "mean s")
+        #print(((f_B - f_B_)**2).mean(), "mean")
         #print((1/(2*g2)), "g2")
 
         return elbo, context_loss.sum(dim=-1)
