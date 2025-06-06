@@ -11,7 +11,6 @@ class VaeContext(nn.Module):
         self.model = model
         
     def forward(self, x): 
-        print("using this?")
         #return the context and the loss from the context       
         mean, log_std = self.model(x).chunk(2, dim=-1)
         std = torch.exp(log_std)
