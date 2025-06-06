@@ -311,6 +311,7 @@ class NeuralDiffusion(nn.Module):
             print("-0----------------------------------------shouldnt happen-----------------------------------------------------")
             gamma, d_gamma = self.gamma(t)
         else:
+            print(context)
             gamma, d_gamma = self.gamma(t, context)
 
         alpha2 = self.gamma.alpha_2(gamma)

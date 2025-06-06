@@ -545,10 +545,12 @@ class DiffusionModule(LightningModule):
 
             # diffusion + (optional) context loss; both are unreduced
             diff_loss, ctx_loss = elbo_model.get_elbo_diffusion_loss(batch, t)
+            print(ctx_loss, "ctx_loss")
             if ctx_loss is None:
                 ctx_loss = torch.zeros_like(prior_loss)
 
             diff_per_ex  = diff_loss.flatten(1).sum(1)    # (B,)
+            print(diff_per_ex.shape, "diff_per_ex shape")
             #print(ctx_loss.shape)
             ctx_per_ex   = ctx_loss                       # already (B,)
 
