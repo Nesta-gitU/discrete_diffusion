@@ -333,9 +333,10 @@ class NeuralDiffusion(nn.Module):
         d_sigma = 0.5 * d_gamma * sigma2 * (1 - sigma2) * (1/sigma) #TODO incorrect derivative 
 
         # compute backward flow '
-        epsilon = (z - alpha * m) / sigma
-        s = (alpha * m - z) / sigma2
-        f = d_alpha * m + d_sigma * epsilon
+        epsilon = (z - alpha * m) / sigma #-> acutally epsilon should be exactly the same as eps
+        print(epsilon==eps, "epsilon == eps")
+        s =- eps / sigma#(alpha * m - z) / sigma2
+        f = d_alpha * m + d_sigma * eps
         f_B = f - (g2 / 2) * s
 
         #compute predicted backward flow 
