@@ -305,7 +305,7 @@ class NeuralDiffusion(nn.Module):
 
         context, context_loss = self.context(x)
 
-        eps = torch.randn_like(x).double()
+        eps = torch.randn_like(x)
 
         if context is None:
             print("-0----------------------------------------shouldnt happen-----------------------------------------------------")
