@@ -509,7 +509,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
                     # 2) approximate the integral G(t) = ∫0^t g(s)^2 ds
                     g_vals       = model.vol(zero_to_t)                            # shape (N,)
                     g2_cumsum    = torch.cumsum(g_vals**2, dim=0) * dt             # shape (N,)
-                    G_t_approx   = g2_cumsum[-1].unsqueeze(-1)                            # scalar
+                    G_t_approx   = g2_cumsum[-1].unsqueeze(-1)                            # scalar #TODO this is technically wrong but yeah doedsnt matter I will not use it. 
 
                     # 3) form the softplus argument
                     sp_arg = (G_t_approx / eta) + torch.nn.functional.softplus(gamma_0)
@@ -827,8 +827,8 @@ def sde_drift_ndm(z_in, t_in, model, clamping, context):
             0.5 * d_gmm * (alpha_2 + eta) * z_in
     
     eps = (z_in - alpha * m_) / sigma
-    alpha_prime = - d_gmm * 0.5 * alpha * (1- alpha_2) 
-    sigma_prime = 0.5 * d_gmm * sigma * (1 - sigma_2)
+    alpha_prime = -0.5 * d_gmm * alpha_2 * (1 - alpha_2) * (1/alpha)
+    sigma_prime = 0.5 * d_gmm * sigma_2 * (1 - sigma_2) * (1/sigma) #TODO incorrect derivative 
     #dz = -alpha * d_gmm + alpha * d_m_ + sigma * d_gmm * eps
     dz = alpha_prime * m_ + alpha * d_m_ + sigma_prime * eps
     drift = dz - 0.5 * (g**2) * (alpha * m_ - z_in)/ (sigma ** 2)
@@ -863,8 +863,8 @@ def ode_drift_ndm(z_in, t_in, model, clamping, context):
     (m_, _), (d_m_, _) = model.transform(x_, t_in)
 
     eps = (z_in - alpha * m_) / sigma
-    alpha_prime = - d_gmm * 0.5 * alpha * (1- alpha_2) 
-    sigma_prime = 0.5 * d_gmm * sigma * (1 - sigma_2)
+    alpha_prime = -0.5 * d_gmm * alpha_2 * (1 - alpha_2) * (1/alpha)
+    sigma_prime = 0.5 * d_gmm * sigma_2 * (1 - sigma_2) * (1/sigma) #TODO incorrect derivative 
     #dz = -alpha * d_gmm + alpha * d_m_ + sigma * d_gmm * eps
     dz = alpha_prime * m_ + alpha * d_m_ + sigma_prime * eps
 
