@@ -298,7 +298,7 @@ class NeuralDiffusion(nn.Module):
         return mean ** 2
 
     
-    def get_elbo_diffusion_loss_old(self, x, t):
+    def get_elbo_diffusion_loss(self, x, t):
         #this is not exactly the same as loss now, need to make sure to compute the full objective, but I did write it all out previously, but it is on a different piece of paper 
         x = self.pred.model.get_embeds(x)
 
