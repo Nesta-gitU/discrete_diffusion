@@ -307,6 +307,7 @@ class NeuralDiffusion(nn.Module):
         eps = torch.randn_like(x)
 
         if context is None:
+            print("-0----------------------------------------shouldnt happen-----------------------------------------------------")
             gamma, d_gamma = self.gamma(t)
         else:
             gamma, d_gamma = self.gamma(t, context)
@@ -343,7 +344,8 @@ class NeuralDiffusion(nn.Module):
         f_B = f - (g2 / 2) * s
 
         #compute predicted backward flow 
-        epsilon_ = (z - alpha * m_) / sigma
+        #epsilon_ = (z - alpha * m_) / sigma
+        epsilon = eps
         s_ = (alpha * m_ - z) / sigma2
         #f_ = d_alpha * m_ + d_sigma * epsilon_
         f_ = d_alpha * m_ + alpha * d_m_ + d_sigma * epsilon_
