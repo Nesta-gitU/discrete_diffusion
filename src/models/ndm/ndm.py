@@ -346,7 +346,7 @@ class NeuralDiffusion(nn.Module):
         #compute predicted backward flow 
         #epsilon_ = (z - alpha * m_) / sigma
         #epsilon_ = eps
-        s_ = (alpha * m - z) / sigma2
+        s_ = (alpha * m_ - z) / sigma2
         #s_ = s
         #f_ = d_alpha * m_ + d_sigma * epsilon_
         #f_ = d_alpha * m_ + alpha * d_m_ + d_sigma * epsilon_
