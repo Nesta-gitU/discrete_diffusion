@@ -312,7 +312,7 @@ class NeuralDiffusion(nn.Module):
             gamma, d_gamma = self.gamma(t)
         else:
             print(context)
-            gamma, d_gamma = self.gamma(t, None)
+            gamma, d_gamma = self.gamma(t, context)
 
         alpha2 = self.gamma.alpha_2(gamma)
         sigma2 = self.gamma.sigma_2(gamma)
@@ -326,7 +326,7 @@ class NeuralDiffusion(nn.Module):
 
         z = alpha * m + sigma * eps
 
-        x_ = self.pred(z, t, context).double()
+        x_ = self.pred(z, t, None).double()
 
         (m_, _), (d_m_, _) = self.transform(x_, t)
 
