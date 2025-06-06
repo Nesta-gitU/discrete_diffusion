@@ -68,13 +68,16 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     model.eval()
     if not hasattr(model.model, "context"):
+        print("do modifications on context")
         model.ema.module.context = NoneContext(None)
         model.model.context = NoneContext(None)
     if not hasattr(model.model, "gamma"):
+        print("do modifications on gamma")
         model.model.gamma = None
         model.ema.module.gamma = None
     if not hasattr(model.model.gamma, "around_reference"):
         if model.model.gamma is not None:
+            print("do modifications on reference")
             model.ema.module.gamma.around_reference = False
             model.model.gamma.around_reference = False    
 
