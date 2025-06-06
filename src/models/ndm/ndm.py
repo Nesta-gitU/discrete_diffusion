@@ -149,6 +149,8 @@ class NeuralDiffusion(nn.Module):
         loss_1 = loss_1 ** 2
         loss = loss_1
 
+        print(((m-m_)**2).mean(), "mean m (mse)")
+
         # Stabilises training
         if self.add_pure_x_pred:
             loss_x = (1 + eta) ** 2 / 4 * (x - x_) ** 2
