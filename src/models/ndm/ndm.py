@@ -340,6 +340,9 @@ class NeuralDiffusion(nn.Module):
         sigma = sigma.double()
         m_ = m_.double()
         m = m.double()
+        eps = eps.double()
+        d_m_ = d_m_.double()
+        d_m = d_m.double()
 
         d_alpha = -0.5 * d_gamma * alpha * (1 - alpha2) 
         d_sigma = 0.5 * d_gamma * sigma * (1 - sigma2)  #TODO incorrect derivative 
