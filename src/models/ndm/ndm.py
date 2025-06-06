@@ -312,7 +312,7 @@ class NeuralDiffusion(nn.Module):
             gamma, d_gamma = self.gamma(t)
         else:
             print(context)
-            gamma, d_gamma = self.gamma(t, context)
+            gamma, d_gamma = self.gamma(t, None)
 
         alpha2 = self.gamma.alpha_2(gamma)
         sigma2 = self.gamma.sigma_2(gamma)
