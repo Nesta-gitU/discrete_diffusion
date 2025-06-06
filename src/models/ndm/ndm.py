@@ -357,8 +357,8 @@ class NeuralDiffusion(nn.Module):
         #compute the loss
         elbo =(1/(2*g2)) * (f_B - f_B_) ** 2
 
-        #print(((f_B - f_B_)**2).mean(), "mean")
-        #print((1/(2*g2)), "g2")
+        print(((f_B - f_B_)**2).mean(), "mean")
+        print((1/(2*g2)), "g2")
 
         return elbo, context_loss.sum(dim=-1)
     
