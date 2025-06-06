@@ -298,7 +298,7 @@ class NeuralDiffusion(nn.Module):
         return mean ** 2
 
     
-    def get_elbo_diffusion_loss(self, x, t):
+    def get_elbo_diffusion_loss_old(self, x, t):
         #this is not exactly the same as loss now, need to make sure to compute the full objective, but I did write it all out previously, but it is on a different piece of paper 
         x = self.pred.model.get_embeds(x)
 
@@ -335,7 +335,9 @@ class NeuralDiffusion(nn.Module):
         # compute backward flow '
         epsilon = (z - alpha * m) / sigma #-> acutally epsilon should be exactly the same as eps
         print(epsilon==eps, "epsilon == eps")
-        s =- eps / sigma#(alpha * m - z) / sigma2
+        print(torch.all(m==x), "m == x")
+        
+        s = -eps / sigma#(alpha * m - z) / sigma2
         f = d_alpha * m + d_sigma * eps
         f_B = f - (g2 / 2) * s
 
