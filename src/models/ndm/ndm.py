@@ -301,22 +301,17 @@ class NeuralDiffusion(nn.Module):
     def get_elbo_diffusion_loss(self, x, t):
         #this is not exactly the same as loss now, need to make sure to compute the full objective, but I did write it all out previously, but it is on a different piece of paper 
     
-        x = self.pred.model.get_embeds(x).double()
+        x = self.pred.model.get_embeds(x)
 
         context, context_loss = self.context(x)
-        context = context.double() if context is not None else None
 
         eps = torch.randn_like(x).double()
 
         if context is None:
             print("-0----------------------------------------shouldnt happen-----------------------------------------------------")
             gamma, d_gamma = self.gamma(t)
-            gamma = gamma.double()
-            d_gamma = d_gamma.double()
         else:
             gamma, d_gamma = self.gamma(t, context)
-            gamma = gamma.double()
-            d_gamma = d_gamma.double()
 
         alpha2 = self.gamma.alpha_2(gamma)
         sigma2 = self.gamma.sigma_2(gamma)
@@ -335,6 +330,16 @@ class NeuralDiffusion(nn.Module):
         (m_, _), (d_m_, _) = self.transform(x_, t)
 
         g2 = sigma2 * d_gamma * eta
+
+        d_gamma = d_gamma.double()
+        gamma = gamma.double()
+        g2 = g2.double()
+        alpha2 = alpha2.double()
+        alpha = alpha.double()
+        sigma2 = sigma2.double()
+        sigma = sigma.double()
+        m_ = m_.double()
+        m = m.double()
 
         d_alpha = -0.5 * d_gamma * alpha * (1 - alpha2) 
         d_sigma = 0.5 * d_gamma * sigma * (1 - sigma2)  #TODO incorrect derivative 
