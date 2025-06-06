@@ -300,75 +300,75 @@ class NeuralDiffusion(nn.Module):
     
     def get_elbo_diffusion_loss(self, x, t):
         #this is not exactly the same as loss now, need to make sure to compute the full objective, but I did write it all out previously, but it is on a different piece of paper 
-        with torch.set_default_dtype(torch.float64):
-            x = self.pred.model.get_embeds(x).double()
+    
+        x = self.pred.model.get_embeds(x).double()
 
-            context, context_loss = self.context(x)
-            context = context.double() if context is not None else None
+        context, context_loss = self.context(x)
+        context = context.double() if context is not None else None
 
-            eps = torch.randn_like(x)
+        eps = torch.randn_like(x).double()
 
-            if context is None:
-                print("-0----------------------------------------shouldnt happen-----------------------------------------------------")
-                gamma, d_gamma = self.gamma(t)
-                gamma = gamma.double()
-                d_gamma = d_gamma.double()
-            else:
-                gamma, d_gamma = self.gamma(t, context)
-                gamma = gamma.double()
-                d_gamma = d_gamma.double()
+        if context is None:
+            print("-0----------------------------------------shouldnt happen-----------------------------------------------------")
+            gamma, d_gamma = self.gamma(t)
+            gamma = gamma.double()
+            d_gamma = d_gamma.double()
+        else:
+            gamma, d_gamma = self.gamma(t, context)
+            gamma = gamma.double()
+            d_gamma = d_gamma.double()
 
-            alpha2 = self.gamma.alpha_2(gamma)
-            sigma2 = self.gamma.sigma_2(gamma)
+        alpha2 = self.gamma.alpha_2(gamma)
+        sigma2 = self.gamma.sigma_2(gamma)
 
-            alpha = alpha2 ** 0.5
-            sigma = sigma2 ** 0.5
+        alpha = alpha2 ** 0.5
+        sigma = sigma2 ** 0.5
 
-            (m, _), (d_m, _) = self.transform(x, t)
+        (m, _), (d_m, _) = self.transform(x, t)
 
-            eta = self.vol_eta(t).double()
+        eta = self.vol_eta(t).double()
 
-            z = alpha * m + sigma * eps
+        z = alpha * m + sigma * eps
 
-            x_ = self.pred(z, t, context).double()
+        x_ = self.pred(z, t, context).double()
 
-            (m_, _), (d_m_, _) = self.transform(x_, t)
+        (m_, _), (d_m_, _) = self.transform(x_, t)
 
-            g2 = sigma2 * d_gamma * eta
+        g2 = sigma2 * d_gamma * eta
 
-            d_alpha = -0.5 * d_gamma * alpha * (1 - alpha2) 
-            d_sigma = 0.5 * d_gamma * sigma * (1 - sigma2)  #TODO incorrect derivative 
+        d_alpha = -0.5 * d_gamma * alpha * (1 - alpha2) 
+        d_sigma = 0.5 * d_gamma * sigma * (1 - sigma2)  #TODO incorrect derivative 
 
-            # compute backward flow '
-            #epsilon = (z - alpha * m) / sigma #-> acutally epsilon should be exactly the same as eps
-            #print(epsilon==eps, "epsilon == eps")
-            #print(torch.all(m==x), "m == x")
-            
-            s = -eps / sigma#(alpha * m - z) / sigma2
-            #f = d_alpha * m + d_sigma * eps
-            f = d_alpha * m + alpha * d_m + d_sigma * eps
-            f_B = f - (g2 / 2) * s
+        # compute backward flow '
+        #epsilon = (z - alpha * m) / sigma #-> acutally epsilon should be exactly the same as eps
+        #print(epsilon==eps, "epsilon == eps")
+        #print(torch.all(m==x), "m == x")
+        
+        s = -eps / sigma#(alpha * m - z) / sigma2
+        #f = d_alpha * m + d_sigma * eps
+        f = d_alpha * m + alpha * d_m + d_sigma * eps
+        f_B = f - (g2 / 2) * s
 
-            #compute predicted backward flow 
-            epsilon_ = (z - alpha * m_) / sigma
-            #epsilon_ = eps
-            s_ = (alpha * m_ - z) / sigma2
-            #s_ = s
-            #f_ = d_alpha * m_ + d_sigma * epsilon_
-            f_ = d_alpha * m_ + alpha * d_m_ + d_sigma * epsilon_
-            #f_ = f
-            f_B_ = f_ - (g2 / 2) * s_
-            #print(d_m_)
+        #compute predicted backward flow 
+        epsilon_ = (z - alpha * m_) / sigma
+        #epsilon_ = eps
+        s_ = (alpha * m_ - z) / sigma2
+        #s_ = s
+        #f_ = d_alpha * m_ + d_sigma * epsilon_
+        f_ = d_alpha * m_ + alpha * d_m_ + d_sigma * epsilon_
+        #f_ = f
+        f_B_ = f_ - (g2 / 2) * s_
+        #print(d_m_)
 
-            #compute the loss
-            elbo =(1/(2*g2)) * (f_B - f_B_) ** 2
+        #compute the loss
+        elbo =(1/(2*g2)) * (f_B - f_B_) ** 2
 
-            print(((m - m_)**2).mean(), "mean m")
-            print(((s-s_)**2).mean(), "mean s")
-            print(((f_B - f_B_)**2).mean(), "mean")
-            #print((1/(2*g2)), "g2")
+        print(((m - m_)**2).mean(), "mean m")
+        print(((s-s_)**2).mean(), "mean s")
+        print(((f_B - f_B_)**2).mean(), "mean")
+        #print((1/(2*g2)), "g2")
 
-            return elbo, context_loss.sum(dim=-1)
+        return elbo, context_loss.sum(dim=-1)
     
     def get_elbo_reconstruction_loss(self, x, t):
         #this is also just cross entropy so it can call the same function as the reconstruction loss.
