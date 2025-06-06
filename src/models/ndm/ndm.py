@@ -360,7 +360,7 @@ class NeuralDiffusion(nn.Module):
         print(((m - m_)**2).mean(), "mean m")
         print(((s-s_)**2).mean(), "mean s")
         print(((f_B - f_B_)**2).mean(), "mean")
-        print((1/(2*g2)), "g2")
+        #print((1/(2*g2)), "g2")
 
         return elbo, context_loss.sum(dim=-1)
     
