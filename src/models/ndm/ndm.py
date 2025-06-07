@@ -360,6 +360,7 @@ class NeuralDiffusion(nn.Module):
 
         #compute the loss
         elbo =(1/(2*g2)) * (f_B - f_B_) ** 2
+        print(elbo.shape, "elbo shape")
 
         print(((m - m_)**2).mean(), "mean m")
         #print(((s-s_)**2).mean(), "mean s")
