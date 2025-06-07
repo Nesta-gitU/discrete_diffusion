@@ -35,7 +35,6 @@ class TransformerEncoder8M(nn.Module):
 
         self.position_embeddings = nn.Embedding(vocab_size, hidden_dim)
         self.LayerNorm = nn.LayerNorm(hidden_dim)
-        self.LayerNorm2 = nn.LayerNorm(hidden_dim)
         self.dropout = nn.Dropout(dropout)
         self.hidden_dim = hidden_dim
         self.input_dim = input_dim
@@ -55,7 +54,7 @@ class TransformerEncoder8M(nn.Module):
 
         self.emb_norm = emb.norm(dim=-1, keepdim=True).mean() #for logging purposes
         seq_length = x.size(1)
-        emb = self.LayerNorm2(emb)  # [bs, 256]
+        #emb = self.LayerNorm2(emb)  # [bs, 256]
         
         #print(emb.shape, emb_x.shape, seq_length)
         #print(emb.unsqueeze(1).expand(-1, seq_length, -1).shape)
@@ -64,16 +63,6 @@ class TransformerEncoder8M(nn.Module):
         position_ids = torch.arange(x.size(1), dtype=torch.long, device=x.device)
         emb_inputs = self.position_embeddings(position_ids) + emb_x + emb.unsqueeze(1).expand(-1, seq_length, -1)
         emb_inputs = self.dropout(self.LayerNorm(emb_inputs))
-
-        print("it starts here")
-        print(t)
-        print(timestep_embedding(t, self.input_dim, True))
-        print(emb_x[0])
-        print(emb[0])
-        print(self.position_embeddings(position_ids)[0])
-        print(emb_inputs[0])
-        test =  self.position_embeddings(position_ids) + emb_x
-        print(test[0])
         #exit()
 
         if mask is not None:
