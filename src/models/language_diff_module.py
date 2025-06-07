@@ -474,6 +474,10 @@ class DiffusionModule(LightningModule):
                 if hasattr(self, "_manual_optim_state"):
                     del self._manual_optim_state
 
+        opt = self.trainer.optimizers[0]
+        for pg in opt.param_groups:
+            pg['lr'] = 0.0
+
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
         """Perform a single validation step on a batch of data from the validation set.
