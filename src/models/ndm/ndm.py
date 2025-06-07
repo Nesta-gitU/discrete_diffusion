@@ -299,8 +299,77 @@ class NeuralDiffusion(nn.Module):
 
         return mean ** 2
 
-    
     def get_elbo_diffusion_loss(self, x, t):
+        # Embed and ensure double precision
+        x = self.pred.model.get_embeds(x).double()
+
+        # Context and its loss
+        context, context_loss = self.context(x)
+        if context is not None:
+            context = context.double()
+            context_loss = context_loss.double()
+
+        # Sample noise in double
+        eps = torch.randn_like(x, dtype=torch.float64)
+
+        # Compute schedule and its derivative
+        gamma, d_gamma = (self.gamma(t) if context is None else self.gamma(t, context))
+        gamma, d_gamma = gamma.double(), d_gamma.double()
+
+        # Compute alpha2, sigma2 and clamp to avoid zeros
+        eps_sched = 1e-6
+        alpha2 = self.gamma.alpha_2(gamma).clamp(min=eps_sched, max=1 - eps_sched)
+        sigma2 = self.gamma.sigma_2(gamma).clamp(min=eps_sched, max=1 - eps_sched)
+        alpha, sigma = alpha2.sqrt(), sigma2.sqrt()
+
+        # Forward transform
+        (m, _), (d_m, _) = self.transform(x, t)
+        m, d_m = m.double(), d_m.double()
+
+        # Volatility reweighting
+        eta = self.vol_eta(t).double()
+
+        # Sample latent z
+        z = alpha * m + sigma * eps
+
+        # Predict x0 and transform predicted sample
+        x_pred = self.pred(z, t, context).double()
+        (m_pred, _), (d_m_pred, _) = self.transform(x_pred, t)
+        m_pred, d_m_pred = m_pred.double(), d_m_pred.double()
+
+        # Build volatility
+        g2 = (sigma2 * d_gamma * eta).clamp(min=1e-8)
+
+        # Stable time derivatives
+        d_alpha = -0.5 * d_gamma * alpha * (1.0 - alpha2)
+        d_sigma =  0.5 * d_gamma * sigma * (1.0 - sigma2)
+
+        # True backward drift
+        f_true  = d_alpha * m + alpha * d_m + d_sigma * eps
+        s_true  = -eps / sigma
+        fB_true = f_true - 0.5 * g2 * s_true
+
+        # Predicted backward drift
+        eps_pred = (z - alpha * m_pred) / sigma
+        s_pred   = -eps_pred / sigma
+        f_pred   = d_alpha * m_pred + alpha * d_m_pred + d_sigma * eps_pred
+        fB_pred  = f_pred - 0.5 * g2 * s_pred
+
+        # Instantaneous ELBO
+        elbo = (1.0 / (2.0 * g2)) * (fB_true - fB_pred).pow(2)
+
+        # Debug prints
+        print("elbo shape:", elbo.shape)
+        print("mean |m - m_pred|^2:", ((m - m_pred)**2).mean())
+        print("mean |s - s_pred|^2:", ((s_true - s_pred)**2).mean())
+        print("mean |fB - fB_pred|^2:", ((fB_true - fB_pred)**2).mean())
+        print("mean 1/(2*g2):", (1.0/(2.0*g2)).mean())
+        print("mean elbo:", elbo.mean())
+
+        return elbo, context_loss.sum(dim=-1)
+
+    
+    def get_elbo_diffusion_loss_old(self, x, t):
         #this is not exactly the same as loss now, need to make sure to compute the full objective, but I did write it all out previously, but it is on a different piece of paper 
     
         x = self.pred.model.get_embeds(x)
