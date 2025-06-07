@@ -324,29 +324,15 @@ class NeuralDiffusion(nn.Module):
 
         (m, _), (d_m, _) = self.transform(x, t)
 
-        eta = self.vol_eta(t).double()
+        eta = self.vol_eta(t)
 
         z = alpha * m + sigma * eps
 
-
-        x_ = self.pred(z, t, context).double()
+        x_ = self.pred(z, t, context)
 
         (m_, _), (d_m_, _) = self.transform(x_, t)
 
         g2 = sigma2 * d_gamma * eta
-
-        d_gamma = d_gamma.double()
-        gamma = gamma.double()
-        g2 = g2.double()
-        alpha2 = alpha2.double()
-        alpha = alpha.double()
-        sigma2 = sigma2.double()
-        sigma = sigma.double()
-        m_ = m_.double()
-        m = m.double()
-        eps = eps.double()
-        d_m_ = d_m_.double()
-        d_m = d_m.double()
 
         d_alpha = -0.5 * d_gamma * alpha * (1 - alpha2) 
         d_sigma = 0.5 * d_gamma * sigma * (1 - sigma2)  #TODO incorrect derivative 
