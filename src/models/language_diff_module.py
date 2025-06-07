@@ -308,7 +308,9 @@ class DiffusionModule(LightningModule):
         if self.automatic_optimization:
             optimizer = self.optimizers()
             for group in optimizer.optimizer.param_groups:
+                group["lr"] = 0
                 print(group["lr"], "learning rate")
+
             return elbo
 
         # (3) otherwise, manual optimization (Muon + AdamW)
