@@ -56,6 +56,8 @@ model:
   mask_padding: false
   diffusion:
     diff_loss_type: x_0_prediction
+  optimizer:
+    lr: 0
 
 logger:
   wandb:
