@@ -306,6 +306,11 @@ class DiffusionModule(LightningModule):
         '''
         # return loss or backpropagation will fail
         if self.automatic_optimization:
+            optimizers = self.optimizers()
+            for optim in optimizers:
+                #print the learning rate for all param groupd
+                for group in optim.param_groups:
+                    print("learning rate", group["lr"])
             return elbo
 
         # (3) otherwise, manual optimization (Muon + AdamW)
@@ -473,11 +478,6 @@ class DiffusionModule(LightningModule):
                 #delete the self.manual_optim_state atribute
                 if hasattr(self, "_manual_optim_state"):
                     del self._manual_optim_state
-
-        opt = self.optimizers()
-
-        for pg in opt[0].param_groups:
-            pg['lr'] = 0.0
 
 
     def validation_step(self, batch: torch.Tensor, batch_idx: int) -> None:
