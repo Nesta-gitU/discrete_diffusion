@@ -125,7 +125,7 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         torch.cuda.memory._dump_snapshot("memory_snapshot.json")
         torch.cuda.memory._record_memory_history()
 
-
+    
     if cfg.get("train"):
         log.info("Starting training!")
         trainer.fit(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path) #gets set to None if we dont want to restart 
