@@ -525,6 +525,7 @@ class DiffusionModule(LightningModule):
         device = batch.device
 
         elbo_model = self.ema.module              # use EMA weights for evaluation
+        elbo_model.eval()                     # set to eval mode (no dropout, etc.)
 
         # -------------------------------------------------------------------
         # 1.   CONSTANT TERMS (reconstruction + prior) – no dependence on t

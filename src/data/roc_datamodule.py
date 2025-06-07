@@ -92,6 +92,7 @@ class ROCdatamodule(LightningDataModule):
             overfit_one_batch=self.hparams.overfit_one_batch,
         )
         self.data_test.prepare(data_args, tokenizer=tokenizer, nlp_tokenizer=nlp_tokenizer)
+        self.data_test = self.data_train
 
     def train_dataloader(self) -> DataLoader[Any]:
         return DataLoader(
