@@ -306,11 +306,9 @@ class DiffusionModule(LightningModule):
         '''
         # return loss or backpropagation will fail
         if self.automatic_optimization:
-            optimizers = self.optimizers()
-            for optim in optimizers:
-                #print the learning rate for all param groupd
-                for group in optim.param_groups:
-                    print("learning rate", group["lr"])
+            optimizer = self.optimizers()
+            for group in optimizer.optimizer.param_groups:
+                print(group["lr"], "learning rate")
             return elbo
 
         # (3) otherwise, manual optimization (Muon + AdamW)
