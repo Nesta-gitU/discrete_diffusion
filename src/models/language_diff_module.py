@@ -306,7 +306,7 @@ class DiffusionModule(LightningModule):
         '''
         # return loss or backpropagation will fail
         if self.automatic_optimization:
-            return elbo
+            return elbo.detach()
 
         # (3) otherwise, manual optimization (Muon + AdamW)
         #    manual_backward() will invoke your on_after_backward() hook,
