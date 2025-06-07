@@ -265,6 +265,7 @@ class NeuralDiffusion(nn.Module):
         z = f_m + f_s * eps
   
         embeddings_ = self.pred(z, t) 
+        print("mse loss: ", ((embeddings - embeddings_) ** 2).mean())
         old = self.diff_loss_type
         self.diff_loss_type = "elbo"
         diffusion_loss = self.diffusion_loss(alpha, alpha_prime, f_s, f_dm, f_ds, eps, g2, embeddings_ , x, z, t, f)
