@@ -52,7 +52,7 @@ class NFDM_gaussian(nn.Module):
         #    m = torch.zeros_like(x)
         #    ls = torch.zeros_like(x)
         #print("using this code------------------------------------------------------------")
-        if False: #torch.all(t == torch.zeros_like(t)):
+        if torch.all(t == torch.zeros_like(t)):
             m = x
             ls = (1 - t) * small_value      # * torch.ones_like(x)
         else:
