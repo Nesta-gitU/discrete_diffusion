@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu_h100
+#SBATCH --gpus=1
+#SBATCH --job-name=basic_diff
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=9
+#SBATCH --time=10:00:00
+#SBATCH --output=$HOME/discrete_diffusion/slurm_outputs/slurm_output_%A.out
+
+module purge
+module load 2023
+module load Anaconda3/2023.07-2
+
+# Your job starts in the directory where you call sbatch
+cd $HOME/discrete_diffusion
+# Activate your environment
+source activate fomo
+# Run your code
+srun python src/sample.py experiment=roc_nfdm_new "+sampling_mode=[better_sde]" +n_steps=2000 +setting=test_mode
