@@ -61,7 +61,12 @@ class NFDM_gaussian(nn.Module):
             #ls = ls.clamp(min=-20, max=10)  #clamping
 
             #make the variance tokenwise instead of dimensionwise
-            if not self.dont_add_head:
+            value = True if hasattr(self, 'dont_add_head') else False
+            if value:
+                if not self.dont_add_head:
+                    ls = self.linear_layer(ls)
+                    m = self.linear_layer2(m)
+            else:
                 ls = self.linear_layer(ls)
                 m = self.linear_layer2(m)
             #ls = ls.mean(dim=2, keepdim=True)
