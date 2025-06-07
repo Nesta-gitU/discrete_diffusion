@@ -474,8 +474,9 @@ class DiffusionModule(LightningModule):
                 if hasattr(self, "_manual_optim_state"):
                     del self._manual_optim_state
 
-        opt = self.trainer.optimizers[0]
-        for pg in opt.param_groups:
+        opt = self.optimizers()
+
+        for pg in opt[0].param_groups:
             pg['lr'] = 0.0
 
 
