@@ -101,8 +101,8 @@ class DiffusionModule(LightningModule):
 
         self.time_sampler = time_sampler
         #hack to make it so you can continue a training run with a different sampler
-        #if not hasattr(self.time_sampler, "_logits"):
-        #    self.time_sampler._logits = nn.Parameter(torch.ones(100), requires_grad=False)
+        if not hasattr(self.time_sampler, "_logits"):
+            self.time_sampler._logits = nn.Parameter(torch.ones(100), requires_grad=False)
         self.model = diffusion
         self.max_steps = total_steps
         self.mask_padding = mask_padding
@@ -306,10 +306,10 @@ class DiffusionModule(LightningModule):
         '''
         # return loss or backpropagation will fail
         if self.automatic_optimization:
-            optimizer = self.optimizers()
-            for group in optimizer.optimizer.param_groups:
-                group["lr"] = 0
-                print(group["lr"], "learning rate")
+            #optimizer = self.optimizers()
+            #for group in optimizer.optimizer.param_groups:
+            #    group["lr"] = 0
+            #    print(group["lr"], "learning rate")
 
             return elbo
 

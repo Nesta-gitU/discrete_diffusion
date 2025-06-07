@@ -94,9 +94,10 @@ class TransformerNetModel2(nn.Module):
         nfdm=True,
         attn_implementation="sdpa",
         layer_norm_eps=None,
+        timestep_scale=False,
     ):
         super().__init__()
-
+        self.timestep_scale = timestep_scale
         attention_resolutions = tuple([int(i) for i in attention_resolutions.split(",")])
         channel_mult = tuple([int(i) for i in channel_mult.split(",")])
 
@@ -200,7 +201,8 @@ class TransformerNetModel2(nn.Module):
         :param y: an [N] Tensor of labels, if class-conditional.
         :return: an [N x C x ...] Tensor of outputs.
         """
-        timesteps = timesteps - 0.9
+        if self.timestep_scale:
+            timesteps = timesteps - 0.9
         assert (y is not None) == (self.num_classes is not None), \
             "must specify y if and only if the model is class-conditional"
 
