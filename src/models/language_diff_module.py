@@ -286,7 +286,8 @@ class DiffusionModule(LightningModule):
         self.log("train/elbo", elbo, on_step=True, prog_bar=False,logger=True, sync_dist=True)
         self.log("train/context_loss", context_loss, on_step=True, prog_bar=False,logger=True, sync_dist=True)
         if hasattr(self.model, "affine"):
-            self.log("train/emb_norm", self.model.affine.net.emb_norm, on_step=True, prog_bar=True, logger=True, sync_dist=True)
+            if hasattr(self.model.affine, "net"):
+                self.log("train/emb_norm", self.model.affine.net.emb_norm, on_step=True, prog_bar=True, logger=True, sync_dist=True)
 
         '''
         missing = []
