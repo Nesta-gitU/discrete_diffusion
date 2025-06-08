@@ -301,6 +301,8 @@ class NeuralDiffusion(nn.Module):
         return mean ** 2
 
     def get_elbo_diffusion_loss(self, x, t):
+        x = self.pred.model.get_embeds(x)
+        
         context, context_loss = self.context(x)
 
         eps = torch.randn_like(x)
