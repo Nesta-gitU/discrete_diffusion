@@ -4,6 +4,7 @@ from typing import Callable, Optional
 
 import numpy as np
 
+from sympy.core.evalf import get_abs
 import torch
 from torch import embedding, nn, Tensor, zeros_like
 from torch.nn import functional as F
@@ -149,7 +150,7 @@ class NeuralDiffusion(nn.Module):
         loss_1 = loss_1 ** 2
         loss = loss_1
 
-        print(((m-m_)**2).mean(), "mean m (mse)")
+        #print(((m-m_)**2).mean(), "mean m (mse)")
 
         # Stabilises training
         if self.add_pure_x_pred:
@@ -300,79 +301,42 @@ class NeuralDiffusion(nn.Module):
         return mean ** 2
 
     def get_elbo_diffusion_loss(self, x, t):
-        """
-        Compute instantaneous ELBO in original model dtypes, but switch to double only for the critical scalar schedules and volatility computations.
-        """
-        # 1) Embed (preserves original dtype)
-        embeds = self.pred.model.get_embeds(x)
+        context, context_loss = self.context(x)
 
-        # 2) Context and its loss
-        context, context_loss = self.context(embeds)
+        eps = torch.randn_like(x)
 
-        # 3) Sample noise in same dtype as embeddings
-        eps = torch.randn_like(embeds)
-
-        # 4) Compute schedule and its time-derivative in double precision
         if context is None:
             gamma, d_gamma = self.gamma(t)
         else:
             gamma, d_gamma = self.gamma(t, context)
-        gamma_d = gamma.double()
-        d_gamma_d = d_gamma.double()
 
-        # 5) Compute alpha^2, sigma^2 and clamp in double precision
-        eps_sched = 1e-6
-        alpha2_d = self.gamma.alpha_2(gamma_d).clamp(min=eps_sched, max=1-eps_sched)
-        sigma2_d = self.gamma.sigma_2(gamma_d).clamp(min=eps_sched, max=1-eps_sched)
-        alpha_d = alpha2_d.sqrt()
-        sigma_d = sigma2_d.sqrt()
+        alpha = self.gamma.alpha_2(gamma) ** 0.5
+        sigma = self.gamma.sigma_2(gamma) ** 0.5
 
-        # 6) Forward transform (original dtype)
-        (m, _), (d_m, _) = self.transform(embeds, t)
+        (m, _), (d_m, _) = self.transform(x, t)
 
-        # 7) Volatility reweighting in double
-        eta_d = self.vol_eta(t).double()
+        eta = self.vol_eta(t)
 
-        # 8) Sample latent z in original dtype
-        alpha = alpha_d.to(embeds.dtype)
-        sigma = sigma_d.to(embeds.dtype)
         z = alpha * m + sigma * eps
 
-        # 9) Predict x0 and transform predicted sample
-        x_pred = self.pred(z, t, context)
-        (m_pred, _), (d_m_pred, _) = self.transform(x_pred, t)
+        x_ = self.pred(z, t, context)
 
-        # 10) Build volatility g2 in double, then cast back for usage
-        g2_d = (sigma2_d * d_gamma_d * eta_d).clamp(min=1e-8)
-        g2 = g2_d.to(embeds.dtype)
+        (m_, _), (d_m_, _) = self.transform(x_, t)
 
-        # 11) Stable time derivatives in double, cast to original dtype
-        d_alpha_d = -0.5 * d_gamma_d * alpha_d * (1.0 - alpha2_d)
-        d_sigma_d =  0.5 * d_gamma_d * sigma_d * (1.0 - sigma2_d)
-        d_alpha = d_alpha_d.to(embeds.dtype)
-        d_sigma = d_sigma_d.to(embeds.dtype)
+        #so I would like to weight like x prediction so I should use this weighting instead
+        #the l_x weighting above still includes the 1/2g(t) term but in my other formulation it actually doesnt, since g(t) >1? is that true, that could make the loss a bit lower
+        #okay I take that back
+        one_over_dgamma = torch.clamp(1 / (d_gamma), max=self.clamp_max) #so it doesnt go to inf 
 
-        # 12) True backward drift (original dtype)
-        f_true  = d_alpha * m + alpha * d_m + d_sigma * eps
-        s_true  = -eps / sigma
-        fB_true = f_true - (g2 * 0.5) * s_true
+        loss_1 = (1 + eta) / 2 * (m - m_) + one_over_dgamma * (d_m - d_m_)
+        loss_1 = loss_1 ** 2
+        loss = loss_1
 
-        # 13) Predicted backward drift
-        eps_pred = (z - alpha * m_pred) / sigma
-        s_pred   = -eps_pred / sigma
-        f_pred   = d_alpha * m_pred + alpha * d_m_pred + d_sigma * eps_pred
-        fB_pred  = f_pred - (g2 * 0.5) * s_pred
+        # ELBO weighting
+        lmbd_elb = 0.5 * torch.exp(-gamma) * d_gamma / eta
+        loss = lmbd_elb * loss
 
-        # 14) Instantaneous ELBO in original dtype: elbo = (1/(2*g2))*(fB_true - fB_pred)^2
-        elbo = (1.0 / (2.0 * g2)) * (fB_true - fB_pred).pow(2)
-
-        # 15) Debug prints
-        print("elbo shape:", elbo.shape)
-        print("mean |m - m_pred|^2:", ((m - m_pred)**2).mean())
-        print("mean |s - s_pred|^2:", ((s_true - s_pred)**2).mean())
-        print("mean |fB - fB_pred|^2:", ((fB_true - fB_pred)**2).mean())
-        print("mean g2:", g2.mean())
-        print("mean elbo:", elbo.mean())
+        elbo = loss
 
         return elbo, context_loss.sum(dim=-1)
 
