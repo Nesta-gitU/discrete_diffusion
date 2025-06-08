@@ -302,7 +302,7 @@ class NeuralDiffusion(nn.Module):
 
     def get_elbo_diffusion_loss(self, x, t):
         x = self.pred.model.get_embeds(x)
-        
+
         context, context_loss = self.context(x)
 
         eps = torch.randn_like(x)
@@ -328,7 +328,7 @@ class NeuralDiffusion(nn.Module):
         #so I would like to weight like x prediction so I should use this weighting instead
         #the l_x weighting above still includes the 1/2g(t) term but in my other formulation it actually doesnt, since g(t) >1? is that true, that could make the loss a bit lower
         #okay I take that back
-        one_over_dgamma = torch.clamp(1 / (d_gamma), max=self.clamp_max) #so it doesnt go to inf 
+        one_over_dgamma = torch.clamp(1 / (d_gamma), max=10000) #so it doesnt go to inf 
 
         loss_1 = (1 + eta) / 2 * (m - m_) + one_over_dgamma * (d_m - d_m_)
         loss_1 = loss_1 ** 2
