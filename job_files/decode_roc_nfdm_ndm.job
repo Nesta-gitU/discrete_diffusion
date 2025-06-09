@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/sample.py experiment=roc_nfdm_new "+sampling_mode=[better_sde]" +n_steps=2000 +setting=test_mode
+srun python src/sample.py experiment=roc_nfdm_new "+sampling_mode=[marginal]" +n_steps=2000 +setting=test_mode
