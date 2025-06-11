@@ -643,7 +643,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     #save the true word embeddings and corresponding words to a file
 
-    if False:
+    if True:
         with torch.no_grad():
             out_dir="output"
             model_base_name = args.model_base_name
@@ -662,6 +662,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
             #plot_nfdm_transformation(batch, model, out_dir, change_basis_over_time=True)
             plot_nfdm_transformation_tsne(batch, model, out_dir, change_basis_over_time=False)
+            exit()
     
 
 
