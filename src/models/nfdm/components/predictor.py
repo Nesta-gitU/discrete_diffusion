@@ -23,3 +23,17 @@ class Predictor(nn.Module):
                 #x = (1 + t) * z - (t + 0.01) * x
         
         return x
+
+class GammaPredictor(nn.Module):
+    """
+    Gamma predictor that can be used in the NeuralDiffusion model.
+    It is a wrapper around the Predictor class that sets the context to None.
+    """
+    def __init__(self, gamma_predictor):
+        super().__init__()
+        self.cur_context = None  # This will be set to the current context in the ldm
+        self.gamma_predictor = gamma_predictor
+        self.model = gamma_predictor.model
+
+    def forward(self, z, t, context=None, **model_kwargs):
+        return self.gamma_predictor(z, t, context=self.cur_context, **model_kwargs)

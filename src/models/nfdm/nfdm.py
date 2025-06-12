@@ -1,3 +1,4 @@
+from sqlalchemy.sql.schema import HasSchemaAttr
 import torch
 import torch.autograd
 import torch.autograd.functional
@@ -78,6 +79,7 @@ class NeuralDiffusion(nn.Module):
         
         #encode the word indices x to embeddings
         #embeddings = self.encoder(x)
+        
         embeddings = self.pred.model.get_embeds(x)
         # compute parameters of q(z_t | x) and corresponding time derivatives
         # that means here we get the parameters of: F(x, t, eps) = _F(e(x), t, eps)
@@ -182,6 +184,7 @@ class NeuralDiffusion(nn.Module):
         r_dz = r_dm + r_ds / r_s * (z - r_m)  # ODE drift
         r_score = (r_m - z) / r_s ** 2  # score function
         r_drift = r_dz - 0.5 * g2 * r_score  # SDE drift
+        print(r_score.shape, "r_score shape")
 
         # not elbo
         #loss = (f_drift - r_drift) ** 2
@@ -195,6 +198,8 @@ class NeuralDiffusion(nn.Module):
         
 
         if self.diff_loss_type == "elbo":
+            print((f_drift - r_drift).shape, "f_drift - r_drift shape")
+            print(g2.shape, "g2 shape")
             loss = 0.5 * (f_drift - r_drift) ** 2 / g2
             #print("we are here")
         
@@ -256,14 +261,20 @@ class NeuralDiffusion(nn.Module):
         embeddings = self.pred.model.get_embeds(x)
 
 
-        g2 = self.vol(t) ** 2
+        
 
         (f_m, f_s, alpha), (f_dm, f_ds, alpha_prime) = t_dir(f(embeddings), t) #(function output), (jvp) == (mean, sigma), (mean derivative, sigma derivative)
+
+        if hasattr(self.affine, "cur_context"):
+            self.vol.cur_context = self.affine.cur_context
+        g2 = self.vol(t) ** 2
 
         eps = torch.randn_like(embeddings)
 
         z = f_m + f_s * eps
-  
+    
+        if hasattr(self.affine, "cur_context"):
+            self.pred.cur_context = self.affine.cur_context
         embeddings_ = self.pred(z, t) 
         print("mse loss: ", ((embeddings - embeddings_) ** 2).mean())
         #old = self.diff_loss_type

@@ -54,3 +54,25 @@ class SqrtVolatility(nn.Module):
         sigma2 = torch.sqrt(t + (0.99 - t) * 0.0001)
         g2 = 0.9999 / (2 * sigma2 * (1-sigma2))
         return torch.sqrt(g2)
+
+class GammaVolatility(nn.Module):
+
+    def __init__(self, gamma, vol_eta):
+        super().__init__()
+
+        self.gamma = gamma
+        self.vol_eta = vol_eta
+        self.cur_context = None
+    
+    def forward(self, t):
+        if self.cur_context is None:
+            gamma, d_gamma = self.gamma(t)
+        else:
+            gamma, d_gamma = self.gamma(t, self.cur_context)
+        
+        eta = self.vol_eta(t)
+        sigma2 = self.gamma.sigma_2(gamma)
+
+        g2 = sigma2 * d_gamma * eta
+
+        return torch.sqrt(g2)

@@ -144,6 +144,43 @@ class Sqrt(nn.Module):
         
         return output0, output1, output3
 
+class GammaAffine(nn.Module):
+    def __init__(self, gamma, context, transform):
+        super().__init__()
+
+        self.gamma = gamma
+        self.context = context
+        self.transform = transform
+        self.cur_context = None
+        self.cur_context_loss = None
+    
+    def forward(self, x, t):
+        # get alpha and sigma through gamma and cur context
+        context, context_loss = self.context(x)
+        self.cur_context_loss = context_loss
+        #print("context in gamma affine", context)
+        self.cur_context = context
+        #print(context, "context in gamma affine")
+
+        if context is None:
+            #print("-0----------------------------------------shouldnt happen-----------------------------------------------------")
+            gamma, d_gamma = self.gamma(t)
+        else:
+            #print(context)
+            gamma, d_gamma = self.gamma(t, context)
+
+        alpha2 = self.gamma.alpha_2(gamma)
+        sigma2 = self.gamma.sigma_2(gamma)
+
+        alpha = alpha2 ** 0.5
+        sigma = sigma2 ** 0.5
+
+        (m, _), (d_m, _) = self.transform(x, t)
+
+        #z = alpha * m + sigma * eps
+
+        return alpha * m, sigma, alpha
+
 """
 class Sqrt2(nn.Module):
     def __init__(self):

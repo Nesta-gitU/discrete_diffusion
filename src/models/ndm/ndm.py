@@ -121,6 +121,7 @@ class NeuralDiffusion(nn.Module):
         
         context, context_loss = self.context(x)
 
+
         eps = torch.randn_like(x)
 
         if context is None:
@@ -304,6 +305,8 @@ class NeuralDiffusion(nn.Module):
         x = self.pred.model.get_embeds(x)
 
         context, context_loss = self.context(x)
+        #print("halloooooo?")
+        #print(type(self.context), "something sketchy here")
 
         eps = torch.randn_like(x)
 
@@ -339,6 +342,8 @@ class NeuralDiffusion(nn.Module):
         loss = lmbd_elb * loss
 
         elbo = loss
+
+        print(((m - m_)**2).mean(), "mean m (mse)")
 
         return elbo, context_loss.sum(dim=-1)
 

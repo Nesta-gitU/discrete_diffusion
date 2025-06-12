@@ -11,10 +11,17 @@ class VaeContext(nn.Module):
         self.model = model
         
     def forward(self, x): 
-        #return the context and the loss from the context       
+        #return the context and the loss from the context      
+        #print(x) 
         mean, log_std = self.model(x).chunk(2, dim=-1)
         std = torch.exp(log_std)
+        #print(mean.shape, "the shape of the mean")
+        #print(log_std.shape, "the shape of the log_std")
+        print(mean.mean(), "mean of the mean")
+        print(std.mean(), "mean of the std")
+
         context = mean + std * torch.randn_like(std)
+        #print(context.shape, "the shape of the context")
 
         KLD = -0.5 * (1 + (2*log_std) - mean**2 - (2*log_std).exp())
         

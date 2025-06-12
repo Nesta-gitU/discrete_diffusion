@@ -64,9 +64,10 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.data)
 
     log.info(f"Instantiating model <{cfg.model._target_}>")
-    model = DiffusionModule.load_from_checkpoint(cfg.ckpt_path, strict=False)
+    model = DiffusionModule.load_from_checkpoint(cfg.ckpt_path, strict=True)
 
     model.eval()
+    print(model.model)
     if not hasattr(model.model, "context"):
         print("do modifications on context")
         model.ema.module.context = NoneContext(None)
@@ -79,7 +80,34 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         if model.model.gamma is not None:
             print("do modifications on reference")
             model.ema.module.gamma.around_reference = False
-            model.model.gamma.around_reference = False    
+            model.model.gamma.around_reference = False   
+
+    if False:
+        # init a new neural diffusion model that takes as input the gamma and context parts and then puts it all together, then replace model.model with this new one. 
+        #nfdm has components, vol, pred, affine -> create classes for mulan in terms of nfdm in these 
+        from src.models.nfdm.components.predictor import GammaPredictor #-> this should set self.cur_context = None, and set it to the correct context in the ldm otherwise.
+        from src.models.nfdm.components.volatility import GammaVolatility 
+        from src.models.nfdm.components.forward_process import GammaAffine # -> same as above, but cur_context should be current while we will store the context itself in self.context. 
+
+        GammaPredictor = GammaPredictor(model.ema.module.pred)
+        GammaVolatility = GammaVolatility(model.ema.module.gamma, model.ema.module.vol_eta)
+        GammaAffine = GammaAffine(model.ema.module.gamma, model.ema.module.context, model.ema.module.transform)
+
+        from src.models.nfdm.nfdm import NeuralDiffusion
+        mulan_as_nfdm = NeuralDiffusion(
+            pred=GammaPredictor,
+            vol=GammaVolatility,
+            affine=GammaAffine,
+        )
+
+        model.ema.module = mulan_as_nfdm
+        model.model = mulan_as_nfdm
+        model.spoof_nfdm = True
+        model.eval()
+        print("model.model is now nfdm----------------------------------------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+
+
+
 
     log.info("Instantiating loggers...")
     logger: List[Logger] = instantiate_loggers(cfg.get("logger"))

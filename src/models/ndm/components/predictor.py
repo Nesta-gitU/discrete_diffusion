@@ -15,8 +15,8 @@ class Predictor(nn.Module):
     def forward(self, z, t, context=None, **model_kwargs):
 
         if context is not None:
-            print("Using context in predictor")
-            print(context, "context")
+            #print("Using context in predictor")
+            #print(context, "context")
             #concatenate context with z
             #check if context is the same shape as one vector in z
             if context.shape[1] != z.shape[-1]:

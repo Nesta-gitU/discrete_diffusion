@@ -527,7 +527,7 @@ class DiffusionModule(LightningModule):
 
         B = batch.size(0)                         # batch size
         d = batch.shape[1]                        # sequence length (dimensions per example)
-        K = 64                                    # MC samples per example
+        K = 2 #64                                    # MC samples per example
         device = batch.device
 
         elbo_model = self.ema.module              # use EMA weights for evaluation
@@ -554,7 +554,10 @@ class DiffusionModule(LightningModule):
             diff_loss, ctx_loss = elbo_model.get_elbo_diffusion_loss(batch, t)
             #print(ctx_loss, "ctx_loss")
             if ctx_loss is None:
-                ctx_loss = torch.zeros_like(prior_loss)
+                if self.spoof_nfdm:
+                    ctx_loss = elbo_model.affine.cur_context_loss.sum(dim=-1)
+                else:
+                    ctx_loss = torch.zeros_like(prior_loss)
 
             diff_per_ex  = diff_loss.flatten(1).sum(1)    # (B,)
             #print(diff_per_ex.shape, "diff_per_ex shape")
