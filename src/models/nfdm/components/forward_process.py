@@ -163,7 +163,7 @@ class GammaAffine(nn.Module):
         #print(context, "context in gamma affine")
 
         if context is None:
-            #print("-0----------------------------------------shouldnt happen-----------------------------------------------------")
+            print("-0----------------------------------------shouldnt happen-----------------------------------------------------")
             gamma, d_gamma = self.gamma(t)
         else:
             #print(context)
@@ -178,6 +178,9 @@ class GammaAffine(nn.Module):
         (m, _), (d_m, _) = self.transform(x, t)
 
         #z = alpha * m + sigma * eps
+        print("r_ds and f_ds should be equal to")
+        d_sigma = 0.5 * d_gamma * sigma * (1 - sigma2) 
+        print(d_sigma, "d_sigma")
 
         return alpha * m, sigma, alpha
 

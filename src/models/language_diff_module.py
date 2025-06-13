@@ -549,6 +549,9 @@ class DiffusionModule(LightningModule):
         for k in range(K):
             # --- plain U[0,1] sampling over t --------------------------------
             t = torch.rand(B, 1, 1, device=device)
+            #make deterministic should be removed normally 
+            t = torch.ones_like(t) - 0.9
+            print(batch)
 
             # diffusion + (optional) context loss; both are unreduced
             diff_loss, ctx_loss = elbo_model.get_elbo_diffusion_loss(batch, t)

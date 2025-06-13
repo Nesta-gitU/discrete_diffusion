@@ -301,7 +301,7 @@ class NeuralDiffusion(nn.Module):
 
         return mean ** 2
 
-    def get_elbo_diffusion_loss(self, x, t):
+    def get_elbo_diffusion_loss_new(self, x, t):
         x = self.pred.model.get_embeds(x)
 
         context, context_loss = self.context(x)
@@ -349,7 +349,7 @@ class NeuralDiffusion(nn.Module):
 
 
     
-    def get_elbo_diffusion_loss_old(self, x, t):
+    def get_elbo_diffusion_loss(self, x, t):
         #this is not exactly the same as loss now, need to make sure to compute the full objective, but I did write it all out previously, but it is on a different piece of paper 
     
         x = self.pred.model.get_embeds(x)
@@ -357,6 +357,8 @@ class NeuralDiffusion(nn.Module):
         context, context_loss = self.context(x)
 
         eps = torch.randn_like(x)
+        #remove later
+        eps = torch.zeros_like(x) + 0.5
 
         if context is None:
             print("-0----------------------------------------shouldnt happen-----------------------------------------------------")
@@ -406,16 +408,26 @@ class NeuralDiffusion(nn.Module):
         #f_ = f
         f_B_ = f_ - (g2 / 2) * s_
         #print(d_m_)
+        #print(alpha * m_, "r_m")
+        #print(sigma, "r_s")
+        print(d_alpha * m_ + alpha * d_m_, "r_dm")
+        print(d_sigma, "r_ds")
 
         #compute the loss
         elbo =(1/(2*g2)) * (f_B - f_B_) ** 2
-        print(elbo.shape, "elbo shape")
+        #print(elbo.shape, "elbo shape")
 
-        print(((m - m_)**2).mean(), "mean m")
-        print(((s-s_)**2).mean(), "mean s")
-        print(((f_B - f_B_)**2).mean(), "mean")
-        print((1/(2*g2)).mean(), "g2")
-        print("elbo: ", elbo.mean(), "mean elbo")
+        #print(((m - m_)**2).mean(), "mean m")
+        #print(((s-s_)**2).mean(), "mean s")
+        #print(((f_B - f_B_)**2).mean(), "mean flow")
+        #print(((f - f_)**2).mean(), "mean ode drift")
+        #print((1/(2*g2)).mean(), "g2")
+        #print("elbo: ", elbo.mean(), "mean elbo")
+        #flow_matching_loss = (1/(2*g2)) * (f - f_) ** 2
+        #print(flow_matching_loss.mean(), "mean flow matching loss")
+        #score_matching_loss = (g2/8) * (s - s_) ** 2
+        #print(score_matching_loss.mean(), "mean score matching loss")
+        #print(torch.all(flow_matching_loss == score_matching_loss), "flow matching loss == score matching loss?")
 
         return elbo, context_loss.sum(dim=-1)
     

@@ -177,14 +177,18 @@ class NeuralDiffusion(nn.Module):
         # substitute predicted \hat{x} into the forward process to parameterise the reverse process
         #print(t)
         (r_m, r_s, avalue), (r_dm, r_ds, anothervalue) = t_dir(f(x_), t)
-        #print(r_dm, r_ds, "r_dm, r_ds")
+        #print(r_m, r_s, "r_m, r_s")
+        print(r_ds, "r_ds")
+        #print(torch.all(r_ds == f_ds), "r_ds == f_ds")
+        #r_ds depends only on time not on x, so these should be exactly the same
         #print("r_ds", r_ds)
 
         # compute the drift term of the reverse process based on z_t
         r_dz = r_dm + r_ds / r_s * (z - r_m)  # ODE drift
         r_score = (r_m - z) / r_s ** 2  # score function
         r_drift = r_dz - 0.5 * g2 * r_score  # SDE drift
-        print(r_score.shape, "r_score shape")
+        
+
 
         # not elbo
         #loss = (f_drift - r_drift) ** 2
@@ -198,8 +202,6 @@ class NeuralDiffusion(nn.Module):
         
 
         if self.diff_loss_type == "elbo":
-            print((f_drift - r_drift).shape, "f_drift - r_drift shape")
-            print(g2.shape, "g2 shape")
             loss = 0.5 * (f_drift - r_drift) ** 2 / g2
             #print("we are here")
         
@@ -208,6 +210,18 @@ class NeuralDiffusion(nn.Module):
             loss = (1/(-0.5 * snr_prime)) * 0.5 * (f_drift - r_drift) ** 2 / g2
         else:
             raise ValueError("Invalid diffusion loss type")
+
+        #print(((x - x_)**2).mean(), "mean m")
+        #print(((f_score-r_score)**2).mean(), "mean s")
+        #print(((f_drift - r_drift)**2).mean(), "mean flow")
+        #print((f_dz - r_dz).mean(), "mean ode drift")
+        #print((1/(2*g2)).mean(), "g2")
+        #print("elbo: ", loss.mean(), "mean elbo")
+        #flow_matching_loss = (1/(2*g2)) * (f_dz - r_dz) ** 2
+        #print(flow_matching_loss.mean(), "mean flow matching loss")
+        #print(f_score.shape, r_score.shape, "f_score, r_score shapes")
+        #score_matching_loss = (g2/8) * (f_score - r_score) ** 2
+        #print(score_matching_loss.mean(), "mean score matching loss")
 
     
         # mask out special tokens
@@ -270,18 +284,20 @@ class NeuralDiffusion(nn.Module):
         g2 = self.vol(t) ** 2
 
         eps = torch.randn_like(embeddings)
+        #fix epsilon to some value
+        eps = torch.zeros_like(embeddings) + 0.5
 
         z = f_m + f_s * eps
     
         if hasattr(self.affine, "cur_context"):
             self.pred.cur_context = self.affine.cur_context
         embeddings_ = self.pred(z, t) 
-        print("mse loss: ", ((embeddings - embeddings_) ** 2).mean())
+    
         #old = self.diff_loss_type
         self.diff_loss_type = "elbo"
-        diffusion_loss = self.diffusion_loss(alpha, alpha_prime, f_s, f_dm, f_ds, eps, g2, embeddings_ , x, z, t, f)
+        diffusion_loss = self.diffusion_loss(alpha, alpha_prime, f_s, f_dm, f_ds, eps, g2, embeddings_ , embeddings, z, t, f)
         #self.diff_loss_type = old
-        print("diffusion loss: ", diffusion_loss.mean())
+        
 
         return diffusion_loss, None
     
