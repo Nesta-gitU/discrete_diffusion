@@ -201,13 +201,13 @@ class GammaMuLAN(Gamma):
         + (b ** 2 + 2 * a * c) * (t ** 2)
         + a * b * (t ** 3) * 2.0
         + b * c * t * 2
-        + (c ** 2) + self.grad_min_epsilon) #Note during training this grad min was not there
+        + (c ** 2)) #Note during training this grad min was not there
         
         scale = ((a ** 2) / 5.0
                 + (b ** 2 + 2 * a * c) / 3.0
                 + a * b / 2.0
                 + b * c
-                + (c ** 2) + self.grad_min_epsilon) #this grad min was also not there
+                + (c ** 2)) #this grad min was also not there
 
         return self.max_minus_min_gamma * polynomial / scale
 
@@ -324,13 +324,13 @@ class GammaMuLANContext(Gamma):
         + (b ** 2 + 2 * a * c) * (t ** 2)
         + a * b * (t ** 3) * 2.0
         + b * c * t * 2
-        + (c ** 2) + self.grad_min_epsilon) #Note during training this grad min was not there, but it should be if you want to compute the actual grad t
+        + (c ** 2)) #Note during training this grad min was not there, but it should be if you want to compute the actual grad t
         
         scale = ((a ** 2) / 5.0
                 + (b ** 2 + 2 * a * c) / 3.0
                 + a * b / 2.0
                 + b * c
-                + (c ** 2) + self.grad_min_epsilon) #this is one of the differences -> same here as above 
+                + (c ** 2)) #this is one of the differences -> same here as above 
 
         return self.max_minus_min_gamma * polynomial / scale
 
