@@ -527,7 +527,7 @@ class DiffusionModule(LightningModule):
 
         B = batch.size(0)                         # batch size
         d = batch.shape[1]                        # sequence length (dimensions per example)
-        K = 2 #64                                    # MC samples per example
+        K = 64 #64                                    # MC samples per example
         device = batch.device
 
         elbo_model = self.ema.module              # use EMA weights for evaluation
