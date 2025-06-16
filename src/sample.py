@@ -161,7 +161,7 @@ def sample_here(args, model, modality, datamodule):
     out_dir = 'generation_outputs'   
     # add a timestamp to the outdir
     timestamp = str(int(np.floor(time.time())))
-    out_dir = os.path.join(out_dir, f"{args.model_base_name}_{timestamp}")
+    out_dir = os.path.join(out_dir, f"{args.model_base_name}_{timestamp}_{args.decode_name}")
 
     #word_embs = model.pred.model.word_embedding.weight
     #word_embs = word_embs.cpu().numpy()
@@ -583,6 +583,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     args.use_files = cfg.get("use_files", False)
     args.use_default_nfdm = cfg.get("use_default_nfdm", False)
     args.use_uniform = cfg.get("use_uniform", True)
+    args.decode_name = cfg.get("decode_name", "noname")
 
 
     #get model name by checkpoint so that it includes the epoch at which it was taken 

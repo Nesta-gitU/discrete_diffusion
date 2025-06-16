@@ -82,7 +82,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
             model.ema.module.gamma.around_reference = False
             model.model.gamma.around_reference = False   
 
-    if False:
+    if True:
         # init a new neural diffusion model that takes as input the gamma and context parts and then puts it all together, then replace model.model with this new one. 
         #nfdm has components, vol, pred, affine -> create classes for mulan in terms of nfdm in these 
         from src.models.nfdm.components.predictor import GammaPredictor #-> this should set self.cur_context = None, and set it to the correct context in the ldm otherwise.

@@ -188,7 +188,7 @@ def nonuniform_time_grid(ts: float,
     assert N >= B, "Need at least one step per bucket, so N >= number of buckets"
 
     # 1) convert logits → probabilities
-    temperature = 0.8 #-> scale up so that the really steep points get much more I suppose on problem is this doesnt just measure steepness
+    temperature = 0.8 #-> scale up so that the really steep points get much more I suppose on problem is this doesnt just measure steepness oops that should have been 1 man 
     probs = torch.softmax(logits/temperature, dim=0)    # shape (B,)
     # 100 probabilities that for sampling 0->1
 
@@ -349,7 +349,7 @@ def get_next_star(x, t, model, denoised_fn=None, context=None):
         return x
 
     #print(x, "x")
-    x_ = model.pred(x, t, context) 
+    x_ = model.pred(x, t, context) #im 99% sure this should be t+1 it should be fed the t corresponding to the Z it gets fed so it should be t = 1 here
     #print(x_, "x_")   
     x_start = process_xstart(x_)
 
@@ -371,7 +371,8 @@ def get_next_star(x, t, model, denoised_fn=None, context=None):
         mean = alpha*m
         log_variance = th.log(sigma2)
     else:
-        f_m, f_s, _ = model.affine(x_start, t)
+        f_m, f_s, _ = model.affine(x_start, t) #but here it should be t = 1-dt cause where sampling z_T-1 -> make sure in marginal it is right
+        
         mean = f_m
         log_variance = th.log(f_s**2)
     
@@ -585,7 +586,7 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
             sigma2_tilde_s_t = torch.clamp(sigma2_tilde_s_t, 0, 1)
             #print(sigma2_tilde_s_t, "sigma2_tilde_s_t")
 
-        sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.8  # -> this works quite well it did a mauve of 0.99
+        sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.5  # -> this works quite well it did a mauve of 0.99
         #if torch.all(s < 0.1):
         #    sigma2_tilde_s_t = torch.zeros_like(sigma2_tilde_s_t) + 0.3
 
@@ -616,8 +617,10 @@ def get_next_marginal(prev_sample, t, s, model, denoised_fn=None, context=None):
         else:
             if hasattr(model,"gamma"):
                 sample = alpha_s * m_s + sigma_s * epsilon_tilde_s_t
+                #sample = alpha_s * m_s + torch.sqrt((sigma_s**2) - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t ** 0.5) * noise
             else:
                 sample = f_m_s + sigma_s * epsilon_tilde_s_t
+                #sample = f_m_s +  torch.sqrt((sigma_s**2) - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t ** 0.5) * noise
     
         #if we want to match appendix 1 of ndm paper I think it should instead be
         #sample = alpha_s * m_s +  torch.sqrt(sigma2 - sigma2_tilde_s_t) * eps + (sigma2_tilde_s_t ** 0.5) * noise
@@ -771,7 +774,8 @@ def sde_drift(z, t, model, clamping, context=None):
 
  
     g = model.vol(t)
-    g2 = g ** 2
+    print(g**2)
+    g2 = g**2
 
     dz = dm + ds / s * (z - m)
     score = (m - z) / s ** 2
