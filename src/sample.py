@@ -601,7 +601,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
             args.animate = False
         args.std_split = 5
         args.num_samples = 5000
-        args.batch_size = 5000
+        args.batch_size = 2500
     elif args.setting == "half_mode":
         args.std_split = 1
         args.num_samples = 1000

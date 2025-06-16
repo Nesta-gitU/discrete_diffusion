@@ -774,7 +774,6 @@ def sde_drift(z, t, model, clamping, context=None):
 
  
     g = model.vol(t)
-    print(g**2)
     g2 = g**2
 
     dz = dm + ds / s * (z - m)
