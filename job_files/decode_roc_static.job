@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/sample.py experiment=roc_static ++restart_from_checkpoint=True "+sampling_mode=[marginal,sde,ode]" +n_steps=64 +setting=full_mode +use_uniform=True +decode_name="64steps"
+srun python src/sample.py experiment=roc_static ++restart_from_checkpoint=True "+sampling_mode=[marginal,sde,ode]" +n_steps=32 +setting=full_mode +use_uniform=True +decode_name="32steps"
