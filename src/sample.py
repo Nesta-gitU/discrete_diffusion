@@ -656,7 +656,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
             time_sampler.device = model_lightning.device
 
             #then plot loss dist
-            batch = next(iter(datamodule.train_dataloader()))
+            batch = next(iter(datamodule.test_dataloader()))
             print(batch.shape)
             print(batch.device)
             batch = batch.to(model_lightning.device)
