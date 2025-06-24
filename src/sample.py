@@ -403,7 +403,7 @@ def plot_nfdm_transformation_tsne(batch, model, outdir, change_basis_over_time=F
             plt.scatter(emb_2d[i, :, 0], emb_2d[i, :, 1], alpha=0.5)
             if isinstance(t, torch.Tensor):
                 t = t[0].item()
-            plt.title(f"t-SNE at t={t:.1f} (Progression {i})")
+            plt.title(f"t-SNE at t={t:.1f}")
             plt.xlabel("Dim 1")
             plt.ylabel("Dim 2")
             plt.grid(True)
@@ -478,7 +478,7 @@ def plot_nfdm_transformation_tsne(batch, model, outdir, change_basis_over_time=F
     plt.figure(figsize=(8, 4))
     print(mean_cosines, std_cosines, "mean and std cosines")
     plt.errorbar(ts[1:], mean_cosines, yerr=std_cosines, marker='o', capsize=4, color='orange')
-    #plt.title("Cosine Similarity to Previous Step Over Time")
+    plt.title("NFDM-G")
     plt.xlabel("t")
     plt.ylabel("Cosine Similarity ± Std")
     plt.grid(True)
