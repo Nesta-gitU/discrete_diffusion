@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#SBATCH --partition=gpu_a100
+#SBATCH --partition=gpu_h100
 #SBATCH --gpus=1
 #SBATCH --job-name=basic_diff
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=9
-#SBATCH --time=24:00:00
+#SBATCH --time=20:00:00
 #SBATCH --output=$HOME/discrete_diffusion/slurm_outputs/slurm_output_%A.out
 
 module purge
@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/train.py experiment=roc_vdm_mulan ++restart_from_checkpoint=False ++model.diffusion.gamma._target_=src.models.ndm.components.gamma.GammaAR #++model.grad_clip=60000
+srun python src/sample.py experiment=roc_nfdm "+sampling_mode=[marginal,sde]" +n_steps=32 +setting=full_mode +decode_name="32steps" +use_uniform=True

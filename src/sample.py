@@ -375,8 +375,8 @@ def plot_nfdm_transformation_tsne(batch, model, outdir, change_basis_over_time=F
     # Stat containers
     mean_norms = []
     std_norms = []
-    mean_cosines = [1.0]  # cosine similarity to self at t=0
-    std_cosines = [0.0]
+    mean_cosines = []  # cosine similarity to self at t=0
+    std_cosines = []
 
     # Compute initial norm stats
     norm_0 = embeddings.norm(dim=-1).view(-1)
@@ -477,14 +477,14 @@ def plot_nfdm_transformation_tsne(batch, model, outdir, change_basis_over_time=F
     # === Plot Cosine Similarity ===
     plt.figure(figsize=(8, 4))
     print(mean_cosines, std_cosines, "mean and std cosines")
-    plt.errorbar(ts, mean_cosines, yerr=std_cosines, marker='o', capsize=4, color='orange')
-    plt.title("Cosine Similarity to Previous Step Over Time")
+    plt.errorbar(ts[1:], mean_cosines, yerr=std_cosines, marker='o', capsize=4, color='orange')
+    #plt.title("Cosine Similarity to Previous Step Over Time")
     plt.xlabel("t")
     plt.ylabel("Cosine Similarity ± Std")
     plt.grid(True)
     plt.savefig(os.path.join(outdir, "cosine_similarity_over_time.png"))
     plt.close()
-
+    exit()
 
 
 
@@ -644,7 +644,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     #save the true word embeddings and corresponding words to a file
 
-    if False:
+    if True:
         with torch.no_grad():
             out_dir="output"
             model_base_name = args.model_base_name
@@ -660,6 +660,12 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
             print(batch.shape)
             print(batch.device)
             batch = batch.to(model_lightning.device)
+            # use the tokenizer to decode the batch so we can see the 5 sentences that are being used
+            tokenizer = datamodule.tokenizer
+            for sentence in batch[:5]:
+                tokens = tokenizer.decode(sentence)
+                print("sentence:", tokens)
+                
 
             #plot_nfdm_transformation(batch, model, out_dir, change_basis_over_time=True)
             plot_nfdm_transformation_tsne(batch, model, out_dir, change_basis_over_time=False)

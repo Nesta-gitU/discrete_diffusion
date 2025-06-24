@@ -765,7 +765,7 @@ def sde_drift(z, t, model, clamping, context=None):
     x = model.pred(z, t)
 
     if clamping: # and (t > 0.7).all():
-        x = clamp(model, x)
+        x = clamp(model, x, t)
         
     def f(t_in):
         return model.affine(x, t_in)
@@ -785,7 +785,7 @@ def ode_drift(z, t, model, clamping, context=None):
     x = model.pred(z, t)
     #print(x, "x")
     if clamping: # and (t > 0.7).all():
-        x = clamp(model, x)
+        x = clamp(model, x, t)
 
     def f(t_in):
         return model.affine(x, t_in)
@@ -820,7 +820,7 @@ def sde_drift_ndm(z_in, t_in, model, clamping, context):
 
     
     if clamping: # and (t_in > 0.7).all():
-        x_ = clamp(model, x_)
+        x_ = clamp(model, x_, t_in)
 
     (m_, _), (d_m_, _) = model.transform(x_, t_in)
 
@@ -860,7 +860,7 @@ def ode_drift_ndm(z_in, t_in, model, clamping, context):
     #x_ = model.pred(z_in, t_in)
 
     if clamping: # and (t_in > 0.7).all():
-        x_ = clamp(model, x_)
+        x_ = clamp(model, x_, t_in)
 
     (m_, _), (d_m_, _) = model.transform(x_, t_in)
 
