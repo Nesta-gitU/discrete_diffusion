@@ -644,7 +644,7 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     #save the true word embeddings and corresponding words to a file
 
-    if True:
+    if False:
         with torch.no_grad():
             out_dir="output"
             model_base_name = args.model_base_name
