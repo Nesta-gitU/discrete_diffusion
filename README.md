@@ -28,8 +28,10 @@ Install the neccecary packages:
 Reproduce the training results from a given experiment (NFDM-G-AdaLN in this case):
 
 ```sh
-python src/train.py experiment=roc_nfdm_new ++restart_from_checkpoint=True
+python src/train.py experiment=roc_nfdm_new ++restart_from_checkpoint=False
 ```
+
+A folder will be created with the model name specificied in the experiment file. This folder stores the checkpoints and is used to restart from checkpoint. 
 
 ## SLURM Usage
 
