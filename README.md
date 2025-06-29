@@ -5,7 +5,8 @@ This repository contains the official implementation of my Masters Thesis titled
 
 The code in this repository allows the user to train latent space diffusion models for language generation. Below is a demo of the model NFDM-G-AdaLN, which uses a learned forward process:
 
-[![Watch the demo](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://youtu.be/g1cgj2s_idM?si=WSHn4Q_dii1AKO-4)
+[![Watch the demo](https://img.youtube.com/vi/g1cgj2s_idM/maxresdefault.jpg)](https://youtu.be/g1cgj2s_idM?si=WSHn4Q_dii1AKO-4)
+
 
 There are 3 other demo's here:
 
