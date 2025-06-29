@@ -26,7 +26,7 @@ def _get_font(size:int = FONT_SIZE) -> ImageFont.FreeTypeFont:
     try:
         return ImageFont.truetype(FONT_PATH, size)
     except OSError:
-        # Fallback: grab any installed mono .ttf
+        
         monos = [p for p in pathlib.Path("/usr/share/fonts").rglob("*.ttf")
                  if re.search("mono", p.name, re.I)]
         if monos:
@@ -42,14 +42,7 @@ def _draw_frame(tokens: Sequence[str],
                 prev:   Sequence[str] | None,
                 k: int, K: int,
                 t: float) -> Image.Image:
-    """
-    Render one tween frame.
-      tokens : target tokens of this step
-      prev   : tokens from previous step (None for step 0)
-      k      : index of *this* diffusion step   (0 … K-1)
-      K      : total number of steps
-      t      : tween progress toward `tokens` (0.0 … 1.0)
-    """
+
     img = Image.new("RGB", (IMG_W, IMG_H), BG)
     dr  = ImageDraw.Draw(img)
 
@@ -77,11 +70,11 @@ def _draw_frame(tokens: Sequence[str],
     dr.rectangle([(PAD, bar_top), (PAD + fill_w, bar_bot)],
                  fill=ACCENT)
 
-    label_y = bar_top - FONT_SIZE - 4              # plenty of room
+    label_y = bar_top - FONT_SIZE - 4             
     dr.text((PAD, label_y), f"step {k}/{K-1}",
             font=FONT, fill=FG)
 
--
+
     for idx, tok in enumerate(tokens):
         r, c = divmod(idx, COLS)
         cx = PAD + c*CELL_W + CELL_W/2
@@ -121,8 +114,7 @@ def make_video(trace,
             trace[i] = step
             print(f"truncated to 64 tokens")
 
-    # • open the encoder once
-    import imageio   # ← v2 API
+    import imageio   
     with imageio.get_writer(path, fps=fps, codec="libx264", quality=8, macro_block_size=1) as writer:
 
         prev = None

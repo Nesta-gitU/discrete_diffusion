@@ -18,7 +18,6 @@ class TwoLayerFiLMHead(nn.Module):
         self.lin1 = nn.Linear(hidden_dim, mid_dim)
         self.lin2 = nn.Linear(mid_dim, out_dim)
 
-        # FiLM parameters for both layers
         n_aff = 2 if use_scale else 1
         self.film1 = nn.Linear(cond_dim, n_aff * mid_dim)
         self.film2 = nn.Linear(cond_dim, n_aff * out_dim)
@@ -125,7 +124,7 @@ class EncoderBlockAdaLN(nn.Module):
     def forward(self, x: torch.Tensor, t_embed: torch.Tensor,
                 attn_mask=None, key_padding_mask=None):
         shift1, scale1, shift2, scale2 = self.t_proj(t_embed)
-        h = self.ada_ln1(x, shift1, scale1)  # AdaLN-Zero
+        h = self.ada_ln1(x, shift1, scale1) 
         x = x + self.attn(
                 query=h,
                 key=h, value=h,
