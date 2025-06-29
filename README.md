@@ -14,6 +14,8 @@ There are 3 other demo's here:
 - [MuLN-Rescaled](https://youtu.be/R6lApViDZ0o)
 - [MuLAN-Rescaled](https://youtu.be/lWZqdKA9D48)
 
+For any questions about setup or the implementation you can open an issue. 
+
 
 ## Setup 
 
