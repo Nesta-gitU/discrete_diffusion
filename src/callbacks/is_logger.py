@@ -18,14 +18,13 @@ from src.models.time_samplers.time_samplers import TimeSampler
 
 def plot_timedist(sampler, out_dir, device, num_points=1000):
     with torch.no_grad():
-        # Generate evenly spaced t values
+        
         t_values = torch.linspace(0, 1, num_points).view(-1, 1).to(device)  # Shape: (num_points, 1)
         
-        # Compute p(t) at these points
+        
         p_values = sampler.prob(t_values).cpu().numpy().flatten()
         t_values = t_values.cpu().numpy().flatten()
 
-        # Compute the integral using the trapezoidal rule
         dt = 1 / (num_points - 1)  # Step size
         integral = np.trapz(p_values, t_values)  # Numerical integration
 

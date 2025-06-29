@@ -471,34 +471,33 @@ class NeuralDiffusion(nn.Module):
             gamma, _ = self.gamma(t)
         else:
             bs = t.size(0)
-            context_hidden_dim = self.context.model.output_dim#context should always be input as [bs, hidden dim]
+            context_hidden_dim = self.context.model.output_dim
             context = torch.zeros(int(bs), int(context_hidden_dim), dtype = embeddings.dtype, device=embeddings.device)
-            gamma = self.gamma.get_gamma(t, context) #prevent a tdir call -> noise boundaries are fixed at t=1 and t=0 and independent of context
+            gamma = self.gamma.get_gamma(t, context) 
 
         alpha = self.gamma.alpha_2(gamma) ** 0.5
         sigma = self.gamma.sigma_2(gamma) ** 0.5
 
-        m, _ = self.transform.get_m_s(embeddings, t) #prevent another tdir call
+        m, _ = self.transform.get_m_s(embeddings, t) 
 
         f_m = alpha * m 
         f_s = sigma
 
-        mu_flat = f_m.view(B, -1)                  # shape [B, D] where D=seq_len*hidden_dim
+        mu_flat = f_m.view(B, -1)                  
 
-        # 2) Broadcast sigma up to mu1’s shape, then flatten
-        #    torch.ones_like(mu1) has shape [B,seq_len,hidden_dim], so sigma * that
-        sigma_bcast = f_s * torch.ones_like(f_m)  # broadcasts σ to [B,seq_len,hidden_dim]
-        sigma_flat  = sigma_bcast.view(B, -1)      # now [B, D] exactly matching mu_flat
+       
+        sigma_bcast = f_s * torch.ones_like(f_m)  
+        sigma_flat  = sigma_bcast.view(B, -1)      
 
-        # 3) Compute D (total latent dim)
+       
         D = mu_flat.shape[1]
 
-        # 4) Compute the three KL pieces
-        term_trace  = torch.sum(sigma_flat**2,    dim=1)   # ∑ σ_i^2
-        term_mean   = torch.sum(mu_flat**2,       dim=1)   # ∑ μ_i^2
-        term_logdet = torch.sum(torch.log(sigma_flat**2), dim=1)  # ∑ log σ_i^2
+      
+        term_trace  = torch.sum(sigma_flat**2,    dim=1)  
+        term_mean   = torch.sum(mu_flat**2,       dim=1)  
+        term_logdet = torch.sum(torch.log(sigma_flat**2), dim=1)  
 
-        # 5) KL per example and mean over batch
+   
         kl_per_example = 0.5*(term_trace + term_mean - D - term_logdet)
        
         return kl_per_example

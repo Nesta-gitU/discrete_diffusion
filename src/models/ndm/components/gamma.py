@@ -221,16 +221,9 @@ class GammaMuLAN(Gamma):
 
     def get_reference_gamma(self, t):
         def safe_logit(x, eps=1e-6):
-            """
-            Stable log( x / (1 - x) ) for x in (0, 1).
 
-            Parameters
-            ----------
-            x   : torch.Tensor   -- input, any shape
-            eps : float          -- clamp width; keeps gradients finite
-            """
-            x = x.clamp(eps, 1.0 - eps)            # avoid exactly 0 or 1
-            return torch.log(x) - torch.log1p(-x)   # log(x) - log(1 - x)
+            x = x.clamp(eps, 1.0 - eps)           
+            return torch.log(x) - torch.log1p(-x) 
         s = (0.99-t) * 0.0001
         sqrt = torch.sqrt(t+s)
         gamma = safe_logit(sqrt)

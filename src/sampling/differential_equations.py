@@ -638,7 +638,7 @@ class ReverseSDE(torch.nn.Module):
         self.drift_fn = drift_fn
         self.clamping = clamping
         self.context = context
-        self.noise_type = "diagonal"   # or "diagonal" if you ever switch back
+        self.noise_type = "diagonal"  
         self.sde_type   = "ito"
         self.drift_shape = drift_shape
         self.prev_u = None
@@ -646,7 +646,6 @@ class ReverseSDE(torch.nn.Module):
 
 
     def f(self, u, y):
-        # u goes from 0 → 1, so t goes from 1 → 0
         self.n_steps += 1
         if self.n_steps % 100 == 0:
             print("f called with u", u, "at n_steps", self.n_steps)
@@ -743,12 +742,12 @@ def better_solve_de(z, ts, tf, n_steps, model, mode, clamping = False, context=N
             sde=sde,
             y0=z, #this z has shape bs, seqlen, hidden_dim -> should be bs,  state_size ----> flatten the last dim and then unflatten
             ts=us,
-            method="milstein",    # or milstein, srk, etc.
+            method="milstein", 
             dt=dt,
             adaptive = True,
-            #rtol = 1e-6,          # still tight, but not extreme
+            #rtol = 1e-6,        
             #atol = 1e-8,
-            dt_min = 2e-4        # to prevent stalling; default is fine, but you can raise to 1e-4 if needed
+            dt_min = 2e-4       
         )
     
     print(z_path.shape, "z_path shape")

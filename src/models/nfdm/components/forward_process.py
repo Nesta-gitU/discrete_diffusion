@@ -229,9 +229,6 @@ class SigmoidApprox(nn.Module):
         print("using sigmoidapprox")
         # Assume t is scaled between 0 and 1
         s = torch.sigmoid((t - self.shift) / self.scale) + 0.0025
-        # For t values where s is near zero, output0 ~ x (i.e. very little noise added)
-        # and output1 ~ 0. As t increases, s moves toward 1, so output0 shrinks and
-        # output1 increases, similar to a noise schedule.
         output3 = ((1 - s) + ((1-t) * 0.06))
         output0 = output3 * x
         output1 = s

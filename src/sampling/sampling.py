@@ -19,18 +19,16 @@ import os
 
 def ani(model):
     with torch.no_grad():
-        #get embeddings from the encoder
+
         embeddings = model.pred.model.word_embedding.weight
         print(embeddings.shape, "embedding_shape") #[vocab_size, emb_dim]
 
-        # Normalize the embeddings to unit vectors
-        new_embds = torch.nn.functional.normalize(embeddings, dim=1)  # Shape remains [vocab_size, emb_dim]
-        #print(embeddings.shape, "embedding_shape") [vocab_size, emb_dim]
+      
+        new_embds = torch.nn.functional.normalize(embeddings, dim=1)  #  [vocab_size, emb_dim]
 
-        # Compute cosine similarities (dot products of normalized embeddings)
-        cosine_similarities = new_embds @ new_embds.T  # Shape: [vocab_size, vocab_size]
 
-        # Exclude self-similarities by subtracting the diagonal
+        cosine_similarities = new_embds @ new_embds.T  # [vocab_size, vocab_size]
+
         vocab_size = new_embds.size(0)
         mask = ~torch.eye(vocab_size, dtype=torch.bool, device=embeddings.device)  # Mask for non-diagonal elements
         pairwise_cosines = cosine_similarities[mask]  # Extract only off-diagonal elements
@@ -81,7 +79,7 @@ def sample_code(model,
             #print(latent_ode.shape, "ode this should have the shape [batch_size, block_size, hidden_size]")
             
             if True:
-                #visualize the embedding matrix with color coding 
+               
                 print("visualizing embedding matrix")
                 visualize_embedding_matrix(model)
 

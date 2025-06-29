@@ -313,19 +313,12 @@ class DiffusionModule(LightningModule):
 
             return elbo
 
-        # (3) otherwise, manual optimization (Muon + AdamW)
-        #    manual_backward() will invoke your on_after_backward() hook,
-        #    so gradient‐clipping & EMA update still happen there.
+
         optimizers = self.optimizers()        # [optim_muon, optim_adamw]
         schedulers = self.lr_schedulers()     # [sched_muon, sched_adamw]
 
-        #print("I do think we are getting here?")
-        self.manual_backward(elbo) #-> manual backward should call on_after_backward, but clearly it doesnt 
-        #print("----------------wegothere--------------------------------")
-        #for name, param in self.named_parameters():
-        #    if param.requires_grad: # and param.grad is None:
-        #        # this parameter didn’t get a gradient
-        #        print(f"[UNUSED] {name}")
+        self.manual_backward(elbo) 
+
 
         self.on_after_backward()
 
@@ -513,90 +506,62 @@ class DiffusionModule(LightningModule):
 
        
     def test_step(self, batch: torch.Tensor, batch_idx: int) -> None:
-        """Test‑time MC‑ELBO with unbiased variance + SE in **nats / dimension**.
-
-        Notes
-        -----
-        * **No antithetic sampling** (plain MC).
-        * `K` i.i.d. draws of the diffusion term per example.
-        * Computes:
-            - `mc_var_per_example` : Var[\bar{ℓ}_i]  (nats²)  ← variance of the MC **mean** per sample.
-            - `dataset_se`         : SE of the reported dataset mean (nats / dim).
-        """
         import math, torch
 
-        B = batch.size(0)                         # batch size
-        d = batch.shape[1]                        # sequence length (dimensions per example)
-        K = 64 #64                                    # MC samples per example
+        B = batch.size(0)                         
+        d = batch.shape[1]                       
+        K = 64 #64                                    
         device = batch.device
 
-        elbo_model = self.ema.module              # use EMA weights for evaluation
-        elbo_model.eval()                     # set to eval mode (no dropout, etc.)
+        elbo_model = self.ema.module            
+        elbo_model.eval()                     
 
-        # -------------------------------------------------------------------
-        # 1.   CONSTANT TERMS (reconstruction + prior) – no dependence on t
-        # -------------------------------------------------------------------
-        t_dummy = torch.zeros(B, 1, 1, device=device)  # placeholder only – functions ignore t
-        recon_loss = elbo_model.get_elbo_reconstruction_loss(batch, t_dummy)   # (B,)
-        prior_loss = elbo_model.get_elbo_prior_loss(batch, t_dummy)            # (B,)
 
-        # -------------------------------------------------------------------
-        # 2.   MONTE‑CARLO SAMPLES OF THE DIFFUSION TERM
-        # -------------------------------------------------------------------
-        elbo_samples = torch.empty(K, B, device=device)   # nats, per‑sample/per‑example
+        t_dummy = torch.zeros(B, 1, 1, device=device)  
+        recon_loss = elbo_model.get_elbo_reconstruction_loss(batch, t_dummy)  
+        prior_loss = elbo_model.get_elbo_prior_loss(batch, t_dummy)           
+
+        elbo_samples = torch.empty(K, B, device=device)  
         diff_samples = torch.empty(K, B, device=device)
 
         for k in range(K):
-            # --- plain U[0,1] sampling over t --------------------------------
+           
             t = torch.rand(B, 1, 1, device=device)
-            #make deterministic should be removed normally 
+          
             t = torch.ones_like(t) - 0.9
-            print(batch)
+            
 
-            # diffusion + (optional) context loss; both are unreduced
+           
             diff_loss, ctx_loss = elbo_model.get_elbo_diffusion_loss(batch, t)
-            #print(ctx_loss, "ctx_loss")
+           
             if ctx_loss is None:
                 if self.spoof_nfdm:
                     ctx_loss = elbo_model.affine.cur_context_loss.sum(dim=-1)
                 else:
                     ctx_loss = torch.zeros_like(prior_loss)
 
-            diff_per_ex  = diff_loss.flatten(1).sum(1)    # (B,)
-            #print(diff_per_ex.shape, "diff_per_ex shape")
-            #print(ctx_loss.shape)
-            ctx_per_ex   = ctx_loss                       # already (B,)
-
-            #print(recon_loss.shape)
-            #print(prior_loss.shape)
+            diff_per_ex  = diff_loss.flatten(1).sum(1)    
+    
+            ctx_per_ex   = ctx_loss                       
 
             elbo_samples[k] = diff_per_ex + recon_loss + prior_loss + ctx_per_ex
             diff_samples[k] = diff_per_ex
 
-        # -------------------------------------------------------------------
-        # 3.   PER‑EXAMPLE MEAN & VARIANCE (unbiased) ------------------------
-        # -------------------------------------------------------------------
-        elbo_mean_per_ex = elbo_samples.mean(0)                       # (B,)
-        mc_var_per_ex    = elbo_samples.var(0, unbiased=True) / K     # Var[ \bar{ℓ}_i ] (nats²)
 
-        # -------------------------------------------------------------------
-        # 4.   DATASET‑LEVEL STATISTICS --------------------------------------
-        # -------------------------------------------------------------------
-        dataset_mean_elbo = elbo_mean_per_ex.mean()                   # scalar (nats)
-        dataset_var_across_ex = elbo_mean_per_ex.var(unbiased=True)   # Var_data[ℓ̄] (nats²)
-        dataset_se = torch.sqrt(dataset_var_across_ex / B)            # SE of mean (nats)
+        elbo_mean_per_ex = elbo_samples.mean(0)                     
+        mc_var_per_ex    = elbo_samples.var(0, unbiased=True) / K     
 
-        # Convert to nats per *dimension* (sequence element)
-        nats_per_dim_mean = dataset_mean_elbo / d                     # scalar
-        nats_per_dim_se   = dataset_se / d                            # scalar
+        dataset_mean_elbo = elbo_mean_per_ex.mean()                   
+        dataset_var_across_ex = elbo_mean_per_ex.var(unbiased=True)  
+        dataset_se = torch.sqrt(dataset_var_across_ex / B)           
 
-        # Same for diffusion term (for monitoring)
-        diff_mean_per_ex = diff_samples.mean(0)                       # (B,)
+
+        nats_per_dim_mean = dataset_mean_elbo / d                   
+        nats_per_dim_se   = dataset_se / d                          
+
+        diff_mean_per_ex = diff_samples.mean(0)                    
         dataset_mean_diff = diff_mean_per_ex.mean()
 
-        # -------------------------------------------------------------------
-        # 5.   LOGGING --------------------------------------------------------
-        # -------------------------------------------------------------------
         self.log("test/diffusion_loss",         dataset_mean_diff,      on_step=False, prog_bar=False)
         self.log("test/reconstruction_loss",    recon_loss.mean(),      on_step=False, prog_bar=False)
         self.log("test/prior_loss",             prior_loss.mean(),      on_step=False, prog_bar=False)

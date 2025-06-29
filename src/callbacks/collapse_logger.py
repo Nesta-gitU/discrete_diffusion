@@ -48,15 +48,14 @@ class CollapseLogger(Callback):
             embeddings = pl_module.model.encoder.embedding.weight
 
             # Normalize the embeddings to unit vectors
-            new_embds = torch.nn.functional.normalize(embeddings, dim=1)  # Shape remains [vocab_size, emb_dim]
+            new_embds = torch.nn.functional.normalize(embeddings, dim=1)  
             #print(embeddings.shape, "embedding_shape") [vocab_size, emb_dim]
 
-            # Compute cosine similarities (dot products of normalized embeddings)
+            # Compute cosine similarities 
             cosine_similarities = new_embds @ new_embds.T  # Shape: [vocab_size, vocab_size]
 
-            # Exclude self-similarities by subtracting the diagonal
             vocab_size = new_embds.size(0)
-            mask = ~torch.eye(vocab_size, dtype=torch.bool, device=embeddings.device)  # Mask for non-diagonal elements
+            mask = ~torch.eye(vocab_size, dtype=torch.bool, device=embeddings.device)  
             pairwise_cosines = cosine_similarities[mask]  # Extract only off-diagonal elements
             global_step = trainer.global_step
             # Compute ANI

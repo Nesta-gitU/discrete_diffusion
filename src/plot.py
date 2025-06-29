@@ -93,13 +93,6 @@ def plot_gamma_snr_with_colormap(
     model, z, T=300, outpath=".", device="cuda:0", cmap_name="viridis"
 ):
     with torch.no_grad():
-        """
-        model: your diffusion model
-        z:     [N, D, hidden_size]  latent samples
-        T:     number of t-steps
-        device:"cuda:0" or "cpu"
-        cmap_name: name of a matplotlib colormap (we're using "viridis")
-        """
         os.makedirs(outpath, exist_ok=True)
         model.to(device)
         z = z.to(device)
@@ -123,15 +116,14 @@ def plot_gamma_snr_with_colormap(
         gmm_flat = gmm_flat.squeeze(-1)
         gmm = gmm_flat.view(T, N, D)                         # [T, N, D]
 
-        # compute SNR
         a2   = model.gamma.alpha_2(gmm)
         s2   = model.gamma.sigma_2(gmm)
         snr  = a2 / s2                                       # [T, N, D]
 
         # stats over N
-        γ_mean = gmm.mean(dim=1).cpu()                       # [T, D]
-        γ_std  = gmm.std(dim=1).cpu()                        # [T, D]
-        μ_snr  = snr.mean(dim=1).cpu()                       # [T, D]
+        gamma_mean = gmm.mean(dim=1).cpu()                       # [T, D]
+        gamma_std  = gmm.std(dim=1).cpu()                        # [T, D]
+        mu_snr  = snr.mean(dim=1).cpu()                       # [T, D]
         var_snr= snr.var(dim=1).cpu()                        # [T, D]
 
         ts = torch.linspace(0, 1, T).cpu().numpy()
@@ -152,10 +144,10 @@ def plot_gamma_snr_with_colormap(
             plt.close()
 
         # 4 separate plots
-        _plot_and_save(γ_mean,  "Mean γ(t) per latent dim",       "gamma_mean.png", "γ")
-        _plot_and_save(γ_std,   "Std  γ(t) per latent dim",       "gamma_std.png",  "γ")
-        _plot_and_save(μ_snr,   "Mean SNR(t) per latent dim",     "snr_mean.png",   "SNR")
-        _plot_and_save(var_snr, "Var  SNR(t) per latent dim",     "snr_var.png",    "SNR")
+        _plot_and_save(gamma_mean,  "mean",       "gamma_mean.png", "gamma")
+        _plot_and_save(gamma_std,   "Std",       "gamma_std.png",  "gamma")
+        _plot_and_save(mu_snr,   "Mean",     "snr_mean.png",   "SNR")
+        _plot_and_save(var_snr, "Var",     "snr_var.png",    "SNR")
 
         # gradient legend
         gradient = np.linspace(0, 1, D).reshape(1, D)
@@ -170,11 +162,6 @@ def plot_gamma_snr_with_colormap(
         plt.close()
 
         print(f"Saved 5 figures under {outpath}/:")
-        print("  • gamma_mean.png       (mean γ)")
-        print("  • gamma_std.png        (std  γ)")
-        print("  • snr_mean.png         (mean SNR)")
-        print("  • snr_var.png          (var  SNR)")
-        print("  • colormap_legend.png  (index→color mapping)")
 
 def sample_loop(z, context, ts, tf, n_steps, model, mode, clamping = False):
     with torch.no_grad():

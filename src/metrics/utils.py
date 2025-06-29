@@ -39,8 +39,6 @@ def file_to_list(text_path, datamodule, tokenizer, setting):
             for line in f:
                 text_samples.append(line)
     
-    # Remove trailing pad tokens from each generated sample.
-    # Assumes pad tokens are represented as "<pad>"
     def postprocess_generation(
         texts: Union[str, List[str]],
         start_token: str = "<s>",
@@ -63,33 +61,30 @@ def file_to_list(text_path, datamodule, tokenizer, setting):
         """
         pad_token_count = 0
         def clean(s: str) -> str:
-            # 1) Remove start/end tokens
+            
             s = s.replace(start_token, "").replace(end_token, "")
-            # 2) Remove spaces before dots and commas
             s = re.sub(r"\s+([.,!?;:])", r"\1", s)
-            # 3) Remove spaces around apostrophes
             s = re.sub(r"\s*'\s*", r"'", s)
             s = re.sub(r"\b(\w+)\s+n['’]t\b", r"\1n't", s)
 
-            # 4) Strip any remaining leading/trailing whitespace
             return s.strip()
         
         def remove_pad_tokens(sample, pad_token='PAD'):
             nonlocal pad_token_count
-        #print("input to pad token removal", sample)
+       
         
             if isinstance(sample, list):
-                # If sample is a list of tokens, remove trailing pad tokens
+                
                 while sample and sample[-1] == pad_token:
                     sample.pop()
                     pad_token_count += 1
-                #print("removed pad tokens", sample)
+                
                 return " ".join(sample)
             
             elif isinstance(sample, str):
-                # If sample is a string, split it into tokens (by whitespace)
+                
                 tokens = sample.split()
-                #print("split tokens",tokens)
+                
                 while tokens and tokens[-1] == pad_token:
                     tokens.pop()
                     pad_token_count += 1  

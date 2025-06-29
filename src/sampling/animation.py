@@ -4,21 +4,19 @@ import pathlib, re, numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import pathlib
 
-# ---------------------------------------------------------------------------
-# 1 · layout & style constants –––––––––––––––––––––––––––––––––––––––––––––––
-# ---------------------------------------------------------------------------
+
 ROWS, COLS      = 4, 16                # 4 rows × 16 columns = 64 buckets
-CELL_W, CELL_H  = 110, 90              # generous room for each token
+CELL_W, CELL_H  = 110, 90             
 PAD             = 24                   # outer margin
 IMG_W           = PAD*2 + COLS*CELL_W
 EXTRA_H = 56
-IMG_H           = PAD*2 + ROWS*CELL_H + EXTRA_H   # +60 px for progress bar / label
+IMG_H           = PAD*2 + ROWS*CELL_H + EXTRA_H   
 
 # Colours (RGB)
-BG      = (250, 250, 250)              # light canvas
-FG      = ( 20,  20,  20)              # base token colour (near-black)
-ACCENT  = (  0, 120, 220)              # blue for changed tokens & progress
-GRID    = (220, 220, 220)              # faint row/col dividers
+BG      = (250, 250, 250)              
+FG      = ( 20,  20,  20)              
+ACCENT  = (  0, 120, 220)              
+GRID    = (220, 220, 220)              
 
 # Typography
 FONT_SIZE = 16
@@ -36,13 +34,10 @@ def _get_font(size:int = FONT_SIZE) -> ImageFont.FreeTypeFont:
         return ImageFont.load_default()
 FONT = _get_font()
 
-# Animation timing
-FPS      = 6      # final video frames-per-second
-TWEEN    = 4      # interpolated frames between diffusion steps
+FPS      = 6      
+TWEEN    = 4      
 
-# ---------------------------------------------------------------------------
-# 2 · frame renderer –––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-# ---------------------------------------------------------------------------
+
 def _draw_frame(tokens: Sequence[str],
                 prev:   Sequence[str] | None,
                 k: int, K: int,
@@ -58,7 +53,7 @@ def _draw_frame(tokens: Sequence[str],
     img = Image.new("RGB", (IMG_W, IMG_H), BG)
     dr  = ImageDraw.Draw(img)
 
-    # grid lines -------------------------------------------------------------
+
     for r in range(ROWS + 1):
         y = PAD + r*CELL_H
         dr.line([(PAD, y), (IMG_W - PAD, y)], fill=GRID)
@@ -66,14 +61,14 @@ def _draw_frame(tokens: Sequence[str],
         x = PAD + c*CELL_W
         dr.line([(x, PAD), (x, PAD + ROWS*CELL_H)], fill=GRID)
 
-    # progress-bar geometry --------------------------------------------------
-    EXTRA_H  = 56                                  # leave 56 px under the grid
-    bar_top  = IMG_H - EXTRA_H + 28                # 28 px below the grid bottom
-    bar_bot  = bar_top + 12                        # 12-px-tall bar
+    
+    EXTRA_H  = 56                                  
+    bar_top  = IMG_H - EXTRA_H + 28               
+    bar_bot  = bar_top + 12                     
     bar_w    = IMG_W - 2*PAD
-    pct      = (k + t) / (K - 1)                   # 0 → 1(+ε)
+    pct      = (k + t) / (K - 1)                  
     fill_w   = int(bar_w * pct)
-    fill_w   = min(bar_w, fill_w)                  # ← clamp so it never overshoots ✔
+    fill_w   = min(bar_w, fill_w)              
 
     # outline
     dr.rectangle([(PAD, bar_top), (PAD + bar_w, bar_bot)],
@@ -82,13 +77,11 @@ def _draw_frame(tokens: Sequence[str],
     dr.rectangle([(PAD, bar_top), (PAD + fill_w, bar_bot)],
                  fill=ACCENT)
 
-    # step label (now 4 px above the bar instead of hugging the bottom edge) ✔
     label_y = bar_top - FONT_SIZE - 4              # plenty of room
     dr.text((PAD, label_y), f"step {k}/{K-1}",
             font=FONT, fill=FG)
 
-
-    # tokens -----------------------------------------------------------------
+-
     for idx, tok in enumerate(tokens):
         r, c = divmod(idx, COLS)
         cx = PAD + c*CELL_W + CELL_W/2
@@ -98,7 +91,7 @@ def _draw_frame(tokens: Sequence[str],
         # simple fade-in accent when a token changes
         if changed:
             if t < 0.5:
-                blend = int(255 * (t/0.5))          # 0→255
+                blend = int(255 * (t/0.5))          
                 col = tuple(FG[i] + (ACCENT[i]-FG[i])*blend//255 for i in range(3))
             else:
                 col = ACCENT
@@ -109,9 +102,7 @@ def _draw_frame(tokens: Sequence[str],
 
     return img
 
-# ---------------------------------------------------------------------------
-# 3 · public API ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-# ---------------------------------------------------------------------------
+
 def make_video(trace,
                fps: int = 6,
                path: str = "diffusion.mp4",
@@ -142,4 +133,4 @@ def make_video(trace,
                 writer.append_data(np.asarray(frame))
             prev = tokens
 
-    print(f"✅ saved {K*tween} frames to {path}")
+    print(f"saved {K*tween} frames to {path}")
