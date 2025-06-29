@@ -644,7 +644,7 @@ class DiffusionModule(LightningModule):
                 else:
                     adamw_params.append(p)
 
-            # 2) Affine: only encoder if using forward_process
+
             affine_net = self.model.affine.net
             if hasattr(affine_net, "forward_process"):
                 for p in affine_net.encoder.parameters():
@@ -655,15 +655,13 @@ class DiffusionModule(LightningModule):
                     else:
                         adamw_params.append(p)
 
-            # 3) Everything else → AdamW
-            #    Skip any p already in one of the two lists
             seen = {id(p) for p in muon_params + adamw_params}
             for p in self.model.parameters():
                 if not p.requires_grad or id(p) in seen:
                     continue
                 adamw_params.append(p)
 
-            # 2) Instantiate optimizers
+
             optim_muon = MuonLightning(
                 muon_params,
                 lr=self.muon_params.muon_lr,

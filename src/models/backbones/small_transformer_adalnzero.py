@@ -101,10 +101,6 @@ class AdaLayerNorm(nn.Module):
 
 
 class EncoderBlockAdaLN(nn.Module):
-    """
-    Minimal re-implementation of nn.TransformerEncoderLayer
-    with AdaLayerNorm 
-    """
     def __init__(self, hidden_dim: int, num_heads: int,
                  mlp_dim: int, dropout: float,
                  use_scale: bool = True):
@@ -124,12 +120,10 @@ class EncoderBlockAdaLN(nn.Module):
         self.ada_ln1 = AdaLayerNorm(hidden_dim)
         self.ada_ln2 = AdaLayerNorm(hidden_dim)
 
-        # Small projection from (timestep → shift/scale)
         self.t_proj = TimestepEmbed(hidden_dim, use_scale=use_scale)
 
     def forward(self, x: torch.Tensor, t_embed: torch.Tensor,
                 attn_mask=None, key_padding_mask=None):
-        """x: (B, L, D)  t_embed: (B, embed_dim)"""
         shift1, scale1, shift2, scale2 = self.t_proj(t_embed)
         h = self.ada_ln1(x, shift1, scale1)  # AdaLN-Zero
         x = x + self.attn(
@@ -197,11 +191,6 @@ class TransformerEncoderAdaLN8M(nn.Module):
 
     def forward(self, x: torch.Tensor, t: torch.Tensor,
                 mask: torch.Tensor | None = None):
-        """
-        x   : (B, L, 128)  – token features
-        t   : (B,)         – diffusion timestep (int32 or float32)
-        mask: (B, L) bool  – optional padding mask (1=pad)
-        """
 
         h = self.input_proj(x)                  
 

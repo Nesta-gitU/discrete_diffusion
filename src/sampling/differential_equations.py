@@ -187,30 +187,30 @@ def nonuniform_time_grid(ts: float,
     print("n-buckets", B)
     assert N >= B, "Need at least one step per bucket, so N >= number of buckets"
 
-    # 1) convert logits → probabilities
+
     temperature = 0.8 #-> scale up so that the really steep points get much more I suppose on problem is this doesnt just measure steepness oops that should have been 1 man 
     probs = torch.softmax(logits/temperature, dim=0)    # shape (B,)
     # 100 probabilities that for sampling 0->1
 
-    # 2) give each bucket 1 mandatory step, then distribute the remaining N-B
-    base = torch.ones(B, dtype=torch.long, device=device) + M # everyone gets ≥1
+   
+    base = torch.ones(B, dtype=torch.long, device=device) + M # everyone gets 
     print("base", base)
     remains = N - torch.sum(base)
     
 
-    # split remains proportionally, via floor + largest-residual tie-breaker:
+   
     raw = probs * remains
     # 100 buckets saying how many steps 0->1 should have 
 
-    floors = raw.floor().long()             # initial extra steps
-    residuals = (raw - floors)              # what’s left over
+    floors = raw.floor().long()             
+    residuals = (raw - floors)             
 
-    k = base + floors                       # preliminary counts
+    k = base + floors                       
     #print(k)
-    short = N - k.sum().item()              # how many “1-step top-ups” we still need
+    short = N - k.sum().item()            
 
     if short > 0:
-        # give +1 to the `short` buckets with largest residuals
+       
         _, idx = torch.sort(residuals, descending=True)
         for i in idx[:short]:
             k[i] += 1
@@ -218,16 +218,15 @@ def nonuniform_time_grid(ts: float,
     #print("k2", k)
     #k = k[::-1]
     k = k.flip(0)
-    #100 buckets saying how many steps 1->0 should have
+   
     print(k)
 
-    # 3) compute bucket edges linearly (shared boundaries)
-    B = logits.shape[0]
-    edges = torch.linspace(ts, tf, steps=B+1, device=device)            # shape (B+1,)
-    #since ts is 1 and tf is 0, this is also a decreasing sequence from 1->0
-    #print("edges", edges)
 
-    # 4) build each bucket’s local grid, drop the left endpoint if not the first bucket
+    B = logits.shape[0]
+    edges = torch.linspace(ts, tf, steps=B+1, device=device)            
+
+
+  
     parts = []
     for i in range(B):
         start, end = edges[i], edges[i+1]
@@ -243,7 +242,7 @@ def nonuniform_time_grid(ts: float,
             pts = pts[1:]
         parts.append(pts)
 
-    # 5) concatenate all buckets
+    
     t_steps = torch.cat(parts, dim=0)
     return t_steps
 
@@ -687,37 +686,6 @@ class ReverseSDE(torch.nn.Module):
 
         return g_val.view(bs, 1).expand(bs, D)
 
-    """
-    def g(self, u, y):
-        # u goes from 0 → 1, so t goes from 1 → 0
-        self.n_steps += 1
-        if self.n_steps % 100 == 0:
-            print("f called with u", u, "at n_steps", self.n_steps)
-        #print(u)
-        bs, D = y.shape
-        t = 1.0 - u
-        #print(t==1)
-        t_ = t.expand(y.shape[0]).unsqueeze(-1).unsqueeze(-1)
-        # sde_drift returns the _reverse_ drift already:
-        #print("y", y.shape)
-        #print(t_)
-        
-        #unflatten last dim so it fits into the model
-        assert y.shape[1] == self.drift_shape[1] * self.drift_shape[2], \
-          f"Incompatible reshape: got {y.shape[1]} but expected {self.drift_shape[1]}*{self.drift_shape[2]}"
-
-        y = y.view(self.drift_shape)
-        #print(y.shape, "y shape in f")
-
-        drift, g = self.drift_fn(y, t_, model=self.model, clamping=self.clamping, context=self.context)
-        #this drift has shape bs, seqlen, hidden_dim -> should be bs,  state_size ----> flatten the last dim 
-        drift = drift.flatten(start_dim=1)
-        #print(g.shape)
-        #g is bs, 64, 1 -> then I want to repeat each of the 64 values 128 times for the hidden dim so that its bs, 64, 128
-        
-        
-        return g.expand(bs, self.drift_shape[1], self.drift_shape[2]).flatten(start_dim=1)
-    """
 
 def better_solve_de(z, ts, tf, n_steps, model, mode, clamping = False, context=None):	
     if hasattr(model, 'vol_eta'):

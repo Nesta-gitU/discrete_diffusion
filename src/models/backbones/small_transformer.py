@@ -27,7 +27,7 @@ class TransformerEncoder8M(nn.Module):           #hidden_dim=256
 
         self.output_dim = int(output_dim/2)
 
-        # Positional embeddings (+1 for CLS token)
+        # Positional embeddings (and CLS token)
         self.position_embeddings = nn.Embedding(vocab_size + 1, hidden_dim)
         self.LayerNorm = nn.LayerNorm(hidden_dim)
         self.dropout = nn.Dropout(dropout)
@@ -55,9 +55,8 @@ class TransformerEncoder8M(nn.Module):           #hidden_dim=256
         position_ids = torch.arange(seq_len + 1, dtype=torch.long, device=x.device)
         position_embeddings = self.position_embeddings(position_ids).unsqueeze(0)  # [1, seq_len + 1, hidden_dim]
         x = x + position_embeddings
-        x = self.dropout(self.LayerNorm(x)) #also double layer norm. 
+        x = self.dropout(self.LayerNorm(x)) 
 
-        # Adjust mask for CLS token if provided
         if mask is not None:
             cls_mask = torch.zeros((batch_size, 1), dtype=mask.dtype, device=mask.device)
             mask = torch.cat((cls_mask, mask), dim=1)  # [batch_size, seq_len + 1]
