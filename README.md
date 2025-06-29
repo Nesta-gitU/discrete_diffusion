@@ -11,8 +11,8 @@ The code in this repository allows the user to train latent space diffusion mode
 There are 3 other demo's here:
 
 - [Diffusion-LM](https://youtu.be/R6lApViDZ0o)
-- [MuLN](https://youtu.be/R6lApViDZ0o)
-- [MuLAN](https://youtu.be/lWZqdKA9D48)
+- [MuLN-Rescaled](https://youtu.be/R6lApViDZ0o)
+- [MuLAN-Rescaled](https://youtu.be/lWZqdKA9D48)
 
 
 ## Setup 
