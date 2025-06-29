@@ -386,7 +386,7 @@ class NeuralDiffusion(nn.Module):
         g2 = sigma2 * d_gamma * eta
 
         d_alpha = -0.5 * d_gamma * alpha * (1 - alpha2) 
-        d_sigma = 0.5 * d_gamma * sigma * (1 - sigma2)  #TODO incorrect derivative 
+        d_sigma = 0.5 * d_gamma * sigma * (1 - sigma2)  
 
         # compute backward flow '
         #epsilon = (z - alpha * m) / sigma #-> acutally epsilon should be exactly the same as eps

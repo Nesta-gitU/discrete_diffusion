@@ -197,7 +197,7 @@ def sample_here(args, model, modality, datamodule):
     #get the perplexity of the generated samples
     if modality == 'e2e': 
         print('using e2e-tgt model gpt2-large')
-        model_name_path = "openai-community/gpt2-large" #TODO: change this to the correct model
+        model_name_path = "openai-community/gpt2-large" 
     elif modality == 'roc':
         model_name_path = "openai-community/gpt2-large" #openai-community/gpt2, msintaha/gpt2-finetuned-rocstories
     else:

@@ -44,7 +44,6 @@ class NFDM_gaussian(nn.Module):
         # Learnable Gaussian forward process (NFDM-Gaussian)
         #x_t = torch.cat([x, t], dim=1)
         #m_ls = self.net(x_t)  
-        #TODO: t conditioning not implemented yet 0.01
         #small_value = torch.log(torch.sqrt(torch.sigmoid(torch.tensor(-10))))
         #small_value2 = torch.log(torch.sqrt(torch.sigmoid(torch.tensor(10))))
         small_value = np.log(0.1) #i I make it 0.01 it gets very low loss but that implies t=0 -> s = exp(0.01) = 1.01	which is clearly wrong 

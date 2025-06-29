@@ -41,8 +41,8 @@ class NeuralDiffusion(nn.Module):
         print("using diff loss type: ", diff_loss_type)
         self.n_steps_interpolated = 0
 
-        #self.encoder = encoder # instead of the encoder it should be like model.get_embedding() or something like that. #TODO
-        #self.decoder = decoder #same goes for the decoder here. #TODO
+        #self.encoder = encoder # instead of the encoder it should be like model.get_embedding() or something like that.
+        #self.decoder = decoder #same goes for the decoder here. 
         #acces the model by self.pred.model #affine.model is to be used only for the affine transformation. 
         #that means we do not need the lines below. 
         #if hasattr(self.decoder, "lm_head"):
