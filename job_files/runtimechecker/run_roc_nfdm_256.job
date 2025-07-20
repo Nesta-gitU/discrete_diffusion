@@ -17,4 +17,4 @@ cd $HOME/discrete_diffusion
 # Activate your environment
 source activate fomo
 # Run your code
-srun python src/train.py experiment=roc_nfdm_new data.block_size=256 model_name="256blocksizenfdm"
+srun python src/train.py experiment=roc_nfdm_new data.block_size=128 model_name="128blocksizenfdm"
