@@ -40,7 +40,7 @@ callbacks:
 #one epoch has 12556 batches
 #one val epoch has 1396 batches on batch size 256
 trainer:
-  max_steps: 900000
+  max_steps: 1000
   check_val_every_n_epoch: null
   val_check_interval: 50000
   max_epochs: null
@@ -70,7 +70,7 @@ logger:
   wandb:
     tags: ${tags}
     group: "roc"
-    project: "roc mulan" #if just testing garbage use test
+    project: "testing runtimes" #if just testing garbage use test
     #mode: "disabled" if you dont want ot log a debug run 
   aim:
     experiment: "text8test"

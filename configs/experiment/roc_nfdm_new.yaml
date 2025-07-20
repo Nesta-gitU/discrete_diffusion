@@ -40,7 +40,7 @@ callbacks:
 #one epoch has 12556 batches
 #one val epoch has 1396 batches on batch size 256
 trainer:
-  max_steps: 1600000
+  max_steps: 20000 #1600000
   max_epochs: null
   check_val_every_n_epoch: null
   val_check_interval: 50000
@@ -91,13 +91,14 @@ logger:
   wandb:
     tags: ${tags}
     group: "roc"
-    project: "roc my code" #if just testing garbage use test
+    project: "testing runtimes" #if just testing garbage use test
     #mode: "disabled" if you dont want ot log a debug run 
   aim:
     experiment: "text8test"
 
-model_name: "roc_nfdm_new6" #5 is muon lr 0.002, 4 is without film head, 3 is with lower lr
+model_name: "nfdm_new" #5 is muon lr 0.002, 4 is without film head, 3 is with lower lr
 restart_from_checkpoint: true
 float32_type: high
 
 
+get_flops: True

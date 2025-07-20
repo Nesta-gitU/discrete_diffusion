@@ -178,7 +178,7 @@ class NeuralDiffusion(nn.Module):
         #print(t)
         (r_m, r_s, avalue), (r_dm, r_ds, anothervalue) = t_dir(f(x_), t)
         #print(r_m, r_s, "r_m, r_s")
-        print(r_ds, "r_ds")
+        #print(r_ds, "r_ds")
         #print(torch.all(r_ds == f_ds), "r_ds == f_ds")
         #r_ds depends only on time not on x, so these should be exactly the same
         #print("r_ds", r_ds)

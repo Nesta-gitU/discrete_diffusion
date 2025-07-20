@@ -8,6 +8,7 @@ from lightning import Callback, LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
 from omegaconf import OmegaConf
+
 OmegaConf.register_new_resolver("eval", eval)
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
@@ -44,6 +45,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from src.utils.checkpoint_loading import get_checkpoint_path
 from src.utils.checkpoint_loading import get_latest_checkpoint
 
+
 @task_wrapper
 def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """Trains the model. Can additionally evaluate on a testset, using best weights obtained during
@@ -75,6 +77,9 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(cfg.model)
 
+    #if cfg.get_flops:
+    #    compute_flops_fvcore(model.model)
+
     log.info("Instantiating callbacks...")
     callbacks: List[Callback] = instantiate_callbacks(cfg.get("callbacks"))
     
@@ -90,8 +95,16 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     logger: List[Logger] = instantiate_loggers(cfg.get("logger"))
     print(logger)
 
+    from lightning.pytorch.callbacks import Timer
+    from datetime import timedelta
+
+    timer = Timer(duration=timedelta(weeks=1))
+    callbacks.append(timer)  # Add timer to callbacks
+
     log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
     trainer: Trainer = hydra.utils.instantiate(cfg.trainer, callbacks=callbacks, logger=logger)
+
+
 
     object_dict = {
         "cfg": cfg,
@@ -129,6 +142,13 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     if cfg.get("train"):
         log.info("Starting training!")
         trainer.fit(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path) #gets set to None if we dont want to restart 
+
+    # query training/validation/test time (in seconds)
+    timer.time_elapsed("train")
+    print("train_time in seconds for this model is-------------------------------------------------")
+    print(timer.time_elapsed("train"), " here it is the time woo in seconds")
+    print("----------------------------------------------------------------------------------------")
+    exit()
 
     train_metrics = trainer.callback_metrics
 

@@ -7,20 +7,23 @@ defaults:
 
 trainer:
   max_epochs: 1
-  limit_train_batches: 5
+  limit_train_batches: 10
   limit_val_batches: 0
   accelerator: gpu
+  detect_anomaly: false
   #profiler: "simple"
+  
   #profiler: "advanced"
   profiler:
     _target_: pytorch_lightning.profilers.PyTorchProfiler
-    with_stack: false                     # Include stack traces
-    profile_memory: true                  # Use memory profiler
-    on_trace_ready: "${...save_trace}"  # Ensures saving
+    with_flops: true  # Include FLOPs in the profiling
+  #  with_stack: false                     # Include stack traces
+  #  profile_memory: false                 # Use memory profiler
+  #  on_trace_ready: "${...save_trace}"    # Ensures saving
 
 save_trace:
   _target_: torch.profiler.tensorboard_trace_handler
   dir_name: "./lightning_trace"  # Now it saves the trace here
   
 
-get_memory_profile: true 
+get_memory_profile: false 
